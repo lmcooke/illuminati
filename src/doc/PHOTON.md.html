@@ -1,0 +1,57 @@
+<meta charset="utf-8">
+
+**Photon (ckendo)**
+
+PHOTON README:
+=====================================================
+
+Kenji Endo (ckendo)
+
+Due 3/9/17
+
+Talked about concepts with Emily Reif (ereif) and Nellie Robinson (nrobins)
+
+***About***
+
+Photon map global illumination for a monte carlo raytracer. Photon map generation uses russian roulette termination. Diffuse lighting estimate calculated by sampling from the photon map, with a final gather step at the first surface hit in the scene. 
+
+***Design***
+
+To generate the photon map, for each of the desired number of photons, App.cpp's scatter function is called, a photon is cast into the scene randomly from an emissive point in the scene, returned along with the surfel it first instersects in the scene. In scatter, this emitted photon is bounced into the scene using a photonTrace helper, which appends the intermediate bounce photons into an Array. 
+
+The photonTraceHelper recursively bounces the photon in the scene up to the set MAX_DEPTH. At each bounce, if it is not the first bounce, the intermediate photon is stored in the array, and the photon is continued into the scene based on a russian roulette termination. The russian roulette is based the averaged probability of scattering. The new photon's power is scalled per channel by the probability of scattering, and recursively cast into the scene. 
+
+For the lighting estimation, emitted, direct, diffuse, and impulse light is estimated, using the photon map and raytracing. The photon map is used for the diffuse lighting calculation. For non-final gather diffuse calculations, a SphereIterator is used to iterate through a radius GATHER_RADIUS sphere, and the photons are summed, using the cone kernel distribution, and scaled by the surfel's finiteScatteringDensity. 
+
+With final gather, for the first bounce, GATHER_SAMPLES number of samples are cast into the scene via surfel's scatter, and those rays are recursively traced into the scene to determine an average estimate for the lighting at that point. Subsequent calls to diffuse use the previous photon map method of estimation.
+
+finalGather is toggled via m_useGather member variable in app.cpp. NUM_PHOTONS, GATHER_RADIUS, MAX_DEPTH, DIRECT_SAMPLES, GATHER_SAMPLES in app.h.
+
+***Results***
+
+With 500,000 photons and a gather radius of 0.1, there is some splotchiness in the scene, particuarly at corners of the cornell box, and in the reflective sphere in CornellBox-Spheres.Scene.Any.
+
+![Without final gather - 500,000 photons, 0.1 gather radius. max depth 4, 64 direct samples](without.png)
+
+Increasing the gather radius improves the spotchiness on the walls, and somewhat on the reflective sphere. This additionally lightens the shadows, and caustics are mostly lost.
+
+![Without final gather - 500,000 photons, 0.5 gather radius. max depth 4, 64 direct samples](radius.png)
+
+With final gather on, reflections spottiness in the reflective left sphere in CornellBox-spheres.Scene.Any is improved. The overall scene appears brighter, though there is greater noise, particuarly on the ceiling and walls of the Cornell Box. This is improved by increasing the final gather samples to match the number of direct samples, but render time suffers greatly.
+
+![Final gather - 500,000 photons, 0.1 gather radius, max depth 4, 64 direct samples, 16 gather samples](finalGather.png)
+
+For the regular CornellBox.Scene.Any, with 0.1 gather radius, there is a degree of splotchiness, as well as lightness at the tops of the cornell box. This seems to be caused by undersampling of photons at these corners.
+
+![Without final gather - 500,000 photons, 0.1 gather radius, max depth 4, 64 direct samples, 16 gather samples](0.1.png)
+
+With an increased gather radius, the splotchiness is reduced, as well as the visual effect of the lightness at the top corner of the boxes.
+
+![Without final gather - 500,000 photons, 0.5 gather radius, max depth 4, 64 direct samples, 16 gather samples](0.5.png)
+
+***Known Bugs***
+
+When rendering the photons, a black rectangle appears on the floor of the cornell box in some scenes. This however does not affect the photon map diffuse estimate, and appears to be a result of the photon rendering and not the photon map itself. 
+
+<!-- Markdeep: -->
+<style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace;}</style><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>
