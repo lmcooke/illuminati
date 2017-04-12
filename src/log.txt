@@ -1,12 +1,12 @@
 Application Log
-Start: Tue Apr 11 15:10:36 2017
+Start: Wed Apr 12 10:19:10 2017
 
-Initializing System::findDataFile took 0.294342s
+Initializing System::findDataFile took 0.008313s
 
 Entering GApp::GApp()
-cwd = /gpfs/main/home/ckendo/course/cs224/photon
-System::setAppDataDir("/gpfs/main/home/ckendo/course/cs224/photon/")
-Initializing System::findDataFile took 0.000170s
+cwd = /gpfs/main/home/ckendo/course/cs224/illuminati/src
+System::setAppDataDir("/gpfs/main/home/ckendo/course/cs224/illuminati/src/build/")
+Initializing System::findDataFile took 0.000583s
 Setting video mode
 Setting initial rendering state.
 Done setting initial state.
@@ -129,12 +129,12 @@ GPU Supports OpenGL 4.1 or later    yes - OpenGL version on this driver is 4.5
 Done initializing RenderDevice.
 System = { 
     App { 
-        Name = "/gpfs/main/home/ckendo/course/cs224/photon/photon-bin"
-        cwd = "/gpfs/main/home/ckendo/course/cs224/photon"
+        Name = "/gpfs/main/home/ckendo/course/cs224/illuminati/src/build/srcd"
+        cwd = "/gpfs/main/home/ckendo/course/cs224/illuminati/src"
     } 
     
     OS { 
-        Name = "Linux mslab2f-l 3.16.0-4-amd64 #1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux"
+        Name = "Linux mslab3e-l 3.16.0-4-amd64 #1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux"
     } 
     
     CPU { 
@@ -152,7 +152,7 @@ System = {
     
     G3D { 
         Link version = 100100 
-        Compile version = "G3D Innovation Engine 10.01, 64-bit"
+        Compile version = "G3D Innovation Engine 10.01, 64-bit (Debug)"
         G3DSpecification::deployMode = No 
         G3D10DATA = "/contrib/projects/g3d10/G3D10/data-files:/contrib/projects/g3d10/G3D10/../data10/common:/contrib/projects/g3d10/G3D10/../data10/game:/contrib/projects/g3d10/G3D10/../data10/research"
     } 
@@ -516,10 +516,10 @@ System = {
         Adapter0 ={ 
             hostname = ";"
             name = "eth0;"
-            ip = " 10.116. 72. 23"; 
+            ip = " 10.116. 72.180"; 
             subnet = "255.255.255.  0"; 
             broadcast = " 10.116. 72.255"; 
-            mac = "d8:cb:8a:5a:6a:87"; 
+            mac = "d8:cb:8a:5a:6a:ce"; 
         }; 
     }; 
     
@@ -531,6 +531,14 @@ Found "console-small.fnt" at "/contrib/projects/g3d10/G3D10/data-files/font/cons
 Done GApp::loadFont(...)
 Done GApp::GApp()
 
+€1
 
+**************************
+
+Assertion Failure
+Debug assertion failure
+
+Expression: direction.isUnit()
+/gpfs/main/sys/shared/psfu/contrib/projects/g3d10/G3D10/G3D.lib/source/Ray.cpp:31
 
 
