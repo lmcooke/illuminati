@@ -20,5 +20,6 @@ thumbs.db
 #Other
 ################
 src/build/
+src/ice-tmp/
 log.txt
-*.pro.user
+**.pro.user
