@@ -28,7 +28,6 @@ src/illuminati.pro.user
 src/illuminati.pro.user*
 src/.nfs*
 src/nfs*
-src/.ice-tmp/src/.icompile-cache
-src/ice-stats.csv
-src/log.txt
-
+src/.ice-tmp/src/.icompile-cache*
+src/ice-stats.csv*
+src/log.txt*
