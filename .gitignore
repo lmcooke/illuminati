@@ -23,3 +23,6 @@ src/build/
 src/ice-tmp/
 log.txt
 **.pro.user
+src/illuminati.pro.user
+.ice-tmp/
+src/illuminati.pro.user*
