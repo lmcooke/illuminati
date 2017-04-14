@@ -11,7 +11,31 @@
 #define MAX_DEPTH       4           /* Recursve depth of the raytracer */
 #define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
 #define EPSILON 1e-4
-#define GATHER_SAMPLES  16            /*Number of ray samples for final gather*/
+#define GATHER_SAMPLES  16          /*Number of ray samples for final gather*/
+
+// you can extend this if you want
+class PTSettings
+{
+public:
+
+    // all light contributions assumed to be area lights
+    bool useDirectDiffuse;
+    bool useDirectSpecular;
+    bool useIndirect;
+    bool useEmitted;
+    bool useSkyMap;
+
+    int superSamples; // for say, stratified sampling
+    bool attenuation; // refracted path absorption through non-vacuum spaces
+    bool useMedium; // enable volumetric mediums
+
+    bool dofEnabled;
+    float dofFocus;
+    float dofLens;
+    int dofSamples;
+
+};
+
 
 /** The entry point and main window manager */
 class App : public GApp
@@ -93,13 +117,58 @@ public:
     Stage stage;
     View view;
 
+    /** Called from onInit() */
+    void makeGUI();
+
+    void loadSceneDirectory(String directory = m_scenePath);
+    void changeDataDirectory();
+
+    void onRender();
+    void setScenePath(const char *path);
+    void loadDefaultScene();
+    void loadCustomScene();
+    void loadCS244Scene();
+    void saveCanvas();
+    FilmSettings getFilmSettings();
+    void toggleWindowRendering();
+    void toggleWindowScenes();
+
+//    static RenderMethod m_currRenderMethod;
+    static bool m_kill;
+    void changeRenderMethod();
+    void toggleWindowPath();
+
+    int             pass; // how many passes we have taken for a given pixel
+    int             num_passes;
+    bool            continueRender;
+
 private:
+
+    PTSettings          m_ptsettings;
+
     PhotonMap              m_photons;  // Contains photons organized spatially
     World                  m_world;    // The scene being rendered
     shared_ptr<Image3>     m_canvas;   // Output buffer for raytrace()
     Random                 m_random;   // Random number generator
     shared_ptr<Thread>     m_dispatch; // Spawns rendering threads
     bool                   m_useGather; // Boolean to use final gather
+
+    shared_ptr<GuiWindow> m_windowRendering;
+    shared_ptr<GuiWindow> m_windowScenes;
+    shared_ptr<GuiWindow> m_windowPath;
+
+    static String         m_scenePath; // path to scene folder
+
+    float                m_scaleFactor; // how much to scale down images by.
+
+    // GUI stuff
+    GuiDropDownList*    m_ddl;
+    GuiDropDownList*    m_renderdl;
+    GuiDropDownList*    m_lightdl;
+    GuiLabel*           m_warningLabel;
+    GuiLabel*           m_scenePathLabel;
+    String              m_dirName;
+    void updateScenePathLabel();
 };
 
 #endif
