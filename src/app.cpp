@@ -392,32 +392,38 @@ void App::onGraphics(RenderDevice *dev,
                      Array<shared_ptr<Surface> >& posed3D,
                      Array<shared_ptr<Surface2D> >& posed2D)
 {
-    View v = this->view;
-    if (v == DEFAULT)
-        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
+//    View v = this->view;
+//    if (v == DEFAULT)
+//        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
 
-    if (v == PHOTONMAP)
-    {
-        dev->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-        dev->clear();
-        m_photons.render(dev, &m_world);
-    }
-    // If you want to display other things (e.g. shadow photon maps), do it here
-    else
-    {
-        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
+//    if (v == PHOTONMAP)
+//    {
+//        dev->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
+//        dev->clear();
+//        m_photons.render(dev, &m_world);
+//    }
+//    // If you want to display other things (e.g. shadow photon maps), do it here
+//    else
+//    {
+//        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
 
-        FilmSettings s;
-        s.setAntialiasingEnabled(false);
-        s.setBloomStrength(0);
-        s.setGamma(2.060);
-        s.setVignetteTopStrength(0);
-        s.setVignetteBottomStrength(0);
-        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
+//        FilmSettings s;
+//        s.setAntialiasingEnabled(false);
+//        s.setBloomStrength(0);
+//        s.setGamma(2.060);
+//        s.setVignetteTopStrength(0);
+//        s.setVignetteBottomStrength(0);
+//        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
 
-        Surface2D::sortAndRender(dev, posed2D);
+//        Surface2D::sortAndRender(dev, posed2D);
 
-    }
+//    }
+
+    shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
+
+    m_film->exposeAndRender(renderDevice, getFilmSettings(), tex, 0, 0);
+
+    Surface2D::sortAndRender(dev, posed2D);
 }
 
 void App::onUserInput(UserInput* input)
