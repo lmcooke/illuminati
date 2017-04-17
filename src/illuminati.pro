@@ -19,11 +19,19 @@ message("G3D Path : " $${G3D_PATH})
 
 SOURCES += app.cpp \
            world.cpp \
-           photonmap.cpp
+           photonmap.cpp \
+    photonscatter.cpp \
+    photonbeam.cpp \
+    indphotonscatter.cpp \
+    dirphotonscatter.cpp
 
 HEADERS += app.h \
            world.h \
-           photonmap.h
+           photonmap.h \
+    photonscatter.h \
+    photonbeam.h \
+    indphotonscatter.h \
+    dirphotonscatter.h
 
 INCLUDEPATH += $${G3D_PATH}/build/include \
             += $${G3D_PATH}/tbb/include
