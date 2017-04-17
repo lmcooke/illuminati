@@ -115,6 +115,105 @@ shared_ptr<Camera> World::camera()
     return m_camera;
 }
 
+
+shared_ptr<Model> World::createSplineModel(const std::string& str) {
+    const shared_ptr<ArticulatedModel>& model = ArticulatedModel::createEmpty("splineModel");
+
+    ArticulatedModel::Part*     part      = model->addPart("root");
+    ArticulatedModel::Geometry* geometry  = model->addGeometry("geom");
+    ArticulatedModel::Mesh*     mesh      = model->addMesh("mesh", part, geometry);
+
+    int npts = 0;
+    int slices = 8;
+    float arc = 2.0 * pif() / slices;
+
+    // Assign a material
+    mesh->material = UniversalMaterial::create(
+        PARSE_ANY(
+        UniversalMaterial::Specification {
+            lambertian = Color3(1.0, 0.7, 0.15);
+            };
+
+            glossy     = Color4(Color3(0.01), 0.2);
+        }));
+    mesh->twoSided = true;
+
+    Array<CPUVertexArray::Vertex>& vertexArray = geometry->cpuVertexArray.vertex;
+    Array<int>& indexArray = mesh->cpuIndexArray;
+
+
+    /* text parsing and vertex construction */
+
+    std::ifstream infile(str);
+    std::string line;
+    Vector3 pt1 = Vector3(0, 0, 0);
+    Vector3 pt2 = Vector3(0, 0, 0);
+    Vector3 pt3 = Vector3(0, 0, 0);
+    float w2;
+    float w3;
+    bool comment;
+    while (std::getline(infile, line)) {
+        std::istringstream iss(line);
+        pt1 = pt2;
+        pt2 = pt3;
+        w2 = w3;
+        comment = iss.peek() == '#';
+        if (!comment && !(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
+            throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+        }
+        if (npts > 0) {
+            Vector3 diff;
+            if (npts == 1) { // first control point
+                diff = normalize(pt3 - pt2);
+            } else if (comment) { // last control point
+                diff = normalize(pt2 - pt1);
+            } else {
+                diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
+            }
+            CFrame yax = CoordinateFrame::fromYAxis(diff, pt2);
+            for (int a = 0; a < slices; a++) {
+                CPUVertexArray::Vertex& v = vertexArray.next();
+                Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
+                                                        pt2.y,
+                                                        pt2.z + w2 * sin(a * arc),
+                                                        1.0);
+                v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                v.normal  = Vector3::nan();
+                v.tangent = Vector4::nan();
+            }
+        }
+        npts++;
+    }
+    npts--;
+
+
+    /* face construction */
+
+    float f[4] = {0,0,0,0};
+    for (int j = 0; j < npts - 1; j++) {
+        for (int i = 0; i < slices; i++) {
+            f[0] = j * slices + (i % slices);
+            f[3] = j * slices + ((i + 1) % slices);
+            f[1] = f[0] + slices;
+            f[2] = f[3] + slices;
+            debugAssert(f[4] < slices * npts);
+            indexArray.append(
+                f[0], f[1], f[2],
+                f[0], f[2], f[3]);
+        }
+    }
+
+
+    // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,
+    // normals and tangents automatically. We already ensured correct
+    // topology, so avoid the vertex merging optimization.
+    ArticulatedModel::CleanGeometrySettings geometrySettings;
+    geometrySettings.allowVertexMerging = false;
+    model->cleanGeometry(geometrySettings);
+
+    return model;
+}
+
 void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area)
 {
     // Pick an emissive triangle uniformly at random
