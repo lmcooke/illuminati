@@ -1,4 +1,6 @@
 #include "app.h"
+#include <string.h>
+#include <stdio.h>
 
 #ifndef G3D_PATH
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
@@ -8,6 +10,7 @@
 String App::m_scenePath = G3D_PATH "/data/scene";
 
 static const char *g_scenePath;
+String m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
 
 G3D_START_AT_MAIN();
 
@@ -23,8 +26,11 @@ int main(int argc, const char *argv[])
     }
     else
     {
-        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox-spheres.Scene.Any";
+//        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox-spheres.Scene.Any";
 //        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox.Scene.Any";
+//        g_scenePath = "/contrib/projects/g3d/cs224/scenes/ckendo-thinker.Scene.Any";
+
+        g_scenePath = m_defaultScene.c_str();
         printf("No scene specified, using default: %s\n", g_scenePath);
     }
 
@@ -34,7 +40,7 @@ int main(int argc, const char *argv[])
 App::App(const GApp::Settings &settings)
     : GApp(settings),
       stage(App::IDLE),
-      continueRender(true),
+//      continueRender(true),
       view(App::DEFAULT),
       m_useGather(false)
 {
@@ -365,6 +371,7 @@ void App::onRender()
         m_world.unload();
         m_world.load(fullpath);
 
+        // TODO: is it this??
 //        m_renderer->setWorld(&m_world);
 //        m_renderer->setPTSettings(m_ptsettings);
 
@@ -547,44 +554,44 @@ void App::makeGUI()
                                                      GuiTheme::MENU_WINDOW_STYLE);
     GuiPane* paneMain = windowMain->pane();
 
-//    // INFO
-//    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-//    infoPane->addButton("Save Image", this, &App::saveCanvas);
-//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
-//    infoPane->pack();
+    // INFO
+    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
+    infoPane->addButton("Save Image", this, &App::saveCanvas);
+    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+    infoPane->pack();
 
-//    // SCENE
-//    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
+    // SCENE
+    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
 
-//    m_ddl = scenesPane->addDropDownList("Scenes");
-//    scenesPane->addLabel("Scene Directory: ");
-//    m_scenePathLabel = paneMain->addLabel("");
-////    scenesPane->addTextBox("Directory:", &m_dirName);
-////    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+    m_ddl = scenesPane->addDropDownList("Scenes");
+    scenesPane->addLabel("Scene Directory: ");
+    m_scenePathLabel = paneMain->addLabel("");
+//    scenesPane->addTextBox("Directory:", &m_dirName);
+//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-////    scenesPane->addLabel("Scene Folders");
-//    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
+//    scenesPane->addLabel("Scene Folders");
+    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
 
-//    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
-//    renderButton->setFocused(true);
-//    scenesPane->pack();
+    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
+    renderButton->setFocused(true);
+    scenesPane->pack();
 
-//    // RENDERING
-//    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
-//    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-////    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
-//    settingsPane->addLabel("Noise:bias ratio");
-//    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    // RENDERING
+    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
+    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
+//    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
+    settingsPane->addLabel("Noise:bias ratio");
+    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
-//    // Lights
-//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-//    m_lightdl = lightsPane->addDropDownList("Emitter");
-//    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
-//    lightsPane->addLabel("Beam radius");
-//    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
-//    lightsPane->addLabel("Scattering");
-//    lightsPane->addLabel("Attenuation");
-//    lightsPane->pack();
+    // Lights
+    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
+    m_lightdl = lightsPane->addDropDownList("Emitter");
+    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
+    lightsPane->addLabel("Beam radius");
+    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
+    lightsPane->addLabel("Scattering");
+    lightsPane->addLabel("Attenuation");
+    lightsPane->pack();
 
 //    loadSceneDirectory(m_scenePath);
 
