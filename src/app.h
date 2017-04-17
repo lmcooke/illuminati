@@ -36,7 +36,6 @@ public:
 
 };
 
-
 /** The entry point and main window manager */
 class App : public GApp
 {

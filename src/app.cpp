@@ -15,6 +15,7 @@ int main(int argc, const char *argv[])
 {
     GApp::Settings s;
     s.window.caption = "Photon Beams";
+    s.dataDir = G3D_PATH "/../data10/common";
 
     if (argc > 1)
     {
@@ -335,7 +336,7 @@ void App::onInit()
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(true);
 
-//    m_world.load(g_scenePath);
+    m_world.load(g_scenePath);
 
     int w = window()->width(),
         h = window()->height();
@@ -344,12 +345,12 @@ void App::onInit()
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-    makeGUI();
+//    makeGUI();
 
     m_canvas = Image3::createEmpty(w, h);
 
-//    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-//    m_dispatch->start();
+    m_dispatch = Thread::create("dispatcher", dispatcher, this);
+    m_dispatch->start();
 }
 
 
@@ -418,6 +419,12 @@ void App::onGraphics(RenderDevice *dev,
         Surface2D::sortAndRender(dev, posed2D);
 
     }
+
+//    shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
+
+//    m_film->exposeAndRender(renderDevice, getFilmSettings(), tex, 0, 0);
+
+//    Surface2D::sortAndRender(dev, posed2D);
 }
 
 void App::onUserInput(UserInput* input)
@@ -509,7 +516,7 @@ void App::saveCanvas()
 
     shared_ptr<Texture> colorBuffer = Texture::createEmpty("Color", renderDevice->width(), renderDevice->height());
     m_film->exposeAndRender(renderDevice, getFilmSettings(), Texture::fromImage("Source", m_canvas), 0, 0, colorBuffer);
-    colorBuffer->toImage(ImageFormat::RGB8())->save(String("../images/scene-") +
+    colorBuffer->toImage(ImageFormat::RGB8())->save (String("../images/scene-") +
                                                     "p" + String(std::to_string(pass).c_str()) +
                                                     "-" + dayHourMinSec + ".png");
 }
@@ -540,44 +547,44 @@ void App::makeGUI()
                                                      GuiTheme::MENU_WINDOW_STYLE);
     GuiPane* paneMain = windowMain->pane();
 
-    // INFO
-    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-    infoPane->addButton("Save Image", this, &App::saveCanvas);
-    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
-    infoPane->pack();
+//    // INFO
+//    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
+//    infoPane->addButton("Save Image", this, &App::saveCanvas);
+//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+//    infoPane->pack();
 
-    // SCENE
-    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
+//    // SCENE
+//    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
 
-    m_ddl = scenesPane->addDropDownList("Scenes");
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = paneMain->addLabel("");
-//    scenesPane->addTextBox("Directory:", &m_dirName);
-//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+//    m_ddl = scenesPane->addDropDownList("Scenes");
+//    scenesPane->addLabel("Scene Directory: ");
+//    m_scenePathLabel = paneMain->addLabel("");
+////    scenesPane->addTextBox("Directory:", &m_dirName);
+////    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-//    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
+////    scenesPane->addLabel("Scene Folders");
+//    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
 
-    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
-    renderButton->setFocused(true);
-    scenesPane->pack();
+//    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
+//    renderButton->setFocused(true);
+//    scenesPane->pack();
 
-    // RENDERING
-    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
-    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-//    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+//    // RENDERING
+//    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
+//    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
+////    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
+//    settingsPane->addLabel("Noise:bias ratio");
+//    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
-    // Lights
-    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-    m_lightdl = lightsPane->addDropDownList("Emitter");
-    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
-    lightsPane->addLabel("Beam radius");
-    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
-    lightsPane->addLabel("Scattering");
-    lightsPane->addLabel("Attenuation");
-    lightsPane->pack();
+//    // Lights
+//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
+//    m_lightdl = lightsPane->addDropDownList("Emitter");
+//    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
+//    lightsPane->addLabel("Beam radius");
+//    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
+//    lightsPane->addLabel("Scattering");
+//    lightsPane->addLabel("Attenuation");
+//    lightsPane->pack();
 
 //    loadSceneDirectory(m_scenePath);
 
