@@ -51,6 +51,9 @@ App::App(const GApp::Settings &settings)
     m_ptsettings.dofSamples=5;
 
     m_ptsettings.attenuation=true;
+
+    // initialize direct photon scatter-er
+    m_dirPhotonScatter = DirPhotonScatter();
 }
 
 App::~App() { }
@@ -347,7 +350,11 @@ void App::onInit()
     developerWindow->cameraControlWindow->setVisible(false);
 //    makeGUI();
 
+
+
     m_canvas = Image3::createEmpty(w, h);
+
+    m_dirPhotonScatter.initialize(m_framebuffer, renderDevice);
 
     m_dispatch = Thread::create("dispatcher", dispatcher, this);
     m_dispatch->start();

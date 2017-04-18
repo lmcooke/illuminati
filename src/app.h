@@ -6,6 +6,8 @@
 #include "photonmap.h"
 #include "world.h"
 
+#include "dirphotonscatter.h"
+
 #define NUM_PHOTONS     500000      /* How many photons to gather */
 #define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
 #define MAX_DEPTH       4           /* Recursve depth of the raytracer */
@@ -168,6 +170,10 @@ private:
     GuiLabel*           m_scenePathLabel;
     String              m_dirName;
     void updateScenePathLabel();
+
+    DirPhotonScatter m_dirPhotonScatter;
+
+
 };
 
 #endif
