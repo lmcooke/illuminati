@@ -1,0 +1,16 @@
+newmtl boatMugFlashlight:blinn7SG
+illum 4
+Kd 0.01 0.01 0.01
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+map_Ks -s 0.25 0.25 -t 0.001 0.001 plastic1_SPEC.png
+newmtl boatMugFlashlight:blinn7SG2
+illum 4
+Kd 0.02 0.02 0.02
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+map_Ks -s 1 0.0333333 -t 0.001 0.001 plastic1_SPEC.png

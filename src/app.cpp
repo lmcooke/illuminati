@@ -342,7 +342,16 @@ static void dispatcher(void *arg)
 void App::onInit()
 {
     GApp::showRenderingStats = false;
-    renderDevice->setSwapBuffersAutomatically(true);
+    renderDevice->setSwapBuffersAutomatically(true); // TODO this should be false?
+
+    ArticulatedModel::Specification spec;
+    spec.filename = System::findDataFile("model/plane.off");
+    std::cout << "YAY" << std::endl;
+    spec.stripMaterials = true;
+
+    m_model = ArticulatedModel::create(spec);
+    m_model->pose(m_sceneGeometry, Point3(0.f, -0.5f, 0.f));
+
 
     // Set up GUI
     createDeveloperHUD();
@@ -424,7 +433,48 @@ void App::onGraphics(RenderDevice *rd,
 
 }
 
+void App::gpuProcess(RenderDevice *rd, Array<shared_ptr<Surface>> quads)
+{
 
+    rd->pushState(m_framebuffer); {
+
+        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        Args args;
+        // TODO : set args uniforms
+
+        CFrame cframe;
+
+        for (int i = 0; i < m_sceneGeometry.size(); i++) {
+            const shared_ptr<UniversalSurface>& surface =
+                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+
+            if (notNull(surface)) {
+                surface->getCoordinateFrame(cframe);
+                args.setUniform("MVP", rd->invertYMatrix() *
+                                        rd->projectionMatrix() *
+                                        rd->cameraToWorldMatrix().inverse() * cframe);
+                surface->gpuGeom()->setShaderArgs(args);
+
+                LAUNCH_SHADER("splat.*", args);
+
+            }
+
+        }
+
+    } rd->popState();
+
+    swapBuffers();
+
+    FilmSettings filmSettings = activeCamera()->filmSettings();
+
+    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                            settings().hdrFramebuffer.colorGuardBandThickness.x +
+                            settings().hdrFramebuffer.depthGuardBandThickness.x,
+                            settings().hdrFramebuffer.depthGuardBandThickness.x);
+}
 
 
 

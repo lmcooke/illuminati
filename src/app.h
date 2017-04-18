@@ -157,6 +157,12 @@ public:
 
 private:
 
+    void gpuProcess(RenderDevice *rd, Array<shared_ptr<Surface>> quads);
+
+    // TODO : temp
+    shared_ptr<ArticulatedModel> m_model;
+    Array<shared_ptr<Surface>> m_sceneGeometry;
+
     // path flags
     PhotonSettings         m_PSettings;
 //    shared_ptr<PathTracer> m_renderer;
