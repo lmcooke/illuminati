@@ -341,8 +341,12 @@ static void dispatcher(void *arg)
 
 void App::onInit()
 {
+//    GApp::onInit();
+    setFrameDuration(1.0f / 60.0f);
+
+
     GApp::showRenderingStats = false;
-    renderDevice->setSwapBuffersAutomatically(true); // TODO this should be false?
+    renderDevice->setSwapBuffersAutomatically(false); // TODO this should be false?
 
     ArticulatedModel::Specification spec;
     spec.filename = System::findDataFile("model/plane.off");
@@ -396,83 +400,104 @@ void App::onCleanup()
     m_world.unload();
 }
 
-void App::onGraphics(RenderDevice *rd,
-                     Array<shared_ptr<Surface> >& posed3D,
-                     Array<shared_ptr<Surface2D> >& posed2D)
-{
+//void App::onGraphics(RenderDevice *rd,
+//                     Array<shared_ptr<Surface> >& posed3D,
+//                     Array<shared_ptr<Surface2D> >& posed2D)
+//{
 
-    View v = this->view;
-    if (v == DEFAULT)
-        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
+//    View v = this->view;
+//    if (v == DEFAULT)
+//        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
 
-    if (v == PHOTONMAP)
-    {
-        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-        rd->clear();
-        m_photons.render(rd, &m_world);
-
-        Surface2D::sortAndRender(rd, posed2D);
-
-    }
-    // If you want to display other things (e.g. shadow photon maps), do it here
-    else
-    {
-
-//        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
-
-//        FilmSettings s;
-//        s.setAntialiasingEnabled(false);
-//        s.setBloomStrength(0);
-//        s.setGamma(2.060);
-//        s.setVignetteTopStrength(0);
-//        s.setVignetteBottomStrength(0);
-//        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
+//    if (v == PHOTONMAP)
+//    {
+//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
+//        rd->clear();
+//        m_photons.render(rd, &m_world);
 
 //        Surface2D::sortAndRender(rd, posed2D);
 
-        // TEMP
-        gpuProcess(rd);
+//    }
+//    // If you want to display other things (e.g. shadow photon maps), do it here
+//    else
+//    {
 
-    }
+////        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
 
+////        FilmSettings s;
+////        s.setAntialiasingEnabled(false);
+////        s.setBloomStrength(0);
+////        s.setGamma(2.060);
+////        s.setVignetteTopStrength(0);
+////        s.setVignetteBottomStrength(0);
+////        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
+
+////        Surface2D::sortAndRender(rd, posed2D);
+
+//        // TEMP
+////        gpuProcess(rd);
+
+//    }
+
+//}
+
+void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
+{
+    gpuProcess(rd);
 }
 
 void App::gpuProcess(RenderDevice *rd)
 {
 
-    rd->pushState(m_framebuffer); {
+//    rd->pushState(m_framebuffer); {
+
+//        rd->setColorClearValue(Color3::white() * 0.3f);
+//        rd->clear();
+//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+//        Args args;
+//        // TODO : set args uniforms
+
+//        CFrame cframe;
+
+//        for (int i = 0; i < m_sceneGeometry.size(); i++) {
+//            const shared_ptr<UniversalSurface>& surface =
+//                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+
+//            if (notNull(surface)) {
+//                surface->getCoordinateFrame(cframe);
+//                args.setUniform("MVP", rd->invertYMatrix() *
+//                                        rd->projectionMatrix() *
+//                                        rd->cameraToWorldMatrix().inverse() * cframe);
+//                surface->gpuGeom()->setShaderArgs(args);
+
+//                LAUNCH_SHADER("splat.*", args);
+
+//            }
+
+//        }
+
+//    } rd->popState();
+
+
+    rd->push2D(m_framebuffer); {
 
         rd->setColorClearValue(Color3::white() * 0.3f);
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
         Args args;
-        // TODO : set args uniforms
-
-        CFrame cframe;
-
-        for (int i = 0; i < m_sceneGeometry.size(); i++) {
-            const shared_ptr<UniversalSurface>& surface =
-                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
-
-            if (notNull(surface)) {
-                surface->getCoordinateFrame(cframe);
-                args.setUniform("MVP", rd->invertYMatrix() *
-                                        rd->projectionMatrix() *
-                                        rd->cameraToWorldMatrix().inverse() * cframe);
-                surface->gpuGeom()->setShaderArgs(args);
-
-                LAUNCH_SHADER("splat.*", args);
-
-            }
-
-        }
+        args.setRect(rd->viewport());
+        LAUNCH_SHADER("testShader1.*", args);
 
     } rd->popState();
 
     swapBuffers();
+    rd->clear();
 
     FilmSettings filmSettings = activeCamera()->filmSettings();
+    filmSettings.setBloomStrength(0.0);
+    filmSettings.setGamma(1.0); // default is 2.0
 
     m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
