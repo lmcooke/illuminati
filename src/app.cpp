@@ -349,8 +349,8 @@ void App::onInit()
     renderDevice->setSwapBuffersAutomatically(false); // TODO this should be false?
 
     ArticulatedModel::Specification spec;
-    spec.filename = System::findDataFile("model/plane.off");
-    std::cout << "YAY" << std::endl;
+    spec.filename = System::findDataFile("model/cauldron.obj");
+
     spec.stripMaterials = true;
 
     m_model = ArticulatedModel::create(spec);
@@ -449,6 +449,40 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 void App::gpuProcess(RenderDevice *rd)
 {
 
+    rd->pushState(m_framebuffer); {
+
+        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
+
+        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        Args args;
+        // TODO : set args uniforms
+
+        CFrame cframe;
+
+        for (int i = 0; i < m_sceneGeometry.size(); i++) {
+            const shared_ptr<UniversalSurface>& surface =
+                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+
+            if (notNull(surface)) {
+                surface->getCoordinateFrame(cframe);
+                rd->setObjectToWorldMatrix(cframe);
+                args.setUniform("MVP", rd->invertYMatrix() *
+                                        rd->projectionMatrix() *
+                                        rd->cameraToWorldMatrix().inverse() * cframe);
+                surface->gpuGeom()->setShaderArgs(args);
+
+                LAUNCH_SHADER("testShader2.*", args);
+
+            }
+
+        }
+
+    } rd->popState();
+
+
 //    rd->pushState(m_framebuffer); {
 
 //        rd->setColorClearValue(Color3::white() * 0.3f);
@@ -456,41 +490,23 @@ void App::gpuProcess(RenderDevice *rd)
 //        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
 //        Args args;
-//        // TODO : set args uniforms
-
-//        CFrame cframe;
-
-//        for (int i = 0; i < m_sceneGeometry.size(); i++) {
-//            const shared_ptr<UniversalSurface>& surface =
-//                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
-
-//            if (notNull(surface)) {
-//                surface->getCoordinateFrame(cframe);
-//                args.setUniform("MVP", rd->invertYMatrix() *
-//                                        rd->projectionMatrix() *
-//                                        rd->cameraToWorldMatrix().inverse() * cframe);
-//                surface->gpuGeom()->setShaderArgs(args);
-
-//                LAUNCH_SHADER("splat.*", args);
-
-//            }
-
-//        }
+//        args.setRect(rd->viewport());
+//        LAUNCH_SHADER("testShader1.*", args);
 
 //    } rd->popState();
 
 
-    rd->push2D(m_framebuffer); {
+//    rd->push2D(m_framebuffer); {
 
-        rd->setColorClearValue(Color3::white() * 0.3f);
-        rd->clear();
-        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+//        rd->setColorClearValue(Color3::white() * 0.3f);
+//        rd->clear();
+//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
-        Args args;
-        args.setRect(rd->viewport());
-        LAUNCH_SHADER("testShader1.*", args);
+//        Args args;
+//        args.setRect(rd->viewport());
+//        LAUNCH_SHADER("testShader1.*", args);
 
-    } rd->popState();
+//    } rd->popState();
 
     swapBuffers();
     rd->clear();
