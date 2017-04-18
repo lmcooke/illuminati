@@ -24,7 +24,8 @@ SOURCES += app.cpp \
     photonbeam.cpp \
     indphotonscatter.cpp \
     dirphotonscatter.cpp \
-    renderer.cpp
+    renderer.cpp \
+    main.cpp
 
 HEADERS += app.h \
            world.h \
@@ -33,7 +34,8 @@ HEADERS += app.h \
     photonbeam.h \
     indphotonscatter.h \
     dirphotonscatter.h \
-    renderer.h
+    renderer.h \
+    medium.h
 
 INCLUDEPATH += $${G3D_PATH}/build/include \
             += $${G3D_PATH}/tbb/include

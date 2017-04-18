@@ -1,6 +1,5 @@
+
 #include "app.h"
-#include <string.h>
-#include <stdio.h>
 
 #ifndef G3D_PATH
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
@@ -8,37 +7,16 @@
 
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
-
 static const char *g_scenePath;
-String m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
+String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
 
-G3D_START_AT_MAIN();
-
-int main(int argc, const char *argv[])
-{
-    GApp::Settings s;
-    s.window.caption = "Photon Beams";
-    s.dataDir = G3D_PATH "/../data10/common";
-
-    if (argc > 1)
-    {
-        g_scenePath = argv[1];
-    }
-    else
-    {
-//        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox-spheres.Scene.Any";
-//        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox.Scene.Any";
-//        g_scenePath = "/contrib/projects/g3d/cs224/scenes/ckendo-thinker.Scene.Any";
-
-        g_scenePath = m_defaultScene.c_str();
-        printf("No scene specified, using default: %s\n", g_scenePath);
-    }
-
-    return App(s).run();
-}
+// set this to 1 to debug a single render thread
+#define THREADS 12
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
+//    pass(0)
+//    m_renderer(new PathTracer)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
@@ -46,7 +24,8 @@ App::App(const GApp::Settings &settings)
 {
     m_scenePath = dataDir + "/scene";
 
-    m_endProgram = false;
+    num_passes=5000;
+
     m_ptsettings.useDirectDiffuse=true;
     m_ptsettings.useDirectSpecular=true;
     m_ptsettings.useEmitted=true;
@@ -343,37 +322,36 @@ void App::onInit()
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(true);
 
-    m_world.load(g_scenePath);
-
-    int w = window()->width(),
-        h = window()->height();
-
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-//    makeGUI();
+    makeGUI();
 
-    m_canvas = Image3::createEmpty(w, h);
+    m_canvas = Image3::createEmpty(window()->width(),
+                                   window()->height());
 
-    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-    m_dispatch->start();
+    m_scenePath = m_defaultScene;
+    // TODO: remove
+//    g_scenePath = m_defaultScene.c_str();
+//    m_world.load(g_scenePath);
+//    m_dispatch = Thread::create("dispatcher", dispatcher, this);
+//    m_dispatch->start();
 }
-
 
 void App::onRender()
 {
-    // user clicks the render button
-    if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
-    {
-        continueRender = true;
-        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
+//    // user clicks the render button
+//    if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
+//    {
+//        continueRender = true;
+//        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
 
-        m_world.unload();
-        m_world.load(fullpath);
+//        m_world.unload();
+//        m_world.load(fullpath);
 
-//        m_renderer->setWorld(&m_world);
-//        m_renderer->setPTSettings(m_ptsettings);
+////        m_renderer->setWorld(&m_world);
+////        m_renderer->setPTSettings(m_ptsettings);
 
 //        shared_ptr<Camera> cam = m_world.camera();
 //        cam->depthOfFieldSettings().setEnabled(true);
@@ -382,13 +360,20 @@ void App::onRender()
 //        cam->depthOfFieldSettings().setLensRadius(m_ptsettings.dofLens);
 //        cam->depthOfFieldSettings().setFocusPlaneZ(m_ptsettings.dofFocus);
 
-        m_canvas = Image3::createEmpty(window()->width(),
-                                       window()->height());
-        m_dispatch = Thread::create("dispatcher", dispatcher, this);
-        m_dispatch->start();
-    } else {
-        continueRender=false;
-    }
+//        m_canvas = Image3::createEmpty(window()->width(),
+//                                       window()->height());
+//        m_dispatch = Thread::create("dispatcher", dispatcher, this);
+//        m_dispatch->start();
+//    } else {
+//        continueRender=false;
+//    }
+
+    m_world.unload();
+    g_scenePath = m_scenePath.c_str();
+    m_world.load(g_scenePath);
+
+    m_dispatch = Thread::create("dispatcher", dispatcher, this);
+    m_dispatch->start();
 }
 
 void App::onCleanup()
@@ -396,19 +381,20 @@ void App::onCleanup()
     m_world.unload();
 }
 
-void App::onGraphics(RenderDevice *dev,
+void App::onGraphics(RenderDevice *rd,
                      Array<shared_ptr<Surface> >& posed3D,
                      Array<shared_ptr<Surface2D> >& posed2D)
 {
+
     View v = this->view;
     if (v == DEFAULT)
         v = stage == SCATTERING ? PHOTONMAP : RENDITION;
 
     if (v == PHOTONMAP)
     {
-        dev->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-        dev->clear();
-        m_photons.render(dev, &m_world);
+        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
+        rd->clear();
+        m_photons.render(rd, &m_world);
     }
     // If you want to display other things (e.g. shadow photon maps), do it here
     else
@@ -423,7 +409,7 @@ void App::onGraphics(RenderDevice *dev,
         s.setVignetteBottomStrength(0);
         m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
 
-        Surface2D::sortAndRender(dev, posed2D);
+        Surface2D::sortAndRender(rd, posed2D);
 
     }
 
@@ -431,21 +417,33 @@ void App::onGraphics(RenderDevice *dev,
 
 //    m_film->exposeAndRender(renderDevice, getFilmSettings(), tex, 0, 0);
 
-//    Surface2D::sortAndRender(dev, posed2D);
+//    Surface2D::sortAndRender(rd, posed2D);
+
 }
 
-void App::onUserInput(UserInput* input)
+//void App::onUserInput(UserInput* input)
+//{
+//    if (input->keyReleased(GKey('1')))
+//        this->view = PHOTONMAP;
+
+//    if (input->keyReleased(GKey('2')))
+//        this->view = RENDITION;
+
+//    if (input->keyReleased(GKey('0')))
+//        this->view = DEFAULT;
+//}
+
+
+FilmSettings App::getFilmSettings()
 {
-    if (input->keyReleased(GKey('1')))
-        this->view = PHOTONMAP;
-
-    if (input->keyReleased(GKey('2')))
-        this->view = RENDITION;
-
-    if (input->keyReleased(GKey('0')))
-        this->view = DEFAULT;
+    FilmSettings s;
+    s.setAntialiasingEnabled(false);
+    s.setBloomStrength(0);
+    s.setGamma(2.060);
+    s.setVignetteTopStrength(0);
+    s.setVignetteBottomStrength(0);
+    return s;
 }
-
 
 void App::changeDataDirectory()
 {
@@ -500,20 +498,8 @@ void App::updateScenePathLabel()
     m_scenePathLabel->setCaption("..." + m_scenePath.substr(m_scenePath.length() - 30, m_scenePath.length()));
 }
 
-FilmSettings App::getFilmSettings()
-{
-    FilmSettings s;
-    s.setAntialiasingEnabled(false);
-    s.setBloomStrength(0);
-    s.setGamma(2.060);
-    s.setVignetteTopStrength(0);
-    s.setVignetteBottomStrength(0);
-    return s;
-}
-
 void App::saveCanvas()
 {
-    std::cout << "saving canvas" << std::endl;
     time_t rawtime;
     struct tm *info;
     char dayHourMinSec [7];
@@ -523,14 +509,13 @@ void App::saveCanvas()
 
     shared_ptr<Texture> colorBuffer = Texture::createEmpty("Color", renderDevice->width(), renderDevice->height());
     m_film->exposeAndRender(renderDevice, getFilmSettings(), Texture::fromImage("Source", m_canvas), 0, 0, colorBuffer);
-    colorBuffer->toImage(ImageFormat::RGB8())->save (String("../images/scene-") +
+    colorBuffer->toImage(ImageFormat::RGB8())->save(String("../images/scene-") +
                                                     "p" + String(std::to_string(pass).c_str()) +
                                                     "-" + dayHourMinSec + ".png");
 }
 
 void App::toggleWindowRendering()
 {
-    std::cout << "toggling rendering window" << std::endl;
     m_windowRendering->setVisible(!m_windowRendering->visible());
 }
 

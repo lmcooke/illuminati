@@ -1,10 +1,13 @@
 #ifndef APP_H
 #define APP_H
 
-#include <G3D/G3DAll.h>
-
-#include "photonmap.h"
 #include "world.h"
+//#include "threadpool.h"
+#include <ctime>
+#include <G3D/G3DAll.h>
+#include "photonmap.h"
+
+//enum RenderMethod { RAY, PATH, PHOTON };
 
 #define NUM_PHOTONS     500000      /* How many photons to gather */
 #define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
@@ -99,6 +102,9 @@ public:
     /** Multithreaded callback for tracing gather rays */
     void traceCallback(int x, int y);
 
+    /** Called once per pixel for raytracing */
+    void threadCallback(int x, int y);
+
     /** Called once at application startup */
     virtual void onInit();
 
@@ -109,15 +115,14 @@ public:
     virtual void onGraphics(RenderDevice *dev,
                             Array<shared_ptr<Surface> >& posed3D,
                             Array<shared_ptr<Surface2D> >& posed2D);
+    /** Called from onInit() */
+    void makeGUI();
 
-    /** Processes user input */
-    virtual void onUserInput(UserInput *input);
+//    /** Processes user input */
+//    virtual void onUserInput(UserInput *input);
 
     Stage stage;
     View view;
-
-    /** Called from onInit() */
-    void makeGUI();
 
     void loadSceneDirectory(String directory = m_scenePath);
     void changeDataDirectory();
@@ -134,8 +139,11 @@ public:
 
 //    static RenderMethod m_currRenderMethod;
     static bool m_kill;
-    void changeRenderMethod();
+//    void changeRenderMethod();
     void toggleWindowPath();
+
+    /** Processes user input */
+//    virtual void onUserInput(UserInput *input);
 
     int             pass; // how many passes we have taken for a given pixel
     int             num_passes;
@@ -143,24 +151,37 @@ public:
 
 private:
 
+    // path flags
     PTSettings          m_ptsettings;
+//    shared_ptr<PathTracer> m_renderer;
 
     PhotonMap              m_photons;  // Contains photons organized spatially
-    World                  m_world;    // The scene being rendered
-    shared_ptr<Image3>     m_canvas;   // Output buffer for raytrace()
     Random                 m_random;   // Random number generator
-    shared_ptr<Thread>     m_dispatch; // Spawns rendering threads
     bool                   m_useGather; // Boolean to use final gather
 
     shared_ptr<GuiWindow> m_windowRendering;
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
 
-    static String              m_defaultScene;
+    static String           m_scenePath; // path to scene folder
+    static String           m_defaultScene;
+    float                   m_scaleFactor; // how much to scale down images by.
 
-    static String         m_scenePath; // path to scene folder
+    World               m_world;    // The scene being rendered
+    shared_ptr<Image3>  m_canvas;   // Output buffer for raytrace()
+    shared_ptr<Thread>  m_dispatch; // Spawns rendering threads
 
-    float                m_scaleFactor; // how much to scale down images by.
+#if 0
+    bool                m_pointLights; // true if these are turned on
+    bool                m_areaLights;
+    bool				m_direct;      // show direct lighting of first intersection point?
+    bool				m_direct_s;      // show SPECULAR reflections of direct lighting of first intersection point?
+    bool				m_indirect;    // show indirect lighting at first intersection point?
+    bool				m_emit;        // show emitted light
+
+    bool                m_fresnelEnabled;
+    bool                m_attenuation;
+#endif
 
     // GUI stuff
     GuiDropDownList*    m_ddl;

@@ -1,9 +1,6 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <G3D/G3DAll.h>
 
 #include "photonmap.h"
@@ -81,13 +78,6 @@ public:
 
     /** Renders the world in wireframe */
     void renderWireframe(RenderDevice *dev);
-
-    /** Reads in spline file and parses it into a G3D Model.
-     *  Spline files consist of a series of points, one per line, represented as:
-     *  x y z radius
-     *  The last line must be a comment starting with a #. */
-    shared_ptr<Model> createSplineModel(const std::string& str);
-
 
 private:
     TriTree             m_tris;     // The scene's geometry in world space
