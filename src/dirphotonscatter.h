@@ -11,15 +11,8 @@ public:
     ~DirPhotonScatter();
     void preprocess();
 
-    void initialize(shared_ptr<Framebuffer> framebuffer, RenderDevice *rd);
-
-    void renderDirect(RenderDevice *rd);
 
 private:
-
-
-    shared_ptr<Framebuffer> m_fb;
-    shared_ptr<Texture> m_directTex;
 
 
 
