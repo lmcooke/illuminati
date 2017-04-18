@@ -362,7 +362,6 @@ void App::onInit()
 void App::onRender()
 {
 
-
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
 
@@ -424,6 +423,7 @@ void App::onGraphics(RenderDevice *rd,
     }
 
 }
+
 
 
 
