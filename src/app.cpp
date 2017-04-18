@@ -417,23 +417,27 @@ void App::onGraphics(RenderDevice *rd,
     // If you want to display other things (e.g. shadow photon maps), do it here
     else
     {
-        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
 
-        FilmSettings s;
-        s.setAntialiasingEnabled(false);
-        s.setBloomStrength(0);
-        s.setGamma(2.060);
-        s.setVignetteTopStrength(0);
-        s.setVignetteBottomStrength(0);
-        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
+//        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
 
-        Surface2D::sortAndRender(rd, posed2D);
+//        FilmSettings s;
+//        s.setAntialiasingEnabled(false);
+//        s.setBloomStrength(0);
+//        s.setGamma(2.060);
+//        s.setVignetteTopStrength(0);
+//        s.setVignetteBottomStrength(0);
+//        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
+
+//        Surface2D::sortAndRender(rd, posed2D);
+
+        // TEMP
+        gpuProcess(rd);
 
     }
 
 }
 
-void App::gpuProcess(RenderDevice *rd, Array<shared_ptr<Surface>> quads)
+void App::gpuProcess(RenderDevice *rd)
 {
 
     rd->pushState(m_framebuffer); {

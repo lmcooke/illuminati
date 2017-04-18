@@ -157,7 +157,7 @@ public:
 
 private:
 
-    void gpuProcess(RenderDevice *rd, Array<shared_ptr<Surface>> quads);
+    void gpuProcess(RenderDevice *rd);
 
     // TODO : temp
     shared_ptr<ArticulatedModel> m_model;
