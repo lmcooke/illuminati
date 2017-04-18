@@ -51,14 +51,16 @@ SOURCES       = app.cpp \
 		photonscatter.cpp \
 		photonbeam.cpp \
 		indphotonscatter.cpp \
-		dirphotonscatter.cpp 
+		dirphotonscatter.cpp \
+		renderer.cpp 
 OBJECTS       = app.o \
 		world.o \
 		photonmap.o \
 		photonscatter.o \
 		photonbeam.o \
 		indphotonscatter.o \
-		dirphotonscatter.o
+		dirphotonscatter.o \
+		renderer.o
 DIST          = ../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/common/shell-unix.conf \
 		../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/common/unix.conf \
@@ -3289,6 +3291,9 @@ dirphotonscatter.o: dirphotonscatter.cpp dirphotonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeam.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dirphotonscatter.o dirphotonscatter.cpp
+
+renderer.o: renderer.cpp renderer.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o renderer.o renderer.cpp
 
 ####### Install
 
