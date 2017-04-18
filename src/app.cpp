@@ -26,17 +26,20 @@ App::App(const GApp::Settings &settings)
 
     num_passes=5000;
 
-    m_ptsettings.useDirectDiffuse=true;
-    m_ptsettings.useDirectSpecular=true;
-    m_ptsettings.useEmitted=true;
-    m_ptsettings.useIndirect=true;
+    m_PSettings.useDirectDiffuse=true;
+    m_PSettings.useDirectSpecular=true;
+    m_PSettings.useEmitted=true;
+    m_PSettings.useIndirect=true;
 
-    m_ptsettings.dofEnabled=false;
-    m_ptsettings.dofFocus=-4.8f;
-    m_ptsettings.dofLens=0.2f;
-    m_ptsettings.dofSamples=5;
+    m_PSettings.dofEnabled=false;
+    m_PSettings.dofFocus=-4.8f;
+    m_PSettings.dofLens=0.2f;
+    m_PSettings.dofSamples=5;
 
-    m_ptsettings.attenuation=true;
+    m_PSettings.attenuation=0.0;
+    m_PSettings.scattering=0.0;
+    m_PSettings.noiseBiasRatio=0.0;
+    m_PSettings.radiusScalingFactor=0.5;
 }
 
 App::~App() { }
@@ -367,13 +370,22 @@ void App::onRender()
 //    } else {
 //        continueRender=false;
 //    }
+    if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
+    {
+        continueRender = true;
 
-    m_world.unload();
-    g_scenePath = m_scenePath.c_str();
-    m_world.load(g_scenePath);
+        m_photons.clear();
 
-    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-    m_dispatch->start();
+        m_world.unload();
+        g_scenePath = m_scenePath.c_str();
+        m_world.load(g_scenePath);
+        m_canvas = Image3::createEmpty(window()->width(),
+                                       window()->height());
+        m_dispatch = Thread::create("dispatcher", dispatcher, this);
+        m_dispatch->start();
+    } else {
+        continueRender=false;
+    }
 }
 
 void App::onCleanup()
@@ -395,6 +407,9 @@ void App::onGraphics(RenderDevice *rd,
         rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
         rd->clear();
         m_photons.render(rd, &m_world);
+
+        Surface2D::sortAndRender(rd, posed2D);
+
     }
     // If you want to display other things (e.g. shadow photon maps), do it here
     else
@@ -514,20 +529,20 @@ void App::saveCanvas()
                                                     "-" + dayHourMinSec + ".png");
 }
 
-void App::toggleWindowRendering()
-{
-    m_windowRendering->setVisible(!m_windowRendering->visible());
-}
+//void App::toggleWindowRendering()
+//{
+//    m_windowRendering->setVisible(!m_windowRendering->visible());
+//}
 
-void App::toggleWindowScenes()
-{
-    m_windowScenes->setVisible(!m_windowScenes->visible());
-}
+//void App::toggleWindowScenes()
+//{
+//    m_windowScenes->setVisible(!m_windowScenes->visible());
+//}
 
-void App::toggleWindowPath()
-{
-    m_windowPath->setVisible(!m_windowPath->visible());
-}
+//void App::toggleWindowPath()
+//{
+//    m_windowPath->setVisible(!m_windowPath->visible());
+//}
 
 void App::makeGUI()
 {
@@ -563,22 +578,26 @@ void App::makeGUI()
 
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
-    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-//    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
+//    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
     settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
+    settingsPane->addLabel("Radius scaling factor");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addLabel("Scattering");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addLabel("Attenuation");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
     // Lights
     GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = lightsPane->addDropDownList("Emitter");
-    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
-    lightsPane->addLabel("Beam radius");
-    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
-    lightsPane->addLabel("Scattering");
-    lightsPane->addLabel("Attenuation");
+    lightsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+//    lightsPane->addLabel("Beam radius");
+//    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
+//    lightsPane->addLabel("Scattering");
+//    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
-//    loadSceneDirectory(m_scenePath);
 
     windowMain->pack();
     windowMain->setVisible(true);

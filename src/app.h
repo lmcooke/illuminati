@@ -2,7 +2,6 @@
 #define APP_H
 
 #include "world.h"
-//#include "threadpool.h"
 #include <ctime>
 #include <G3D/G3DAll.h>
 #include "photonmap.h"
@@ -17,7 +16,7 @@
 #define GATHER_SAMPLES  16          /*Number of ray samples for final gather*/
 
 // you can extend this if you want
-class PTSettings
+class PhotonSettings
 {
 public:
 
@@ -26,11 +25,16 @@ public:
     bool useDirectSpecular;
     bool useIndirect;
     bool useEmitted;
-    bool useSkyMap;
+//    bool useSkyMap;
 
     int superSamples; // for say, stratified sampling
-    bool attenuation; // refracted path absorption through non-vacuum spaces
+    float attenuation; // refracted path absorption through non-vacuum spaces
+    float scattering;
+    float radiusScalingFactor;
+    float noiseBiasRatio;
     bool useMedium; // enable volumetric mediums
+
+    bool lightEnabled; // TODO: assume one light source for now
 
     bool dofEnabled;
     float dofFocus;
@@ -152,16 +156,16 @@ public:
 private:
 
     // path flags
-    PTSettings          m_ptsettings;
+    PhotonSettings         m_PSettings;
 //    shared_ptr<PathTracer> m_renderer;
 
     PhotonMap              m_photons;  // Contains photons organized spatially
     Random                 m_random;   // Random number generator
     bool                   m_useGather; // Boolean to use final gather
 
-    shared_ptr<GuiWindow> m_windowRendering;
-    shared_ptr<GuiWindow> m_windowScenes;
-    shared_ptr<GuiWindow> m_windowPath;
+//    shared_ptr<GuiWindow> m_windowRendering;
+//    shared_ptr<GuiWindow> m_windowScenes;
+//    shared_ptr<GuiWindow> m_windowPath;
 
     static String           m_scenePath; // path to scene folder
     static String           m_defaultScene;
