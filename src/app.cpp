@@ -361,7 +361,7 @@ void App::onInit()
 
     m_canvas = Image3::createEmpty(w, h);
 
-    m_dirPhotonScatter.initialize(m_framebuffer, renderDevice);
+//    m_dirPhotonScatter.initialize(m_framebuffer, renderDevice);
 
     m_dispatch = Thread::create("dispatcher", dispatcher, this);
     m_dispatch->start();
