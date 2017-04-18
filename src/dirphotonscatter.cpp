@@ -7,9 +7,7 @@ DirPhotonScatter::DirPhotonScatter()
 
 DirPhotonScatter::~DirPhotonScatter()
 {
-
 }
-
 
 void DirPhotonScatter::preprocess()
 {

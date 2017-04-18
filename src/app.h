@@ -158,6 +158,8 @@ private:
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
 
+    static String              m_defaultScene;
+
     static String         m_scenePath; // path to scene folder
 
     float                m_scaleFactor; // how much to scale down images by.
