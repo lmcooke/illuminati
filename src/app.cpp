@@ -80,14 +80,18 @@ static Vector3 bump(Ray &ray, float t, Vector3 normal)
  */
 void App::scatter()
 {
+
     // Emit a photon
     Photon photon = Photon();
     shared_ptr<Surfel> surfel;
+
     m_world.emit(m_random, photon, surfel);
+
 
     // Bounce the photon in the scene
     Array<Photon> incidentPhotons;
     photonTrace(photon, incidentPhotons);
+
 
     // Insert the bounced photon into the map
     m_photons.insert(incidentPhotons);
@@ -290,8 +294,10 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
+
         printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
@@ -306,13 +312,21 @@ void App::traceCallback(int x, int y)
 
 static void dispatcher(void *arg)
 {
+
+
     App *self = (App*)arg;
+
 
     int w = self->window()->width(),
         h = self->window()->height();
 
+
     self->stage = App::SCATTERING;
+
+
     self->buildPhotonMap();
+
+
 
     printf("Rendering ...");
     fflush(stdout);
@@ -338,59 +352,27 @@ void App::onInit()
 
 
 
-//    m_canvas = Image3::createEmpty(w, h);
 
-//    m_dirPhotonScatter.initialize(m_framebuffer, renderDevice);
-
-    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-    m_dispatch->start();
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
 
     m_scenePath = m_defaultScene;
-    // TODO: remove
-//    g_scenePath = m_defaultScene.c_str();
-//    m_world.load(g_scenePath);
-//    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-//    m_dispatch->start();
 }
 
 void App::onRender()
 {
-//    // user clicks the render button
-//    if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
-//    {
-//        continueRender = true;
-//        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
 
-//        m_world.unload();
-//        m_world.load(fullpath);
 
-////        m_renderer->setWorld(&m_world);
-////        m_renderer->setPTSettings(m_ptsettings);
-
-//        shared_ptr<Camera> cam = m_world.camera();
-//        cam->depthOfFieldSettings().setEnabled(true);
-//        cam->depthOfFieldSettings().setModel(DepthOfFieldModel::PHYSICAL);
-
-//        cam->depthOfFieldSettings().setLensRadius(m_ptsettings.dofLens);
-//        cam->depthOfFieldSettings().setFocusPlaneZ(m_ptsettings.dofFocus);
-
-//        m_canvas = Image3::createEmpty(window()->width(),
-//                                       window()->height());
-//        m_dispatch = Thread::create("dispatcher", dispatcher, this);
-//        m_dispatch->start();
-//    } else {
-//        continueRender=false;
-//    }
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
+
         continueRender = true;
 
         m_photons.clear();
 
         m_world.unload();
         g_scenePath = m_scenePath.c_str();
+        std::cout << "Loading default scene path " + m_scenePath << std::endl;
         m_world.load(g_scenePath);
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
@@ -441,25 +423,9 @@ void App::onGraphics(RenderDevice *rd,
 
     }
 
-//    shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
-
-//    m_film->exposeAndRender(renderDevice, getFilmSettings(), tex, 0, 0);
-
-//    Surface2D::sortAndRender(rd, posed2D);
-
 }
 
-//void App::onUserInput(UserInput* input)
-//{
-//    if (input->keyReleased(GKey('1')))
-//        this->view = PHOTONMAP;
 
-//    if (input->keyReleased(GKey('2')))
-//        this->view = RENDITION;
-
-//    if (input->keyReleased(GKey('0')))
-//        this->view = DEFAULT;
-//}
 
 
 FilmSettings App::getFilmSettings()
@@ -542,20 +508,6 @@ void App::saveCanvas()
                                                     "-" + dayHourMinSec + ".png");
 }
 
-//void App::toggleWindowRendering()
-//{
-//    m_windowRendering->setVisible(!m_windowRendering->visible());
-//}
-
-//void App::toggleWindowScenes()
-//{
-//    m_windowScenes->setVisible(!m_windowScenes->visible());
-//}
-
-//void App::toggleWindowPath()
-//{
-//    m_windowPath->setVisible(!m_windowPath->visible());
-//}
 
 void App::makeGUI()
 {

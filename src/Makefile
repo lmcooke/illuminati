@@ -835,7 +835,10 @@ app.o: app.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BindlessTextureHandle.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
-		photonmap.h
+		photonmap.h \
+		dirphotonscatter.h \
+		photonscatter.h \
+		photonbeam.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o app.o app.cpp
 
 world.o: world.cpp app.h \
@@ -1245,7 +1248,10 @@ world.o: world.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BindlessTextureHandle.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
-		photonmap.h
+		photonmap.h \
+		dirphotonscatter.h \
+		photonscatter.h \
+		photonbeam.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o world.o world.cpp
 
 photonmap.o: photonmap.cpp photonmap.h \
@@ -3704,7 +3710,10 @@ main.o: main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		app.h \
 		world.h \
-		photonmap.h
+		photonmap.h \
+		dirphotonscatter.h \
+		photonscatter.h \
+		photonbeam.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o main.cpp
 
 ####### Install
