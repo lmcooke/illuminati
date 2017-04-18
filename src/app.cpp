@@ -40,12 +40,13 @@ int main(int argc, const char *argv[])
 App::App(const GApp::Settings &settings)
     : GApp(settings),
       stage(App::IDLE),
-//      continueRender(true),
+      continueRender(true),
       view(App::DEFAULT),
       m_useGather(false)
 {
     m_scenePath = dataDir + "/scene";
 
+    m_endProgram = false;
     m_ptsettings.useDirectDiffuse=true;
     m_ptsettings.useDirectSpecular=true;
     m_ptsettings.useEmitted=true;
@@ -371,7 +372,6 @@ void App::onRender()
         m_world.unload();
         m_world.load(fullpath);
 
-        // TODO: is it this??
 //        m_renderer->setWorld(&m_world);
 //        m_renderer->setPTSettings(m_ptsettings);
 
@@ -602,112 +602,3 @@ void App::makeGUI()
 
     std::cout <<"done making GUI" << std::endl;
 }
-
-//void App::makeGUI()
-//{
-//    std::cout << "making GUI" << std::endl;
-
-//    shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
-//                                                     debugWindow->theme(),
-//                                                     Rect2D::xywh(0,0,50,50),
-//                                                     GuiTheme::MENU_WINDOW_STYLE);
-
-//    m_windowRendering = GuiWindow::create("Rendering",
-//                                                     debugWindow->theme(),
-//                                                     Rect2D::xywh(0,0,50,50),
-//                                                     GuiTheme::NORMAL_WINDOW_STYLE);
-
-//    m_windowScenes = GuiWindow::create("Scenes",
-//                                                 debugWindow->theme(),
-//                                                 Rect2D::xywh(50,0,50,50),
-//                                                 GuiTheme::NORMAL_WINDOW_STYLE);
-
-//    m_windowPath = GuiWindow::create("Path Tracer",
-//                                                 debugWindow->theme(),
-//                                                 Rect2D::xywh(50,0,50,50),
-//                                                 GuiTheme::NORMAL_WINDOW_STYLE);
-
-
-//    GuiPane* paneMain = windowMain->pane();
-//    GuiPane* paneScenes = m_windowScenes->pane();
-//    GuiPane* paneRendering = m_windowRendering->pane();
-//    GuiPane* panePath = m_windowPath->pane();
-
-//    //MAIN
-//    paneMain->addButton("Rendering", this, &App::toggleWindowRendering);
-//    paneMain->addButton("Scenes", this, &App::toggleWindowScenes);
-//    paneMain->addButton("Path Tracer", this, &App::toggleWindowPath);
-
-//    // SCENE
-//    m_ddl = paneScenes->addDropDownList("Scenes");
-
-//    paneScenes->addLabel("Scene Directory: ");
-//    m_scenePathLabel = paneScenes->addLabel("");
-//    paneScenes->addTextBox("Directory:", &m_dirName);
-//    paneScenes->addButton("Change Directory", this, &App::changeDataDirectory);
-
-//    paneScenes->addLabel("Scene Folders");
-//    paneScenes->addButton("My Scenes", this,  &App::loadCustomScene);
-//    paneScenes->addButton("G3D Scenes", this,  &App::loadDefaultScene);
-//    paneScenes->addButton("CS224 Scenes", this,  &App::loadCS244Scene);
-
-//    m_warningLabel = paneScenes->addLabel("");
-//    updateScenePathLabel();
-
-//    // RENDERING WINDOW
-////    GuiControl::Callback changeRender(this, &App::changeRenderMethod);
-////    m_renderdl = paneRendering->addDropDownList("Renderer", Array<GuiText>("Ray", "Path", "Photon"), (int*)(&m_currRenderMethod), changeRender);
-
-//    paneRendering->addButton("Save Image", this, &App::saveCanvas);
-//    GuiButton* renderButton = paneRendering->addButton("Render", this, &App::onRender);
-//    renderButton->setFocused(true);
-//    renderButton->moveBy(140.0f,0.0f);
-
-////    paneRendering->addLabel("--- Skybox ---");
-////    paneRendering->addCheckBox("Enable", &m_ptsettings.useSkyMap);
-
-////    paneRendering->addLabel("--- Depth of Field ---");
-////    paneRendering->addCheckBox("Enable", &m_ptsettings.dofEnabled);
-
-////    paneRendering->addLabel("Lens Radius");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-////    paneRendering->addLabel("Focus Plane");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofFocus, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 3.45f, 0.05f);
-////    paneRendering->addLabel("DOF Samples");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofSamples, GuiText(""), GuiTheme::LINEAR_SLIDER, 1, 20, 1);
-
-////    paneRendering->addLabel("--- Stratified Sampling ---");
-////    paneRendering->addLabel("Subpixel Divisions");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.superSamples, GuiText(""), GuiTheme::LINEAR_SLIDER, 1, 5, 1);
-
-//    // PATH
-////    panePath->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-////    panePath->addCheckBox("Attenuation", &m_ptsettings.attenuation);
-////    paneRendering->addLabel("--- Radiance Components ---");
-////    panePath->addCheckBox("Emitted Light", &m_ptsettings.useEmitted);
-////    panePath->addCheckBox("Scattered Direct Light from Diffuse", &m_ptsettings.useDirectDiffuse);
-////    panePath->addCheckBox("Scattered Direct Light from Specular", &m_ptsettings.useDirectSpecular);
-////    panePath->addCheckBox("Scattered Indirect Light from Diffuse", &m_ptsettings.useIndirect);
-////    panePath->addCheckBox("Participating Media Attenuation", &m_ptsettings.useMedium);
-
-//    loadSceneDirectory(m_scenePath);
-
-//    m_windowPath->pack();
-//    m_windowPath->setVisible(false);
-
-//    m_windowScenes->pack();
-//    m_windowScenes->setVisible(false);
-
-//    m_windowRendering->pack();
-//    m_windowRendering->setVisible(false);
-
-//    windowMain->pack();
-//    windowMain->setVisible(true);
-
-//    addWidget(m_windowPath);
-//    addWidget(m_windowRendering);
-//    addWidget(m_windowScenes);
-//    addWidget(windowMain);
-
-//    std::cout <<"done making GUI" << std::endl;
-//}

@@ -6,7 +6,6 @@ PhotonScatter::PhotonScatter()
 
 PhotonScatter::~PhotonScatter()
 {
-
 }
 
 std::vector<PhotonBeam> PhotonScatter::shootRay()
