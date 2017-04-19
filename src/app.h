@@ -5,8 +5,11 @@
 
 #include "photonmap.h"
 #include "world.h"
-
-#define NUM_PHOTONS     500000      /* How many photons to gather */
+#include "photonscatter.h"
+#include "indphotonscatter.h"
+#include "dirphotonscatter.h"
+#define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
+#define NUM_PHOTONS     500      /* How many photons to gather */
 #define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
 #define MAX_DEPTH       4           /* Recursve depth of the raytracer */
 #define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
@@ -155,6 +158,7 @@ private:
     shared_ptr<GuiWindow> m_windowRendering;
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
+    std::unique_ptr<DirPhotonScatter> m_dirBeams;
 
     static String         m_scenePath; // path to scene folder
 
@@ -168,6 +172,7 @@ private:
     GuiLabel*           m_scenePathLabel;
     String              m_dirName;
     void updateScenePathLabel();
+    void renderBeams(RenderDevice *dev, World *world);
 };
 
 #endif

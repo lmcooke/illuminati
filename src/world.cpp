@@ -276,6 +276,34 @@ bool World::emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf)
     return true;
 }
 
+bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf)
+{
+
+    // Select the point of emission
+    shared_ptr<Surfel> light;
+    float prob;
+    float area;
+
+    emissivePoint(random, light, prob, area);
+
+    // Shoot the photon somewhere into the scene
+    Vector3 dir;
+    float dist;
+
+    dir = Vector3::cosHemiRandom(light->shadingNormal, random);
+    intersect(Ray(light->position + light->geometricNormal * 1e-4, dir), dist, surf);
+
+    if (!surf) return false;
+
+    // Store the beam
+    beam.m_end = surf->position;
+    beam.m_start = light->position;
+    beam.m_power = light->emittedRadiance(dir)
+                 / NUM_PHOTONS
+                 * m_emit.size();
+    return true;
+}
+
 void World::intersect(const Ray &ray, float &dist, shared_ptr<Surfel> &surf)
 {
     TriTree::Hit hit;

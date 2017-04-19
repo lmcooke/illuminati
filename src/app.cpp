@@ -296,9 +296,11 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+    m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world);
+
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
-        printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
+//        printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
     printf("\rBuilding photon map ... done       \n");
@@ -335,9 +337,7 @@ void App::onInit()
 {
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(true);
-
     m_world.load(g_scenePath);
-
     int w = window()->width(),
         h = window()->height();
 
@@ -389,6 +389,26 @@ void App::onCleanup()
     m_world.unload();
 }
 
+void App::renderBeams(RenderDevice *dev, World *world)
+{
+    world->renderWireframe(dev);
+
+    dev->pushState();
+    world->setMatrices(dev);
+    SlowMesh mesh(PrimitiveType::LINES);
+    mesh.setPointSize(1);
+
+    std::vector<PhotonBeamette> beams = m_dirBeams->getBeams();
+    for (int i=0; i<beams.size(); i++) {
+        PhotonBeamette beam = beams[i];
+        mesh.setColor(beam.m_power / beam.m_power.max());
+        mesh.makeVertex(beam.m_start);
+        mesh.makeVertex(beam.m_end);
+    }
+    mesh.render(dev);
+    dev->popState();
+}
+
 void App::onGraphics(RenderDevice *dev,
                      Array<shared_ptr<Surface> >& posed3D,
                      Array<shared_ptr<Surface2D> >& posed2D)
@@ -401,7 +421,8 @@ void App::onGraphics(RenderDevice *dev,
     {
         dev->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
         dev->clear();
-        m_photons.render(dev, &m_world);
+        renderBeams(dev, &m_world);
+//        m_photons.render(dev, &m_world);
     }
     // If you want to display other things (e.g. shadow photon maps), do it here
     else

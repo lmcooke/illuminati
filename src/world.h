@@ -7,6 +7,7 @@
 #include <G3D/G3DAll.h>
 
 #include "photonmap.h"
+#include "photonbeamette.h"
 
 /** Represents a static scene with triangle mesh geometry, multiple lights, and
   * an initial camera specification
@@ -55,6 +56,9 @@ public:
       */
     bool emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf);
 
+
+    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf);
+
     /** Finds the first point a ray intersects with this scene
       *
       * @param ray  The ray to intersect
@@ -88,9 +92,9 @@ public:
      *  The last line must be a comment starting with a #. */
     shared_ptr<Model> createSplineModel(const std::string& str);
 
+    TriTree             m_tris;     // The scene's geometry in world space
 
 private:
-    TriTree             m_tris;     // The scene's geometry in world space
     shared_ptr<Camera>  m_camera;   // The scene's camera
     Array<Tri>          m_emit;     // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
