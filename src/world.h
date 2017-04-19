@@ -1,6 +1,10 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <fstream>
+#include <sstream>
+#include <string>
+
 #include <G3D/G3DAll.h>
 
 #include "photonmap.h"
@@ -87,7 +91,7 @@ public:
      *  Spline files consist of a series of points, one per line, represented as:
      *  x y z radius
      *  The last line must be a comment starting with a #. */
-    shared_ptr<Model> createSplineModel(const std::string& str);
+    shared_ptr<ArticulatedModel> createSplineModel(const String& str);
 
     TriTree             m_tris;     // The scene's geometry in world space
 

@@ -8,7 +8,7 @@
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 static const char *g_scenePath;
-String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
+String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
 
 // set this to 1 to debug a single render thread
 #define THREADS 12
