@@ -1,7 +1,7 @@
 #include "indphotonscatter.h"
 
-IndPhotonScatter::IndPhotonScatter()
-    : PhotonScatter()
+IndPhotonScatter::IndPhotonScatter(World * world)
+    : PhotonScatter(world)
 {
 }
 

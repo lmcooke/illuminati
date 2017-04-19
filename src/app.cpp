@@ -38,8 +38,6 @@ App::App(const GApp::Settings &settings)
 
 //    m_ptsettings.attenuation=true;
 
-    // initialize direct photon scatter-er
-    m_dirPhotonScatter = DirPhotonScatter();
 
     m_PSettings.attenuation=0.0;
     m_PSettings.scattering=0.0;
@@ -73,6 +71,15 @@ static void bump(Ray &ray, shared_ptr<Surfel> surf)
 static Vector3 bump(Ray &ray, float t, Vector3 normal)
 {
     return bump(ray.origin() + t * ray.direction(), ray.direction(), normal);
+}
+
+/** Used for attenuation
+ */
+static Radiance3 exp( float d, const Radiance3 &tau )
+{
+    return Radiance3( ::exp(-d*tau.r),
+                      ::exp(-d*tau.g),
+                      ::exp(-d*tau.b) );
 }
 
 /**
@@ -283,10 +290,12 @@ Radiance3 App::trace(const Ray &ray, int depth)
         Point3 eye = ray.origin();
         Vector3 wo = -ray.direction();
 
-        final += surf->emittedRadiance(wo)
+        Radiance3 surf_radiance = surf->emittedRadiance(wo)
                + direct(surf, wo)
                + diffuse(surf, wo, depth)
                + impulse(surf, wo, depth);
+        surf_radiance *= exp(dist, Radiance3(m_PSettings.attenuation));
+        final += surf_radiance;
     }
 
     return final;
@@ -294,10 +303,10 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+    m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world);
 
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
-
         printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
@@ -410,11 +419,41 @@ void App::onCleanup()
     m_world.unload();
 }
 
+void App::renderBeams(RenderDevice *dev, World *world)
+{
+    world->renderWireframe(dev);
+
+    dev->pushState();
+    world->setMatrices(dev);
+    SlowMesh mesh(PrimitiveType::LINES);
+    mesh.setPointSize(1);
+
+    std::vector<PhotonBeamette> beams = m_dirBeams->getBeams();
+    for (int i=0; i<beams.size(); i++) {
+        PhotonBeamette beam = beams[i];
+        mesh.setColor(beam.m_power / beam.m_power.max());
+        mesh.makeVertex(beam.m_start);
+        mesh.makeVertex(beam.m_end);
+    }
+    mesh.render(dev);
+    dev->popState();
+}
+
+
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+
+
     gpuProcess(rd);
+//    if (m_dirBeams)
+//    {
+//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
+//        rd->clear();
+//        renderBeams(rd, &m_world);
+//    }
 }
+
 
 void App::gpuProcess(RenderDevice *rd)
 {

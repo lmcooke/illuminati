@@ -21,7 +21,7 @@ SOURCES += app.cpp \
            world.cpp \
            photonmap.cpp \
     photonscatter.cpp \
-    photonbeam.cpp \
+    photonbeamette.cpp \
     indphotonscatter.cpp \
     dirphotonscatter.cpp \
     renderer.cpp \
@@ -31,7 +31,7 @@ HEADERS += app.h \
            world.h \
            photonmap.h \
     photonscatter.h \
-    photonbeam.h \
+    photonbeamette.h \
     indphotonscatter.h \
     dirphotonscatter.h \
     renderer.h \

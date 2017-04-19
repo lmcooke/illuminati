@@ -6,7 +6,7 @@ class IndPhotonScatter
     :public PhotonScatter
 {
 public:
-    IndPhotonScatter();
+    IndPhotonScatter(World * world);
     ~IndPhotonScatter();
     void preprocess();
 };

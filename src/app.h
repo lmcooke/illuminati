@@ -5,12 +5,17 @@
 #include <ctime>
 #include <G3D/G3DAll.h>
 #include "photonmap.h"
+#include "world.h"
+#include "photonscatter.h"
+#include "indphotonscatter.h"
+#include "dirphotonscatter.h"
+#define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
 
 //enum RenderMethod { RAY, PATH, PHOTON };
 
-#include "dirphotonscatter.h"
+//#include "dirphotonscatter.h"
 
-#define NUM_PHOTONS     500000      /* How many photons to gather */
+#define NUM_PHOTONS     500         /* How many photons to gather */
 #define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
 #define MAX_DEPTH       4           /* Recursve depth of the raytracer */
 #define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
@@ -173,6 +178,10 @@ private:
     Random                 m_random;   // Random number generator
     bool                   m_useGather; // Boolean to use final gather
 
+    shared_ptr<GuiWindow> m_windowRendering;
+    shared_ptr<GuiWindow> m_windowScenes;
+    shared_ptr<GuiWindow> m_windowPath;
+    std::unique_ptr<DirPhotonScatter> m_dirBeams;
 //    shared_ptr<GuiWindow> m_windowRendering;
 //    shared_ptr<GuiWindow> m_windowScenes;
 //    shared_ptr<GuiWindow> m_windowPath;
@@ -205,10 +214,7 @@ private:
     GuiLabel*           m_scenePathLabel;
     String              m_dirName;
     void updateScenePathLabel();
-
-    DirPhotonScatter m_dirPhotonScatter;
-
-
+    void renderBeams(RenderDevice *dev, World *world);
 };
 
 #endif
