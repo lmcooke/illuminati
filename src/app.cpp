@@ -452,6 +452,20 @@ void App::gpuProcess(RenderDevice *rd)
     } rd->popState();
 
 
+    View v = this->view;
+    if (v == DEFAULT) {
+        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
+    }
+
+    if (v == PHOTONMAP) {
+//        rd->setColorClearValue(Color4(0.0,0.0,0.0,0.0));
+//        rd->clear();
+//        m_photons.render(rd, &m_world);
+    } else {
+        // mid-rendering
+    }
+
+
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
