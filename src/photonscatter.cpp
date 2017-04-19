@@ -53,7 +53,7 @@ std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emit
     shared_ptr<Surfel> surfel;
     float dist = inf();
 
-    Vector3 direction = emitBeam.m_start - emitBeam.m_end;
+    Vector3 direction =  emitBeam.m_end - emitBeam.m_start;
     Ray ray = Ray(emitBeam.m_start, direction);
     m_world->intersect(ray, dist, surfel);
 
@@ -61,13 +61,13 @@ std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emit
     if (surfel){
 
         // Don't store direct light contribution
-//        if (bounces > 0){
+        if (bounces > -1){
             PhotonBeamette beam = PhotonBeamette();
-            beam.m_start = surfel->position + EPSILON * surfel->shadingNormal;
-            beam.m_end = beam.m_start - ray.direction();
+            beam.m_start =  emitBeam.m_start;
+            beam.m_end = surfel->position + EPSILON * surfel->shadingNormal;
             beam.m_power = emitBeam.m_power;
             beamettes.push_back(beam);
-//        }
+        }
 
         // recursive rays
         Vector3 wIn = -ray.direction();
@@ -87,10 +87,7 @@ std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emit
             PhotonBeamette beam2 = PhotonBeamette();
             beam2.m_start = surfel->position;
             beam2.m_end = emitBeam.m_start + offsetRay.direction();
-            beam2.m_power = emitBeam.m_power * weight;
-            beam2.m_power.r *= (probability.r/prob);
-            beam2.m_power.g *= (probability.g/prob);
-            beam2.m_power.b *= (probability.b/prob);
+            beam2.m_power = emitBeam.m_power * weight * probability/prob;
             shootRayRecursive(beam2, beamettes, bounces + 1);
         }
     }

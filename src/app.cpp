@@ -432,7 +432,15 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+
+
     gpuProcess(rd);
+//    if (m_dirBeams)
+//    {
+//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
+//        rd->clear();
+//        renderBeams(rd, &m_world);
+//    }
 }
 
 
