@@ -15,7 +15,7 @@
 
 #include "dirphotonscatter.h"
 
-#define NUM_PHOTONS     500000      /* How many photons to gather */
+#define NUM_PHOTONS     500         /* How many photons to gather */
 #define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
 #define MAX_DEPTH       4           /* Recursve depth of the raytracer */
 #define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
