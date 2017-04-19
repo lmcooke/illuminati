@@ -73,6 +73,15 @@ static Vector3 bump(Ray &ray, float t, Vector3 normal)
     return bump(ray.origin() + t * ray.direction(), ray.direction(), normal);
 }
 
+/** Used for attenuation
+ */
+static Radiance3 exp( float d, const Radiance3 &tau )
+{
+    return Radiance3( ::exp(-d*tau.r),
+                      ::exp(-d*tau.g),
+                      ::exp(-d*tau.b) );
+}
+
 /**
  * Emits a photon into the scene, and bounces it in the scene, storing increment bounces in the photon map
  */
@@ -281,10 +290,12 @@ Radiance3 App::trace(const Ray &ray, int depth)
         Point3 eye = ray.origin();
         Vector3 wo = -ray.direction();
 
-        final += surf->emittedRadiance(wo)
+        Radiance3 surf_radiance = surf->emittedRadiance(wo)
                + direct(surf, wo)
                + diffuse(surf, wo, depth)
                + impulse(surf, wo, depth);
+        surf_radiance *= exp(dist, Radiance3(m_PSettings.attenuation));
+        final += surf_radiance;
     }
 
     return final;
