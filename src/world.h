@@ -1,9 +1,6 @@
 #ifndef WORLD_H
 #define WORLD_H
 
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <G3D/G3DAll.h>
 
 #include "photonmap.h"

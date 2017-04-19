@@ -12,7 +12,6 @@ DirPhotonScatter::~DirPhotonScatter()
 {
 }
 
-
 void DirPhotonScatter::preprocess()
 {
     // Send out a beam, recursivly bounce it around, and then store it in our beams array.
@@ -28,3 +27,5 @@ std::vector<PhotonBeamette> DirPhotonScatter::getBeams()
 {
     return m_beams;
 }
+
+

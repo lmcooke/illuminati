@@ -1,0 +1,20 @@
+#version 410
+
+uniform int screenHeight;
+uniform int screenWidth;
+
+uniform sampler2D indirectSample;
+uniform sampler2D directSample;
+
+out vec4 result;
+
+void main()
+{
+
+	vec2 texCoords = vec2(gl_FragCoord.x/screenWidth, gl_FragCoord.y/screenHeight);
+
+	vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
+	vec4 directColor = texture(directSample, texCoords, 0.0);
+
+	result = indirectColor + directColor;
+}

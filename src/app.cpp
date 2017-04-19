@@ -1,3 +1,4 @@
+
 #include "app.h"
 
 #ifndef G3D_PATH
@@ -6,33 +7,16 @@
 
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
-
 static const char *g_scenePath;
+String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
 
-G3D_START_AT_MAIN();
-
-int main(int argc, const char *argv[])
-{
-    GApp::Settings s;
-    s.window.caption = "Photon Beams";
-    s.dataDir = G3D_PATH "/../data10/common";
-
-    if (argc > 1)
-    {
-        g_scenePath = argv[1];
-    }
-    else
-    {
-        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox-spheres.Scene.Any";
-//        g_scenePath = "/contrib/projects/g3d10/data10/common/scene/CornellBox.Scene.Any";
-        printf("No scene specified, using default: %s\n", g_scenePath);
-    }
-
-    return App(s).run();
-}
+// set this to 1 to debug a single render thread
+#define THREADS 12
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
+//    pass(0)
+//    m_renderer(new PathTracer)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
@@ -40,17 +24,25 @@ App::App(const GApp::Settings &settings)
 {
     m_scenePath = dataDir + "/scene";
 
-    m_ptsettings.useDirectDiffuse=true;
-    m_ptsettings.useDirectSpecular=true;
-    m_ptsettings.useEmitted=true;
-    m_ptsettings.useIndirect=true;
+    num_passes=5000;
 
-    m_ptsettings.dofEnabled=false;
-    m_ptsettings.dofFocus=-4.8f;
-    m_ptsettings.dofLens=0.2f;
-    m_ptsettings.dofSamples=5;
+    m_PSettings.useDirectDiffuse=true;
+    m_PSettings.useDirectSpecular=true;
+    m_PSettings.useEmitted=true;
+    m_PSettings.useIndirect=true;
 
-    m_ptsettings.attenuation=true;
+    m_PSettings.dofEnabled=false;
+    m_PSettings.dofFocus=-4.8f;
+    m_PSettings.dofLens=0.2f;
+    m_PSettings.dofSamples=5;
+
+//    m_ptsettings.attenuation=true;
+
+
+    m_PSettings.attenuation=0.0;
+    m_PSettings.scattering=0.0;
+    m_PSettings.noiseBiasRatio=0.0;
+    m_PSettings.radiusScalingFactor=0.5;
 }
 
 App::~App() { }
@@ -86,14 +78,18 @@ static Vector3 bump(Ray &ray, float t, Vector3 normal)
  */
 void App::scatter()
 {
+
     // Emit a photon
     Photon photon = Photon();
     shared_ptr<Surfel> surfel;
+
     m_world.emit(m_random, photon, surfel);
+
 
     // Bounce the photon in the scene
     Array<Photon> incidentPhotons;
     photonTrace(photon, incidentPhotons);
+
 
     // Insert the bounced photon into the map
     m_photons.insert(incidentPhotons);
@@ -300,7 +296,7 @@ void App::buildPhotonMap()
 
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
-//        printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
+        printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
     printf("\rBuilding photon map ... done       \n");
@@ -314,13 +310,21 @@ void App::traceCallback(int x, int y)
 
 static void dispatcher(void *arg)
 {
+
+
     App *self = (App*)arg;
+
 
     int w = self->window()->width(),
         h = self->window()->height();
 
+
     self->stage = App::SCATTERING;
+
+
     self->buildPhotonMap();
+
+
 
     printf("Rendering ...");
     fflush(stdout);
@@ -335,46 +339,61 @@ static void dispatcher(void *arg)
 
 void App::onInit()
 {
+
+    // GPU stuff
+    m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
+                                      m_framebuffer->height(), ImageFormat::RGBA16());
+    m_dirLight->clear();
+
+    m_dirFBO = Framebuffer::create(m_dirLight);
+
+    m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
+
+
+    setFrameDuration(1.0f / 60.0f);
+
+
     GApp::showRenderingStats = false;
-    renderDevice->setSwapBuffersAutomatically(true);
-    m_world.load(g_scenePath);
-    int w = window()->width(),
-        h = window()->height();
+    renderDevice->setSwapBuffersAutomatically(false); // TODO this should be false?
+
+    ArticulatedModel::Specification spec;
+    spec.filename = System::findDataFile("model/cauldron.obj");
+
+    spec.stripMaterials = true;
+
+    m_model = ArticulatedModel::create(spec);
+    m_model->pose(m_sceneGeometry, Point3(0.f, -0.5f, 0.f));
+
 
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-//    makeGUI();
+    makeGUI();
 
-    m_canvas = Image3::createEmpty(w, h);
 
-    m_dispatch = Thread::create("dispatcher", dispatcher, this);
-    m_dispatch->start();
+
+
+    m_canvas = Image3::createEmpty(window()->width(),
+                                   window()->height());
+
+    m_scenePath = m_defaultScene;
 }
-
 
 void App::onRender()
 {
-    // user clicks the render button
+
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
+
         continueRender = true;
-        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
+
+        m_photons.clear();
 
         m_world.unload();
-        m_world.load(fullpath);
-
-//        m_renderer->setWorld(&m_world);
-//        m_renderer->setPTSettings(m_ptsettings);
-
-//        shared_ptr<Camera> cam = m_world.camera();
-//        cam->depthOfFieldSettings().setEnabled(true);
-//        cam->depthOfFieldSettings().setModel(DepthOfFieldModel::PHYSICAL);
-
-//        cam->depthOfFieldSettings().setLensRadius(m_ptsettings.dofLens);
-//        cam->depthOfFieldSettings().setFocusPlaneZ(m_ptsettings.dofFocus);
-
+        g_scenePath = m_scenePath.c_str();
+        std::cout << "Loading default scene path " + m_scenePath << std::endl;
+        m_world.load(g_scenePath);
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
@@ -409,57 +428,99 @@ void App::renderBeams(RenderDevice *dev, World *world)
     dev->popState();
 }
 
-void App::onGraphics(RenderDevice *dev,
-                     Array<shared_ptr<Surface> >& posed3D,
-                     Array<shared_ptr<Surface2D> >& posed2D)
+
+
+void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-    View v = this->view;
-    if (v == DEFAULT)
-        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
-
-    if (v == PHOTONMAP)
-    {
-        dev->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-        dev->clear();
-        renderBeams(dev, &m_world);
-//        m_photons.render(dev, &m_world);
-    }
-    // If you want to display other things (e.g. shadow photon maps), do it here
-    else
-    {
-        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
-
-        FilmSettings s;
-        s.setAntialiasingEnabled(false);
-        s.setBloomStrength(0);
-        s.setGamma(2.060);
-        s.setVignetteTopStrength(0);
-        s.setVignetteBottomStrength(0);
-        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
-
-        Surface2D::sortAndRender(dev, posed2D);
-
-    }
-
-//    shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
-
-//    m_film->exposeAndRender(renderDevice, getFilmSettings(), tex, 0, 0);
-
-//    Surface2D::sortAndRender(dev, posed2D);
+    gpuProcess(rd);
 }
 
-void App::onUserInput(UserInput* input)
+
+void App::gpuProcess(RenderDevice *rd)
 {
-    if (input->keyReleased(GKey('1')))
-        this->view = PHOTONMAP;
+    rd->pushState(m_dirFBO); {
 
-    if (input->keyReleased(GKey('2')))
-        this->view = RENDITION;
+        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 
-    if (input->keyReleased(GKey('0')))
-        this->view = DEFAULT;
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        Args args;
+        // TODO : set args uniforms
+
+        CFrame cframe;
+
+        for (int i = 0; i < m_sceneGeometry.size(); i++) {
+            const shared_ptr<UniversalSurface>& surface =
+                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+
+            if (notNull(surface)) {
+                surface->getCoordinateFrame(cframe);
+                rd->setObjectToWorldMatrix(cframe);
+                args.setUniform("MVP", rd->invertYMatrix() *
+                                        rd->projectionMatrix() *
+                                        rd->cameraToWorldMatrix().inverse() * cframe);
+                surface->gpuGeom()->setShaderArgs(args);
+
+                LAUNCH_SHADER("splat.*", args);
+
+            }
+
+        }
+
+    } rd->popState();
+
+
+    shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
+
+    // composite direct and indirect
+    rd->push2D(m_framebuffer); {
+        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        Args argsComp;
+        argsComp.setRect(rd->viewport());
+
+        argsComp.setUniform("screenHeight", rd->height());
+        argsComp.setUniform("screenWidth", rd->width());
+
+        argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
+        argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
+
+
+        LAUNCH_SHADER("composite.*", argsComp);
+
+    } rd->popState();
+
+
+    // TO RENDER COMPOSITITED
+    swapBuffers();
+    rd->clear();
+
+    FilmSettings filmSettings = activeCamera()->filmSettings();
+    filmSettings.setBloomStrength(0.0);
+    filmSettings.setGamma(1.0); // default is 2.0
+
+    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                            settings().hdrFramebuffer.colorGuardBandThickness.x +
+                            settings().hdrFramebuffer.depthGuardBandThickness.x,
+                            settings().hdrFramebuffer.depthGuardBandThickness.x);
 }
 
+
+
+FilmSettings App::getFilmSettings()
+{
+    FilmSettings s;
+    s.setAntialiasingEnabled(false);
+    s.setBloomStrength(0);
+    s.setGamma(2.060);
+    s.setVignetteTopStrength(0);
+    s.setVignetteBottomStrength(0);
+    return s;
+}
 
 void App::changeDataDirectory()
 {
@@ -514,20 +575,8 @@ void App::updateScenePathLabel()
     m_scenePathLabel->setCaption("..." + m_scenePath.substr(m_scenePath.length() - 30, m_scenePath.length()));
 }
 
-FilmSettings App::getFilmSettings()
-{
-    FilmSettings s;
-    s.setAntialiasingEnabled(false);
-    s.setBloomStrength(0);
-    s.setGamma(2.060);
-    s.setVignetteTopStrength(0);
-    s.setVignetteBottomStrength(0);
-    return s;
-}
-
 void App::saveCanvas()
 {
-    std::cout << "saving canvas" << std::endl;
     time_t rawtime;
     struct tm *info;
     char dayHourMinSec [7];
@@ -537,26 +586,11 @@ void App::saveCanvas()
 
     shared_ptr<Texture> colorBuffer = Texture::createEmpty("Color", renderDevice->width(), renderDevice->height());
     m_film->exposeAndRender(renderDevice, getFilmSettings(), Texture::fromImage("Source", m_canvas), 0, 0, colorBuffer);
-    colorBuffer->toImage(ImageFormat::RGB8())->save (String("../images/scene-") +
+    colorBuffer->toImage(ImageFormat::RGB8())->save(String("../images/scene-") +
                                                     "p" + String(std::to_string(pass).c_str()) +
                                                     "-" + dayHourMinSec + ".png");
 }
 
-void App::toggleWindowRendering()
-{
-    std::cout << "toggling rendering window" << std::endl;
-    m_windowRendering->setVisible(!m_windowRendering->visible());
-}
-
-void App::toggleWindowScenes()
-{
-    m_windowScenes->setVisible(!m_windowScenes->visible());
-}
-
-void App::toggleWindowPath()
-{
-    m_windowPath->setVisible(!m_windowPath->visible());
-}
 
 void App::makeGUI()
 {
@@ -568,46 +602,50 @@ void App::makeGUI()
                                                      GuiTheme::MENU_WINDOW_STYLE);
     GuiPane* paneMain = windowMain->pane();
 
-//    // INFO
-//    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-//    infoPane->addButton("Save Image", this, &App::saveCanvas);
-//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
-//    infoPane->pack();
+    // INFO
+    GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
+    infoPane->addButton("Save Image", this, &App::saveCanvas);
+    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+    infoPane->pack();
 
-//    // SCENE
-//    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
+    // SCENE
+    GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
 
-//    m_ddl = scenesPane->addDropDownList("Scenes");
-//    scenesPane->addLabel("Scene Directory: ");
-//    m_scenePathLabel = paneMain->addLabel("");
-////    scenesPane->addTextBox("Directory:", &m_dirName);
-////    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+    m_ddl = scenesPane->addDropDownList("Scenes");
+    scenesPane->addLabel("Scene Directory: ");
+    m_scenePathLabel = paneMain->addLabel("");
+//    scenesPane->addTextBox("Directory:", &m_dirName);
+//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-////    scenesPane->addLabel("Scene Folders");
-//    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
+//    scenesPane->addLabel("Scene Folders");
+    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
 
-//    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
-//    renderButton->setFocused(true);
-//    scenesPane->pack();
+    GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
+    renderButton->setFocused(true);
+    scenesPane->pack();
 
-//    // RENDERING
-//    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
+    // RENDERING
+    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-////    settingsPane->addCheckBox("Attenuation", &m_ptsettings.attenuation);
-//    settingsPane->addLabel("Noise:bias ratio");
-//    settingsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addLabel("Noise:bias ratio");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
+    settingsPane->addLabel("Radius scaling factor");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addLabel("Scattering");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addLabel("Attenuation");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
-//    // Lights
-//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-//    m_lightdl = lightsPane->addDropDownList("Emitter");
-//    lightsPane->addCheckBox("Enable", &m_ptsettings.attenuation);
+    // Lights
+    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
+    m_lightdl = lightsPane->addDropDownList("Emitter");
+    lightsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
 //    lightsPane->addLabel("Attenuation");
-//    lightsPane->pack();
+    lightsPane->pack();
 
-//    loadSceneDirectory(m_scenePath);
 
     windowMain->pack();
     windowMain->setVisible(true);
@@ -616,112 +654,3 @@ void App::makeGUI()
 
     std::cout <<"done making GUI" << std::endl;
 }
-
-//void App::makeGUI()
-//{
-//    std::cout << "making GUI" << std::endl;
-
-//    shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
-//                                                     debugWindow->theme(),
-//                                                     Rect2D::xywh(0,0,50,50),
-//                                                     GuiTheme::MENU_WINDOW_STYLE);
-
-//    m_windowRendering = GuiWindow::create("Rendering",
-//                                                     debugWindow->theme(),
-//                                                     Rect2D::xywh(0,0,50,50),
-//                                                     GuiTheme::NORMAL_WINDOW_STYLE);
-
-//    m_windowScenes = GuiWindow::create("Scenes",
-//                                                 debugWindow->theme(),
-//                                                 Rect2D::xywh(50,0,50,50),
-//                                                 GuiTheme::NORMAL_WINDOW_STYLE);
-
-//    m_windowPath = GuiWindow::create("Path Tracer",
-//                                                 debugWindow->theme(),
-//                                                 Rect2D::xywh(50,0,50,50),
-//                                                 GuiTheme::NORMAL_WINDOW_STYLE);
-
-
-//    GuiPane* paneMain = windowMain->pane();
-//    GuiPane* paneScenes = m_windowScenes->pane();
-//    GuiPane* paneRendering = m_windowRendering->pane();
-//    GuiPane* panePath = m_windowPath->pane();
-
-//    //MAIN
-//    paneMain->addButton("Rendering", this, &App::toggleWindowRendering);
-//    paneMain->addButton("Scenes", this, &App::toggleWindowScenes);
-//    paneMain->addButton("Path Tracer", this, &App::toggleWindowPath);
-
-//    // SCENE
-//    m_ddl = paneScenes->addDropDownList("Scenes");
-
-//    paneScenes->addLabel("Scene Directory: ");
-//    m_scenePathLabel = paneScenes->addLabel("");
-//    paneScenes->addTextBox("Directory:", &m_dirName);
-//    paneScenes->addButton("Change Directory", this, &App::changeDataDirectory);
-
-//    paneScenes->addLabel("Scene Folders");
-//    paneScenes->addButton("My Scenes", this,  &App::loadCustomScene);
-//    paneScenes->addButton("G3D Scenes", this,  &App::loadDefaultScene);
-//    paneScenes->addButton("CS224 Scenes", this,  &App::loadCS244Scene);
-
-//    m_warningLabel = paneScenes->addLabel("");
-//    updateScenePathLabel();
-
-//    // RENDERING WINDOW
-////    GuiControl::Callback changeRender(this, &App::changeRenderMethod);
-////    m_renderdl = paneRendering->addDropDownList("Renderer", Array<GuiText>("Ray", "Path", "Photon"), (int*)(&m_currRenderMethod), changeRender);
-
-//    paneRendering->addButton("Save Image", this, &App::saveCanvas);
-//    GuiButton* renderButton = paneRendering->addButton("Render", this, &App::onRender);
-//    renderButton->setFocused(true);
-//    renderButton->moveBy(140.0f,0.0f);
-
-////    paneRendering->addLabel("--- Skybox ---");
-////    paneRendering->addCheckBox("Enable", &m_ptsettings.useSkyMap);
-
-////    paneRendering->addLabel("--- Depth of Field ---");
-////    paneRendering->addCheckBox("Enable", &m_ptsettings.dofEnabled);
-
-////    paneRendering->addLabel("Lens Radius");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-////    paneRendering->addLabel("Focus Plane");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofFocus, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 3.45f, 0.05f);
-////    paneRendering->addLabel("DOF Samples");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.dofSamples, GuiText(""), GuiTheme::LINEAR_SLIDER, 1, 20, 1);
-
-////    paneRendering->addLabel("--- Stratified Sampling ---");
-////    paneRendering->addLabel("Subpixel Divisions");
-////    paneRendering->addNumberBox(GuiText(""), &m_ptsettings.superSamples, GuiText(""), GuiTheme::LINEAR_SLIDER, 1, 5, 1);
-
-//    // PATH
-////    panePath->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-////    panePath->addCheckBox("Attenuation", &m_ptsettings.attenuation);
-////    paneRendering->addLabel("--- Radiance Components ---");
-////    panePath->addCheckBox("Emitted Light", &m_ptsettings.useEmitted);
-////    panePath->addCheckBox("Scattered Direct Light from Diffuse", &m_ptsettings.useDirectDiffuse);
-////    panePath->addCheckBox("Scattered Direct Light from Specular", &m_ptsettings.useDirectSpecular);
-////    panePath->addCheckBox("Scattered Indirect Light from Diffuse", &m_ptsettings.useIndirect);
-////    panePath->addCheckBox("Participating Media Attenuation", &m_ptsettings.useMedium);
-
-//    loadSceneDirectory(m_scenePath);
-
-//    m_windowPath->pack();
-//    m_windowPath->setVisible(false);
-
-//    m_windowScenes->pack();
-//    m_windowScenes->setVisible(false);
-
-//    m_windowRendering->pack();
-//    m_windowRendering->setVisible(false);
-
-//    windowMain->pack();
-//    windowMain->setVisible(true);
-
-//    addWidget(m_windowPath);
-//    addWidget(m_windowRendering);
-//    addWidget(m_windowScenes);
-//    addWidget(windowMain);
-
-//    std::cout <<"done making GUI" << std::endl;
-//}
