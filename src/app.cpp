@@ -491,29 +491,45 @@ void App::gpuProcess(RenderDevice *rd)
 
     } rd->popState();
 
-//    shared_ptr<Texture> dirLightTex = m_dirFBO->texture(1);
-//    shared_ptr<Image> savedImage = dirLightTex->toImage();
 
-//    Point2int32 samplePt = Point2int32(2,2);
-//    Color4 sampledColor;
 
-//    savedImage->get(samplePt, sampledColor);
-
-//    std::cout << "getting sample : " << sampledColor << std::endl;
-
-    swapBuffers();
-    rd->clear();
 
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
-    FilmSettings s;
-    s.setAntialiasingEnabled(false);
-    s.setBloomStrength(0);
-    s.setGamma(2.06);
-    s.setVignetteTopStrength(0);
-    s.setVignetteBottomStrength(0);
-    m_film->exposeAndRender(rd, s, indirectTex, 0, 0);
+//    // TO RENDER INDIRECT
+//    swapBuffers();
+//    rd->clear();
 
+//    FilmSettings s;
+//    s.setAntialiasingEnabled(false);
+//    s.setBloomStrength(0);
+//    s.setGamma(2.06);
+//    s.setVignetteTopStrength(0);
+//    s.setVignetteBottomStrength(0);
+//    m_film->exposeAndRender(rd, s, indirectTex, 0, 0);
+
+    // composite direct and indirect
+    rd->push2D(m_framebuffer); {
+        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        Args argsComp;
+        argsComp.setRect(rd->viewport());
+
+        argsComp.setUniform("screenHeight", rd->height());
+        argsComp.setUniform("screenWidth", rd->width());
+
+        argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
+        argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
+
+
+        LAUNCH_SHADER("composite.*", argsComp);
+
+    } rd->popState();
+
+
+    // TO RENDER DIRECT
 //    Surface2D::sortAndRender(rd, posed2D);
 
 //    swapBuffers();
@@ -527,6 +543,20 @@ void App::gpuProcess(RenderDevice *rd)
 //                            settings().hdrFramebuffer.colorGuardBandThickness.x +
 //                            settings().hdrFramebuffer.depthGuardBandThickness.x,
 //                            settings().hdrFramebuffer.depthGuardBandThickness.x);
+
+
+    // TO RENDER COMPOSITITED
+    swapBuffers();
+    rd->clear();
+
+    FilmSettings filmSettings = activeCamera()->filmSettings();
+    filmSettings.setBloomStrength(0.0);
+    filmSettings.setGamma(1.0); // default is 2.0
+
+    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                            settings().hdrFramebuffer.colorGuardBandThickness.x +
+                            settings().hdrFramebuffer.depthGuardBandThickness.x,
+                            settings().hdrFramebuffer.depthGuardBandThickness.x);
 }
 
 
