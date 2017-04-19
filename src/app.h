@@ -118,10 +118,6 @@ public:
     virtual void onCleanup();
 
     /** Called once per frame to render the scene */
-//    virtual void onGraphics(RenderDevice *dev,
-//                            Array<shared_ptr<Surface> >& posed3D,
-//                            Array<shared_ptr<Surface2D> >& posed2D);
-
     virtual void onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface>>& surface3D) override;
 
     /** Called from onInit() */

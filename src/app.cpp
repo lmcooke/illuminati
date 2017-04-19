@@ -410,46 +410,6 @@ void App::onCleanup()
     m_world.unload();
 }
 
-//void App::onGraphics(RenderDevice *rd,
-//                     Array<shared_ptr<Surface> >& posed3D,
-//                     Array<shared_ptr<Surface2D> >& posed2D)
-//{
-
-//    View v = this->view;
-//    if (v == DEFAULT)
-//        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
-
-//    if (v == PHOTONMAP)
-//    {
-//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-//        rd->clear();
-//        m_photons.render(rd, &m_world);
-
-//        Surface2D::sortAndRender(rd, posed2D);
-
-//    }
-//    // If you want to display other things (e.g. shadow photon maps), do it here
-//    else
-//    {
-
-////        shared_ptr<Texture> tex = Texture::fromImage("Source", m_canvas);
-
-////        FilmSettings s;
-////        s.setAntialiasingEnabled(false);
-////        s.setBloomStrength(0);
-////        s.setGamma(2.060);
-////        s.setVignetteTopStrength(0);
-////        s.setVignetteBottomStrength(0);
-////        m_film->exposeAndRender(renderDevice, s, tex, 0, 0);
-
-////        Surface2D::sortAndRender(rd, posed2D);
-
-//        // TEMP
-////        gpuProcess(rd);
-
-//    }
-
-//}
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
@@ -462,7 +422,7 @@ void App::gpuProcess(RenderDevice *rd)
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 
-        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
@@ -492,21 +452,7 @@ void App::gpuProcess(RenderDevice *rd)
     } rd->popState();
 
 
-
-
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
-
-//    // TO RENDER INDIRECT
-//    swapBuffers();
-//    rd->clear();
-
-//    FilmSettings s;
-//    s.setAntialiasingEnabled(false);
-//    s.setBloomStrength(0);
-//    s.setGamma(2.06);
-//    s.setVignetteTopStrength(0);
-//    s.setVignetteBottomStrength(0);
-//    m_film->exposeAndRender(rd, s, indirectTex, 0, 0);
 
     // composite direct and indirect
     rd->push2D(m_framebuffer); {
@@ -527,22 +473,6 @@ void App::gpuProcess(RenderDevice *rd)
         LAUNCH_SHADER("composite.*", argsComp);
 
     } rd->popState();
-
-
-    // TO RENDER DIRECT
-//    Surface2D::sortAndRender(rd, posed2D);
-
-//    swapBuffers();
-//    rd->clear();
-
-//    FilmSettings filmSettings = activeCamera()->filmSettings();
-//    filmSettings.setBloomStrength(0.0);
-//    filmSettings.setGamma(1.0); // default is 2.0
-
-//    m_film->exposeAndRender(rd, filmSettings, m_dirFBO->texture(1),
-//                            settings().hdrFramebuffer.colorGuardBandThickness.x +
-//                            settings().hdrFramebuffer.depthGuardBandThickness.x,
-//                            settings().hdrFramebuffer.depthGuardBandThickness.x);
 
 
     // TO RENDER COMPOSITITED
