@@ -166,6 +166,9 @@ private:
     shared_ptr<ArticulatedModel> m_model;
     Array<shared_ptr<Surface>> m_sceneGeometry;
 
+    shared_ptr<Texture> m_dirLight;
+    shared_ptr<Framebuffer> m_dirFBO;
+
     // path flags
     PhotonSettings         m_PSettings;
 //    shared_ptr<PathTracer> m_renderer;

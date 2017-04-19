@@ -341,7 +341,17 @@ static void dispatcher(void *arg)
 
 void App::onInit()
 {
-//    GApp::onInit();
+
+    // GPU stuff
+    m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
+                                      m_framebuffer->height(), ImageFormat::RGBA16());
+    m_dirLight->clear();
+
+    m_dirFBO = Framebuffer::create(m_dirLight);
+
+    m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
+
+
     setFrameDuration(1.0f / 60.0f);
 
 
@@ -449,7 +459,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 void App::gpuProcess(RenderDevice *rd)
 {
 
-    rd->pushState(m_framebuffer); {
+    rd->pushState(m_dirFBO); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 
@@ -474,7 +484,7 @@ void App::gpuProcess(RenderDevice *rd)
                                         rd->cameraToWorldMatrix().inverse() * cframe);
                 surface->gpuGeom()->setShaderArgs(args);
 
-                LAUNCH_SHADER("testShader2.*", args);
+                LAUNCH_SHADER("splat.*", args);
 
             }
 
@@ -482,31 +492,15 @@ void App::gpuProcess(RenderDevice *rd)
 
     } rd->popState();
 
+//    shared_ptr<Texture> dirLightTex = m_dirFBO->texture(1);
+//    shared_ptr<Image> savedImage = dirLightTex->toImage();
 
-//    rd->pushState(m_framebuffer); {
+//    Point2int32 samplePt = Point2int32(2,2);
+//    Color4 sampledColor;
 
-//        rd->setColorClearValue(Color3::white() * 0.3f);
-//        rd->clear();
-//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+//    savedImage->get(samplePt, sampledColor);
 
-//        Args args;
-//        args.setRect(rd->viewport());
-//        LAUNCH_SHADER("testShader1.*", args);
-
-//    } rd->popState();
-
-
-//    rd->push2D(m_framebuffer); {
-
-//        rd->setColorClearValue(Color3::white() * 0.3f);
-//        rd->clear();
-//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
-
-//        Args args;
-//        args.setRect(rd->viewport());
-//        LAUNCH_SHADER("testShader1.*", args);
-
-//    } rd->popState();
+//    std::cout << "getting sample : " << sampledColor << std::endl;
 
     swapBuffers();
     rd->clear();
@@ -515,7 +509,7 @@ void App::gpuProcess(RenderDevice *rd)
     filmSettings.setBloomStrength(0.0);
     filmSettings.setGamma(1.0); // default is 2.0
 
-    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+    m_film->exposeAndRender(rd, filmSettings, m_dirFBO->texture(1),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
