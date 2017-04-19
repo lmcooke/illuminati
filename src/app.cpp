@@ -458,7 +458,6 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-
     rd->pushState(m_dirFBO); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
@@ -505,14 +504,29 @@ void App::gpuProcess(RenderDevice *rd)
     swapBuffers();
     rd->clear();
 
-    FilmSettings filmSettings = activeCamera()->filmSettings();
-    filmSettings.setBloomStrength(0.0);
-    filmSettings.setGamma(1.0); // default is 2.0
+    shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
-    m_film->exposeAndRender(rd, filmSettings, m_dirFBO->texture(1),
-                            settings().hdrFramebuffer.colorGuardBandThickness.x +
-                            settings().hdrFramebuffer.depthGuardBandThickness.x,
-                            settings().hdrFramebuffer.depthGuardBandThickness.x);
+    FilmSettings s;
+    s.setAntialiasingEnabled(false);
+    s.setBloomStrength(0);
+    s.setGamma(2.06);
+    s.setVignetteTopStrength(0);
+    s.setVignetteBottomStrength(0);
+    m_film->exposeAndRender(rd, s, indirectTex, 0, 0);
+
+//    Surface2D::sortAndRender(rd, posed2D);
+
+//    swapBuffers();
+//    rd->clear();
+
+//    FilmSettings filmSettings = activeCamera()->filmSettings();
+//    filmSettings.setBloomStrength(0.0);
+//    filmSettings.setGamma(1.0); // default is 2.0
+
+//    m_film->exposeAndRender(rd, filmSettings, m_dirFBO->texture(1),
+//                            settings().hdrFramebuffer.colorGuardBandThickness.x +
+//                            settings().hdrFramebuffer.depthGuardBandThickness.x,
+//                            settings().hdrFramebuffer.depthGuardBandThickness.x);
 }
 
 
