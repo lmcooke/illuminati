@@ -20,7 +20,8 @@ App::App(const GApp::Settings &settings)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
-      m_useGather(false)
+      m_useGather(false),
+      m_passType(0)
 {
     m_scenePath = FileSystem::currentDirectory() + "/scene";
 
@@ -400,8 +401,6 @@ void App::onRender()
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
         m_world.unload();
         m_world.load(fullpath);
-//        g_scenePath = m_scenePath.c_str();
-//        std::cout << "Loading default scene path " + m_scenePath << std::endl;
         std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
@@ -440,10 +439,8 @@ void App::renderBeams(RenderDevice *dev, World *world)
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
     gpuProcess(rd);
-    if (m_dirBeams)
+    if (m_dirBeams && view == App::PHOTONMAP)
     {
-        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-        rd->clear();
         renderBeams(rd, &m_world);
     }
 }
@@ -469,7 +466,7 @@ void App::gpuProcess(RenderDevice *rd)
             const shared_ptr<UniversalSurface>& surface =
                     dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
 
-            if (notNull(surface)) {
+            if (notNull(surface) && view == App::SPLAT) {
                 surface->getCoordinateFrame(cframe);
                 rd->setObjectToWorldMatrix(cframe);
                 args.setUniform("MVP", rd->invertYMatrix() *
@@ -662,8 +659,11 @@ void App::makeGUI()
 
     scenesPane->addLabel("Scene Folders");
     scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
-    scenesPane->addButton("G3D Scenes", this,  &App::loadDefaultScene);
-    scenesPane->addButton("CS224 Scenes", this,  &App::loadCS244Scene);
+
+    scenesPane->addLabel("View");
+    scenesPane->addRadioButton("Default", App::DEFAULT, &view);
+    scenesPane->addRadioButton("Photon Beams", App::PHOTONMAP, &view);
+    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
     m_warningLabel = scenesPane->addLabel("");
     updateScenePathLabel();
