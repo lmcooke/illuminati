@@ -303,7 +303,13 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+    // Make the diret photon beams, to be splatted and rendered directly.
     m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world);
+
+    // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
+    // Note that it's redunant to here calculate both of these lighting maps, but
+    // we'll later be using them at different rates (and also with different scattering properties)
+    m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world);
 
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
@@ -428,7 +434,7 @@ void App::renderBeams(RenderDevice *dev, World *world)
     SlowMesh mesh(PrimitiveType::LINES);
     mesh.setPointSize(1);
 
-    std::vector<PhotonBeamette> beams = m_dirBeams->getBeams();
+    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
     for (int i=0; i<beams.size(); i++) {
         PhotonBeamette beam = beams[i];
         mesh.setColor(beam.m_power / beam.m_power.max());
@@ -443,15 +449,13 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+    if (m_dirBeams)
+    {
 
-
+        renderBeams(rd, &m_world);
+    }
     gpuProcess(rd);
-//    if (m_dirBeams)
-//    {
-//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-//        rd->clear();
-//        renderBeams(rd, &m_world);
-//    }
+
 }
 
 

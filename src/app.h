@@ -182,9 +182,7 @@ private:
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
     std::unique_ptr<DirPhotonScatter> m_dirBeams;
-//    shared_ptr<GuiWindow> m_windowRendering;
-//    shared_ptr<GuiWindow> m_windowScenes;
-//    shared_ptr<GuiWindow> m_windowPath;
+    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
 
     static String           m_scenePath; // path to scene folder
     static String           m_defaultScene;

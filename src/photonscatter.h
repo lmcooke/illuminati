@@ -5,6 +5,7 @@
 #include "world.h"
 #define MAX_DEPTH 4
 #define EPSILON 1e-4
+#define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
 
 class PhotonScatter
 {
@@ -21,8 +22,8 @@ protected:
      * to be added to the KD tree or array.
      * Returns an array of PhotonBeams
      */
-    std::vector<PhotonBeamette> shootRay();
-    std::vector<PhotonBeamette> shootRayRecursive(PhotonBeamette emitBeam, std::vector<PhotonBeamette> &beamettes, int bounces);
+    Array<PhotonBeamette> shootRay();
+    Array<PhotonBeamette> shootRayRecursive(PhotonBeamette emitBeam, Array<PhotonBeamette> &beamettes, int bounces);
     World* m_world;
     Random m_random;   // Random number generator
 
