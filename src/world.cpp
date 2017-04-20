@@ -91,7 +91,7 @@ void World::load(const String &path )
 
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
-                m_geometry.append(posed[i]);
+                m_geometry.append(posed[i]); // TODO keep separate spline list
 
             printf("done\n");
         }

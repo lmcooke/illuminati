@@ -837,7 +837,6 @@ app.o: app.cpp app.h \
 		photonmap.h \
 		world.h \
 		photonbeamette.h \
-		splatter.h \
 		photonscatter.h \
 		indphotonscatter.h \
 		dirphotonscatter.h
@@ -1252,7 +1251,6 @@ world.o: world.cpp app.h \
 		photonmap.h \
 		world.h \
 		photonbeamette.h \
-		splatter.h \
 		photonscatter.h \
 		indphotonscatter.h \
 		dirphotonscatter.h
@@ -1665,8 +1663,7 @@ photonmap.o: photonmap.cpp photonmap.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		world.h \
-		photonbeamette.h \
-		splatter.h
+		photonbeamette.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o photonmap.o photonmap.cpp
 
 photonscatter.o: photonscatter.cpp photonscatter.h \
@@ -2077,8 +2074,7 @@ photonscatter.o: photonscatter.cpp photonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
-		photonmap.h \
-		splatter.h
+		photonmap.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o photonscatter.o photonscatter.cpp
 
 photonbeamette.o: photonbeamette.cpp photonbeamette.h \
@@ -2898,8 +2894,7 @@ indphotonscatter.o: indphotonscatter.cpp indphotonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
-		photonmap.h \
-		splatter.h
+		photonmap.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o indphotonscatter.o indphotonscatter.cpp
 
 dirphotonscatter.o: dirphotonscatter.cpp dirphotonscatter.h \
@@ -3311,8 +3306,7 @@ dirphotonscatter.o: dirphotonscatter.cpp dirphotonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
-		photonmap.h \
-		splatter.h
+		photonmap.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dirphotonscatter.o dirphotonscatter.cpp
 
 renderer.o: renderer.cpp renderer.h
@@ -3727,7 +3721,6 @@ main.o: main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/
 		photonmap.h \
 		world.h \
 		photonbeamette.h \
-		splatter.h \
 		photonscatter.h \
 		indphotonscatter.h \
 		dirphotonscatter.h

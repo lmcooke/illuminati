@@ -8,7 +8,7 @@ uniform mat4 MVP;
 void main() {
 
     // Extrusion distance
-    const float d = 0.2;
+    const float d = 0.1;
 
     vec3 start = gl_in[0].gl_Position.xyz;
     vec3 end = gl_in[1].gl_Position.xyz;

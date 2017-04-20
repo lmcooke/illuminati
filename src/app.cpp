@@ -497,7 +497,6 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
-//        Array<int>       cpuIndex;
         for (PhotonBeamette pb : direct_beams) {
             cpuVertex.append(pb.m_start);
             cpuVertex.append(pb.m_end);
@@ -505,12 +504,12 @@ void App::gpuProcess(RenderDevice *rd)
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(sizeof(Vector3) * cpuVertex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
-//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
         rd->setObjectToWorldMatrix(CoordinateFrame());
+        //TODO pass in spline information
 
         args.setUniform("MVP", rd->invertYMatrix() *
                                 rd->projectionMatrix() *
