@@ -1,14 +1,15 @@
 #ifndef APP_H
 #define APP_H
 
-#include "world.h"
 #include <ctime>
 #include <G3D/G3DAll.h>
+
 #include "photonmap.h"
 #include "world.h"
 #include "photonscatter.h"
 #include "indphotonscatter.h"
 #include "dirphotonscatter.h"
+
 #define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
 
 //enum RenderMethod { RAY, PATH, PHOTON };
@@ -182,9 +183,7 @@ private:
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
     std::unique_ptr<DirPhotonScatter> m_dirBeams;
-//    shared_ptr<GuiWindow> m_windowRendering;
-//    shared_ptr<GuiWindow> m_windowScenes;
-//    shared_ptr<GuiWindow> m_windowPath;
+    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
 
     static String           m_scenePath; // path to scene folder
     static String           m_defaultScene;

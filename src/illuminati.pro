@@ -73,3 +73,6 @@ QMAKE_CXXFLAGS_WARN_ON += -Waddress -Warray-bounds -Wc++0x-compat -Wchar-subscri
                           -Wtrigraphs -Wuninitialized -Wunused-label -Wunused-variable \
                           -Wvolatile-register-var -Wno-extra
 
+OTHER_FILES += \
+    data-files/beamsplat.vsh
+

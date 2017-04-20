@@ -429,7 +429,6 @@ compiler_clean:
 ####### Compile
 
 app.o: app.cpp app.h \
-		world.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3DAll.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3D.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/DoNotInitialize.h \
@@ -836,6 +835,7 @@ app.o: app.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonmap.h \
+		world.h \
 		photonbeamette.h \
 		photonscatter.h \
 		indphotonscatter.h \
@@ -843,7 +843,6 @@ app.o: app.cpp app.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o app.o app.cpp
 
 world.o: world.cpp app.h \
-		world.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3DAll.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3D.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/DoNotInitialize.h \
@@ -1250,6 +1249,7 @@ world.o: world.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonmap.h \
+		world.h \
 		photonbeamette.h \
 		photonscatter.h \
 		indphotonscatter.h \
@@ -3718,8 +3718,8 @@ main.o: main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		app.h \
-		world.h \
 		photonmap.h \
+		world.h \
 		photonbeamette.h \
 		photonscatter.h \
 		indphotonscatter.h \

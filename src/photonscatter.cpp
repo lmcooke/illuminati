@@ -29,10 +29,10 @@ static Vector3 bump(Ray &ray, float t, Vector3 normal)
     return bump(ray.origin() + t * ray.direction(), ray.direction(), normal);
 }
 
-std::vector<PhotonBeamette> PhotonScatter::shootRay()
+Array<PhotonBeamette> PhotonScatter::shootRay()
 {
     // Array to store photon beams.
-    std::vector<PhotonBeamette> beams;
+    Array<PhotonBeamette> beams;
 
     // Emit a photon.
     PhotonBeamette beam;
@@ -43,7 +43,7 @@ std::vector<PhotonBeamette> PhotonScatter::shootRay()
     return beams;
 }
 
-std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, std::vector<PhotonBeamette> &beamettes, int bounces)
+Array<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, Array<PhotonBeamette> &beamettes, int bounces)
 {
     // Terminate recursion
     if (bounces > MAX_DEPTH) {
@@ -61,13 +61,11 @@ std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emit
     if (surfel){
 
         // Don't store direct light contribution
-        if (bounces > -1){
-            PhotonBeamette beam = PhotonBeamette();
-            beam.m_start =  emitBeam.m_start;
-            beam.m_end = surfel->position + EPSILON * surfel->shadingNormal;
-            beam.m_power = emitBeam.m_power;
-            beamettes.push_back(beam);
-        }
+        PhotonBeamette beam = PhotonBeamette();
+        beam.m_start =  emitBeam.m_start;
+        beam.m_end = surfel->position + EPSILON * surfel->shadingNormal;
+        beam.m_power = emitBeam.m_power;
+        beamettes.push_back(beam);
 
         // recursive rays
         Vector3 wIn = -ray.direction();
@@ -93,5 +91,3 @@ std::vector<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emit
     }
     return beamettes;
 }
-
-

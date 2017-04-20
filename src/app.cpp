@@ -8,7 +8,7 @@
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 static const char *g_scenePath;
-String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere.Scene.Any";
+String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
 
 // set this to 1 to debug a single render thread
 #define THREADS 12
@@ -300,7 +300,13 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+    // Make the diret photon beams, to be splatted and rendered directly.
     m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world);
+
+    // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
+    // Note that it's redunant to here calculate both of these lighting maps, but
+    // we'll later be using them at different rates (and also with different scattering properties)
+    m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world);
 
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
@@ -420,7 +426,7 @@ void App::renderBeams(RenderDevice *dev, World *world)
     SlowMesh mesh(PrimitiveType::LINES);
     mesh.setPointSize(1);
 
-    std::vector<PhotonBeamette> beams = m_dirBeams->getBeams();
+    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
     for (int i=0; i<beams.size(); i++) {
         PhotonBeamette beam = beams[i];
         mesh.setColor(beam.m_power / beam.m_power.max());
@@ -444,6 +450,8 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
+    Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
+
     rd->pushState(m_dirFBO); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
@@ -478,6 +486,34 @@ void App::gpuProcess(RenderDevice *rd)
     } rd->popState();
 
 
+    // beam splatting
+    rd->pushState(m_dirFBO); {
+        // Allocate on CPU
+        Array<Vector3>   cpuVertex;
+        for (PhotonBeamette pb : direct_beams) {
+            cpuVertex.append(pb.m_start);
+            cpuVertex.append(pb.m_end);
+        }
+        // Upload to GPU
+        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(sizeof(Vector3) * cpuVertex.size());
+        AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
+        Args args;
+
+        args.setPrimitiveType(PrimitiveType::LINES);
+        args.setAttributeArray("Position", gpuVertex);
+        rd->setObjectToWorldMatrix(CoordinateFrame());
+        //TODO pass in spline information
+
+        args.setUniform("MVP", rd->invertYMatrix() *
+                                rd->projectionMatrix() *
+                                rd->cameraToWorldMatrix().inverse());
+
+        LAUNCH_SHADER("beamsplat.*", args);
+
+    } rd->popState();
+
+
+
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
@@ -494,7 +530,6 @@ void App::gpuProcess(RenderDevice *rd)
 
         argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
         argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
-
 
         LAUNCH_SHADER("composite.*", argsComp);
 
