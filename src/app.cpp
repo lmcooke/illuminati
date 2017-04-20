@@ -457,6 +457,8 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
+    Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
+
     rd->pushState(m_dirFBO); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
@@ -491,6 +493,35 @@ void App::gpuProcess(RenderDevice *rd)
     } rd->popState();
 
 
+    // beam splatting
+    rd->pushState(m_dirFBO); {
+        // Allocate on CPU
+        Array<Vector3>   cpuVertex;
+//        Array<int>       cpuIndex;
+        for (PhotonBeamette pb : direct_beams) {
+            cpuVertex.append(pb.m_start);
+            cpuVertex.append(pb.m_end);
+        }
+        // Upload to GPU
+        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(sizeof(Vector3) * cpuVertex.size());
+        AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
+//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
+        Args args;
+
+        args.setPrimitiveType(PrimitiveType::LINES);
+        args.setAttributeArray("Position", gpuVertex);
+        rd->setObjectToWorldMatrix(CoordinateFrame());
+
+        args.setUniform("MVP", rd->invertYMatrix() *
+                                rd->projectionMatrix() *
+                                rd->cameraToWorldMatrix().inverse());
+
+        LAUNCH_SHADER("beamsplat.*", args);
+
+    } rd->popState();
+
+
+
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
@@ -507,7 +538,6 @@ void App::gpuProcess(RenderDevice *rd)
 
         argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
         argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
-
 
         LAUNCH_SHADER("composite.*", argsComp);
 

@@ -1,14 +1,15 @@
 #ifndef APP_H
 #define APP_H
 
-#include "world.h"
 #include <ctime>
 #include <G3D/G3DAll.h>
+
 #include "photonmap.h"
 #include "world.h"
 #include "photonscatter.h"
 #include "indphotonscatter.h"
 #include "dirphotonscatter.h"
+#include "splatter.h"
 #define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
 
 //enum RenderMethod { RAY, PATH, PHOTON };
@@ -166,6 +167,7 @@ private:
     // TODO : temp
     shared_ptr<ArticulatedModel> m_model;
     Array<shared_ptr<Surface>> m_sceneGeometry;
+    shared_ptr<Splatter> m_splatter; // Contains photon beam representations for splatting
 
     shared_ptr<Texture> m_dirLight;
     shared_ptr<Framebuffer> m_dirFBO;

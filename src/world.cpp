@@ -1,7 +1,9 @@
 #include "app.h"
 #include "world.h"
 
-World::World() { }
+World::World()
+    : m_splines(Array<Array<Vector4>>())
+{ }
 
 World::~World() { }
 
@@ -74,7 +76,7 @@ void World::load(const String &path )
             const Table<String, Any> &props = e.table();
             const ArticulatedModel::Specification& spec = models[props["model"]];
             String filename = FileSystem::resolve(spec.filename);
-            std::cout << filename << std::endl;
+            printf("%s ... ", spec.filename.c_str());
 
             shared_ptr<ArticulatedModel> spline = createSplineModel(filename);
 
@@ -294,6 +296,7 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
     Array<CPUVertexArray::Vertex>& vertexArray = geometry->cpuVertexArray.vertex;
     Array<int>& indexArray = mesh->cpuIndexArray;
 
+    Array<Vector4> raw_spline = Array<Vector4>();
 
     /* text parsing and vertex construction */
 
@@ -312,8 +315,11 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
         pt2 = pt3;
         w2 = w3;
         comment = iss.peek() == '#';
-        if (!comment && !(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
-            throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+        if (!comment) {
+            if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
+                throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+            }
+            raw_spline.append(Vector4(pt3[0], pt3[1], pt3[2], w3));
         }
         if (npts > 0) {
             Vector3 diff;
@@ -340,6 +346,7 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
     }
     npts--;
 
+    assert(npts == raw_spline.size());
 
     /* face construction */
 
@@ -365,5 +372,24 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
     geometrySettings.allowVertexMerging = false;
     model->cleanGeometry(geometrySettings);
 
+    m_splines.append(raw_spline);
+
     return model;
+}
+
+Array<PhotonBeamette> World::vizualizeSplines() {
+    Array<PhotonBeamette> beams = Array<PhotonBeamette>();
+    for (Array<Vector4> spline : m_splines) {
+        Vector4 prev = Vector4::nan();
+        for (Vector4 v : spline) {
+            if (prev.isFinite()) {
+                PhotonBeamette pb = PhotonBeamette();
+                pb.m_end = v.xyz();
+                pb.m_start = prev.xyz();
+                beams.append(pb);
+            }
+            prev = v;
+        }
+    }
+    return beams;
 }
