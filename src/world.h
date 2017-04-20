@@ -1,6 +1,10 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include <fstream>
+#include <sstream>
+#include <string>
+
 #include <G3D/G3DAll.h>
 
 #include "photonmap.h"
@@ -87,7 +91,12 @@ public:
      *  Spline files consist of a series of points, one per line, represented as:
      *  x y z radius
      *  The last line must be a comment starting with a #. */
-    shared_ptr<Model> createSplineModel(const std::string& str);
+    shared_ptr<ArticulatedModel> createSplineModel(const String& str);
+
+    /** Returns exact beamette representation of splines used as spline lights,
+     * for testing splatting
+     */
+    Array<PhotonBeamette> vizualizeSplines();
 
     TriTree             m_tris;     // The scene's geometry in world space
 
@@ -96,6 +105,8 @@ private:
     Array<Tri>          m_emit;     // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
+
+    Array<Array<Vector4>> m_splines; // collection of spline lights, each light represented by x, y, z, radius
 };
 
 #endif

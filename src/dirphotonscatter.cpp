@@ -13,7 +13,7 @@ DirPhotonScatter::~DirPhotonScatter()
 
 void DirPhotonScatter::preprocess()
 {
-    // Send out a beam, recursivly bounce it around, and then store it in our beams array.
+    // Send out a beam, recursively bounce it around, and then store it in our beams array.
     for (int i=0; i<NUM_BEAMETTES; i++)
     {
         Array<PhotonBeamette> newBeams = shootRay();

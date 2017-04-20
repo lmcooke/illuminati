@@ -436,7 +436,6 @@ compiler_clean:
 ####### Compile
 
 app.o: ../src/app.cpp ../src/app.h \
-		../src/world.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3DAll.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3D.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/DoNotInitialize.h \
@@ -843,6 +842,7 @@ app.o: ../src/app.cpp ../src/app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		../src/photonmap.h \
+		../src/world.h \
 		../src/photonbeamette.h \
 		../src/photonscatter.h \
 		../src/indphotonscatter.h \
@@ -850,7 +850,6 @@ app.o: ../src/app.cpp ../src/app.h \
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o app.o ../src/app.cpp
 
 world.o: ../src/world.cpp ../src/app.h \
-		../src/world.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3DAll.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3D.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/DoNotInitialize.h \
@@ -1257,6 +1256,7 @@ world.o: ../src/world.cpp ../src/app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		../src/photonmap.h \
+		../src/world.h \
 		../src/photonbeamette.h \
 		../src/photonscatter.h \
 		../src/indphotonscatter.h \
@@ -3725,8 +3725,8 @@ main.o: ../src/main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		../src/app.h \
-		../src/world.h \
 		../src/photonmap.h \
+		../src/world.h \
 		../src/photonbeamette.h \
 		../src/photonscatter.h \
 		../src/indphotonscatter.h \
