@@ -34,3 +34,8 @@ src/log.txt*
 src/illuminati.creator.user
 src/illuminati.creator.user*
 src/.ice-tmp/src/
+build/
+build*/
+g3d_license.txt
+ice-stats.csv
+ice.txt
