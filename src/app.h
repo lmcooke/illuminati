@@ -9,6 +9,8 @@
 #include "photonscatter.h"
 #include "indphotonscatter.h"
 #include "dirphotonscatter.h"
+#include "indrenderer.h"
+#include "app.h"
 
 #define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
 
@@ -184,6 +186,7 @@ private:
     shared_ptr<GuiWindow> m_windowPath;
     std::unique_ptr<DirPhotonScatter> m_dirBeams;
     std::unique_ptr<IndPhotonScatter> m_inDirBeams;
+    std::unique_ptr<IndRenderer> m_indRenderer;
 
     static String           m_scenePath; // path to scene folder
     static String           m_defaultScene;

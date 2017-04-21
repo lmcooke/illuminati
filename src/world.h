@@ -9,6 +9,7 @@
 
 #include "photonmap.h"
 #include "photonbeamette.h"
+#include "utils.h"
 
 /** Represents a static scene with triangle mesh geometry, multiple lights, and
   * an initial camera specification

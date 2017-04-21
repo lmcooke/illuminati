@@ -3,6 +3,7 @@
 #include <G3D/G3DAll.h>
 #include "photonbeamette.h"
 #include "world.h"
+
 #define MAX_DEPTH 4
 #define EPSILON 1e-4
 #define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */

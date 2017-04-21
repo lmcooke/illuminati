@@ -311,18 +311,25 @@ void App::buildPhotonMap()
     // we'll later be using them at different rates (and also with different scattering properties)
     m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world);
 
+
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
         printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
     printf("\rBuilding photon map ... done       \n");
+
+    // Create renderer
+    m_indRenderer = std::make_unique<IndRenderer>(&m_world);
+    m_indRenderer->setBeams(m_inDirBeams->getBeams());
 }
 
 void App::traceCallback(int x, int y)
 {
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
     m_canvas->set(x, y, trace(ray, MAX_DEPTH));
+
+//    m_canvas->set(x, y, m_indRenderer->trace(ray, MAX_DEPTH));
 }
 
 static void dispatcher(void *arg)
@@ -451,7 +458,6 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
     if (m_dirBeams)
     {
-
         renderBeams(rd, &m_world);
     }
     gpuProcess(rd);

@@ -213,7 +213,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     emissivePoint(random, light, prob, area);
 
-    // Shoot the photon somewhere into the scene
+    // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
     float dist;
 
