@@ -113,10 +113,10 @@ After changes have been made to the gitignore (additions or deletions), you may 
 
 First, commit any changes you've made, update local master and merge local master into personal branch.
 
-  'git rm -r --cached . // removes cached files'
+  `git rm -r --cached . // removes cached files`
   
-  'git add . // adds everything back'
+  `git add . // adds everything back`
   
-  'git commit -m \"fixed untracked files\"'
+  `git commit -m \"fixed untracked files\"`
   
 Then, merge local into master, and push as normal.
