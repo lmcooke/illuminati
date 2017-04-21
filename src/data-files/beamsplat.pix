@@ -1,8 +1,9 @@
 #version 410
 
 out vec3 g3d_FragColor;
+in vec2 uv;
 
 void main(void) {
 
-        g3d_FragColor = vec3(1.0, 1.0, 0.0);
+        g3d_FragColor = vec3(uv.xy, 0.0);
 }

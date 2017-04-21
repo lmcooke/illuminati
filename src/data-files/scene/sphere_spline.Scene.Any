@@ -39,7 +39,7 @@
                 vignetteTopStrength = 0.5; 
             }; 
             
-            frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 ); 
+            frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
             motionBlurSettings = MotionBlurSettings { 
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
@@ -50,13 +50,13 @@
             
             projection = Projection { 
                 farPlaneZ = -200; 
-                fovDegrees = 25; 
+                fovDegrees = 25;
                 fovDirection = "VERTICAL"; 
                 nearPlaneZ = -0.1; 
                 pixelOffset = Vector2(0, 0 ); 
             }; 
             
-            visualizationScale = 1; 
+            visualizationScale = 1;
         }; 
         
         cornellBox = VisibleEntity { 
@@ -70,7 +70,7 @@
         }; 
         
         spline = SplineLight {
-            frame = CFrame::fromXYZPRDegrees(-1, 0, 1);
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
             model = "splineModel";
         };
     }; 

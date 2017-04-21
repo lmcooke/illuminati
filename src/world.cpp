@@ -42,6 +42,8 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
+            std::cout << "is cam null? " << camnull() << std::endl;
+//            std::cout << "is wcam null? " << !camera() << std::endl;
 
             printf("done\n");
         }
@@ -91,7 +93,7 @@ void World::load(const String &path )
 
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
-                m_geometry.append(posed[i]); // TODO keep separate spline list
+                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
 
             printf("done\n");
         }
@@ -134,6 +136,7 @@ void World::unload()
     m_emit.clear();
     m_geometry.clear();
     m_tris.clear();
+    m_splines.clear();
 }
 
 shared_ptr<Camera> World::camera()
@@ -386,6 +389,10 @@ Array<PhotonBeamette> World::vizualizeSplines() {
                 PhotonBeamette pb = PhotonBeamette();
                 pb.m_end = v.xyz();
                 pb.m_start = prev.xyz();
+                pb.m_dir1 = (pb.m_end - pb.m_start);
+                pb.m_dir2 = (pb.m_end - pb.m_start);
+                pb.m_diff1 = pb.m_start + Vector3(0.2, 0, 0.0);
+                pb.m_diff2 = pb.m_start - Vector3(0.0, 0, 0.2);
                 beams.append(pb);
             }
             prev = v;

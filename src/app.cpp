@@ -20,9 +20,10 @@ App::App(const GApp::Settings &settings)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
-      m_useGather(false)
+      m_useGather(false),
+      m_passType(0)
 {
-    m_scenePath = dataDir + "/scene";
+    m_scenePath = FileSystem::currentDirectory() + "/scene";
 
     num_passes=5000;
 
@@ -35,9 +36,6 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dofFocus=-4.8f;
     m_PSettings.dofLens=0.2f;
     m_PSettings.dofSamples=5;
-
-//    m_ptsettings.attenuation=true;
-
 
     m_PSettings.attenuation=0.0;
     m_PSettings.scattering=0.0;
@@ -326,6 +324,7 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
+
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
     m_canvas->set(x, y, trace(ray, MAX_DEPTH));
 
@@ -334,7 +333,6 @@ void App::traceCallback(int x, int y)
 
 static void dispatcher(void *arg)
 {
-
 
     App *self = (App*)arg;
 
@@ -345,10 +343,7 @@ static void dispatcher(void *arg)
 
     self->stage = App::SCATTERING;
 
-
     self->buildPhotonMap();
-
-
 
     printf("Rendering ...");
     fflush(stdout);
@@ -386,22 +381,19 @@ void App::onInit()
     spec.stripMaterials = true;
 
     m_model = ArticulatedModel::create(spec);
-    m_model->pose(m_sceneGeometry, Point3(0.f, -0.5f, 0.f));
+    m_model->pose(m_sceneGeometry, Point3(0.f, 0.f, 0.f));
 
 
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
+//    m_scenePath = m_defaultScene;
+
     makeGUI();
-
-
-
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
-
-    m_scenePath = m_defaultScene;
 }
 
 void App::onRender()
@@ -409,15 +401,14 @@ void App::onRender()
 
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
-
         continueRender = true;
 
         m_photons.clear();
 
+        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
         m_world.unload();
-        g_scenePath = m_scenePath.c_str();
-        std::cout << "Loading default scene path " + m_scenePath << std::endl;
-        m_world.load(g_scenePath);
+        m_world.load(fullpath);
+        std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
@@ -452,18 +443,14 @@ void App::renderBeams(RenderDevice *dev, World *world)
     dev->popState();
 }
 
-
-
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-    if (m_dirBeams)
+    gpuProcess(rd);
+    if (m_dirBeams && view == App::PHOTONMAP)
     {
         renderBeams(rd, &m_world);
     }
-    gpuProcess(rd);
-
 }
-
 
 void App::gpuProcess(RenderDevice *rd)
 {
@@ -486,11 +473,10 @@ void App::gpuProcess(RenderDevice *rd)
             const shared_ptr<UniversalSurface>& surface =
                     dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
 
-            if (notNull(surface)) {
+            if (notNull(surface) && view == App::SPLAT) {
                 surface->getCoordinateFrame(cframe);
                 rd->setObjectToWorldMatrix(cframe);
-                args.setUniform("MVP", rd->invertYMatrix() *
-                                        rd->projectionMatrix() *
+                args.setUniform("MVP", rd->projectionMatrix() *
                                         rd->cameraToWorldMatrix().inverse() * cframe);
                 surface->gpuGeom()->setShaderArgs(args);
 
@@ -507,18 +493,56 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
+        Array<Vector3>   cpuDiff1;
+        Array<Vector3>   cpuDiff2;
+        Array<int>   cpuIndex;
+        int i = 0;
+        cpuIndex.append(i);
+
         for (PhotonBeamette pb : direct_beams) {
             cpuVertex.append(pb.m_start);
             cpuVertex.append(pb.m_end);
+            cpuDiff1.append(pb.m_diff1);
+            cpuDiff1.append(pb.m_diff1);
+            cpuDiff2.append(pb.m_diff2);
+            cpuDiff2.append(pb.m_diff2);
+            cpuIndex.append(i);
+//            std::cout << pb << std::endl;
         }
+
+        cpuIndex.append(i);
+        rd->setObjectToWorldMatrix(CFrame());
+
+        //TODO hardcoded temp, figure out how to get camera from world
+        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
+        Projection cameraproj = Projection();
+        cameraproj.setFarPlaneZ(-200);
+        cameraproj.setFieldOfViewAngleDegrees(25);
+        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
+        cameraproj.setNearPlaneZ(-0.1);
+        cameraproj.setPixelOffset(Vector2(0,0));
+
+        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
+
+
         // Upload to GPU
-        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(sizeof(Vector3) * cpuVertex.size());
+        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
+                    sizeof(Vector3) * cpuVertex.size() +
+                    sizeof(Vector3) * cpuDiff1.size() +
+                    sizeof(Vector3) * cpuDiff2.size() +
+                    sizeof(int) * cpuIndex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
+        AttributeArray gpuDiff1   = AttributeArray(cpuDiff1, vbuffer);
+        AttributeArray gpuDiff2   = AttributeArray(cpuDiff2, vbuffer);
+        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
-        rd->setObjectToWorldMatrix(CoordinateFrame());
+        args.setAttributeArray("Diff1", gpuDiff1);
+        args.setAttributeArray("Diff2", gpuDiff2);
+//        args.setIndexStream(gpuIndex);
+//        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
 
         args.setUniform("MVP", rd->invertYMatrix() *
@@ -669,14 +693,24 @@ void App::makeGUI()
     // SCENE
     GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
 
+    // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = paneMain->addLabel("");
-//    scenesPane->addTextBox("Directory:", &m_dirName);
-//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-//    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
+    scenesPane->addLabel("Scene Directory: ");
+    m_scenePathLabel = scenesPane->addLabel("");
+    scenesPane->addTextBox("Directory:", &m_dirName);
+    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+
+    scenesPane->addLabel("Scene Folders");
+    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
+
+    scenesPane->addLabel("View");
+    scenesPane->addRadioButton("Default", App::DEFAULT, &view);
+    scenesPane->addRadioButton("Photon Beams", App::PHOTONMAP, &view);
+    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
+
+    m_warningLabel = scenesPane->addLabel("");
+    updateScenePathLabel();
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -704,11 +738,12 @@ void App::makeGUI()
 //    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
-
     windowMain->pack();
     windowMain->setVisible(true);
 
     addWidget(windowMain);
+
+    loadSceneDirectory(m_scenePath);
 
     std::cout <<"done making GUI" << std::endl;
 }

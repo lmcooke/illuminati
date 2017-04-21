@@ -58,7 +58,7 @@ class App : public GApp
 {
 public:
     enum Stage { IDLE, SCATTERING, GATHERING };
-    enum View { DEFAULT, PHOTONMAP, RENDITION };
+    enum View { DEFAULT, PHOTONMAP, SPLAT, RENDITION };
 
     App(const GApp::Settings &settings = GApp::Settings());
     virtual ~App();
@@ -150,13 +150,8 @@ public:
     void toggleWindowRendering();
     void toggleWindowScenes();
 
-//    static RenderMethod m_currRenderMethod;
     static bool m_kill;
-//    void changeRenderMethod();
     void toggleWindowPath();
-
-    /** Processes user input */
-//    virtual void onUserInput(UserInput *input);
 
     int             pass; // how many passes we have taken for a given pixel
     int             num_passes;
@@ -180,6 +175,7 @@ private:
     PhotonMap              m_photons;  // Contains photons organized spatially
     Random                 m_random;   // Random number generator
     bool                   m_useGather; // Boolean to use final gather
+    int                    m_passType; // Pass type to render
 
     shared_ptr<GuiWindow> m_windowRendering;
     shared_ptr<GuiWindow> m_windowScenes;
