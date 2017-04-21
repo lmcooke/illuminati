@@ -309,12 +309,17 @@ void App::buildPhotonMap()
     // we'll later be using them at different rates (and also with different scattering properties)
     m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world);
 
+
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
         printf("\rBuilding photon map ... %.2f%%", 100.f * i / NUM_PHOTONS);
         scatter();
     }
     printf("\rBuilding photon map ... done       \n");
+
+    // Create renderer
+    m_indRenderer = std::make_unique<IndRenderer>(&m_world);
+    m_indRenderer->setBeams(m_inDirBeams->getBeams());
 }
 
 void App::traceCallback(int x, int y)
@@ -322,6 +327,8 @@ void App::traceCallback(int x, int y)
 
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
     m_canvas->set(x, y, trace(ray, MAX_DEPTH));
+
+//    m_canvas->set(x, y, m_indRenderer->trace(ray, MAX_DEPTH));
 }
 
 static void dispatcher(void *arg)
@@ -374,7 +381,7 @@ void App::onInit()
     spec.stripMaterials = true;
 
     m_model = ArticulatedModel::create(spec);
-    m_model->pose(m_sceneGeometry, Point3(0.f, -0.5f, 0.f));
+    m_model->pose(m_sceneGeometry, Point3(0.f, 0.f, 0.f));
 
 
     // Set up GUI
@@ -471,8 +478,7 @@ void App::gpuProcess(RenderDevice *rd)
             if (notNull(surface) && view == App::SPLAT) {
                 surface->getCoordinateFrame(cframe);
                 rd->setObjectToWorldMatrix(cframe);
-                args.setUniform("MVP", rd->invertYMatrix() *
-                                        rd->projectionMatrix() *
+                args.setUniform("MVP", rd->projectionMatrix() *
                                         rd->cameraToWorldMatrix().inverse() * cframe);
                 surface->gpuGeom()->setShaderArgs(args);
 
@@ -489,18 +495,56 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
+        Array<Vector3>   cpuDiff1;
+        Array<Vector3>   cpuDiff2;
+        Array<int>   cpuIndex;
+        int i = 0;
+        cpuIndex.append(i);
+
         for (PhotonBeamette pb : direct_beams) {
             cpuVertex.append(pb.m_start);
             cpuVertex.append(pb.m_end);
+            cpuDiff1.append(pb.m_diff1);
+            cpuDiff1.append(pb.m_diff1);
+            cpuDiff2.append(pb.m_diff2);
+            cpuDiff2.append(pb.m_diff2);
+            cpuIndex.append(i);
+//            std::cout << pb << std::endl;
         }
+
+        cpuIndex.append(i);
+        rd->setObjectToWorldMatrix(CFrame());
+
+        //TODO hardcoded temp, figure out how to get camera from world
+        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
+        Projection cameraproj = Projection();
+        cameraproj.setFarPlaneZ(-200);
+        cameraproj.setFieldOfViewAngleDegrees(25);
+        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
+        cameraproj.setNearPlaneZ(-0.1);
+        cameraproj.setPixelOffset(Vector2(0,0));
+
+        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
+
+
         // Upload to GPU
-        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(sizeof(Vector3) * cpuVertex.size());
+        shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
+                    sizeof(Vector3) * cpuVertex.size() +
+                    sizeof(Vector3) * cpuDiff1.size() +
+                    sizeof(Vector3) * cpuDiff2.size() +
+                    sizeof(int) * cpuIndex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
+        AttributeArray gpuDiff1   = AttributeArray(cpuDiff1, vbuffer);
+        AttributeArray gpuDiff2   = AttributeArray(cpuDiff2, vbuffer);
+        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
-        rd->setObjectToWorldMatrix(CoordinateFrame());
+        args.setAttributeArray("Diff1", gpuDiff1);
+        args.setAttributeArray("Diff2", gpuDiff2);
+//        args.setIndexStream(gpuIndex);
+//        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
 
         args.setUniform("MVP", rd->invertYMatrix() *

@@ -3,6 +3,7 @@
 IndPhotonScatter::IndPhotonScatter(World * world)
     : PhotonScatter(world)
 {
+    preprocess();
 }
 
 IndPhotonScatter::~IndPhotonScatter()

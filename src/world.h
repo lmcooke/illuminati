@@ -9,6 +9,7 @@
 
 #include "photonmap.h"
 #include "photonbeamette.h"
+#include "utils.h"
 
 /** Represents a static scene with triangle mesh geometry, multiple lights, and
   * an initial camera specification
@@ -100,11 +101,14 @@ public:
 
     TriTree             m_tris;     // The scene's geometry in world space
 
+    bool camnull() { return !m_camera; }
+
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
     Array<Tri>          m_emit;     // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
+    Array<shared_ptr<Surface>> m_spline_geometry; // for previewing purposes
 
     Array<Array<Vector4>> m_splines; // collection of spline lights, each light represented by x, y, z, radius
 };
