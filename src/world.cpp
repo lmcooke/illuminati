@@ -1,7 +1,9 @@
 #include "app.h"
 #include "world.h"
 
-World::World() { }
+World::World()
+    : m_splines(Array<Array<Vector4>>())
+{ }
 
 World::~World() { }
 
@@ -40,6 +42,8 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
+            std::cout << "is cam null? " << camnull() << std::endl;
+//            std::cout << "is wcam null? " << !camera() << std::endl;
 
             printf("done\n");
         }
@@ -66,6 +70,30 @@ void World::load(const String &path )
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
                 m_geometry.append(posed[i]);
+
+            printf("done\n");
+        }
+        else if (type == "SplineLight")
+        {
+            const Table<String, Any> &props = e.table();
+            const ArticulatedModel::Specification& spec = models[props["model"]];
+            String filename = FileSystem::resolve(spec.filename);
+            printf("%s ... ", spec.filename.c_str());
+
+            shared_ptr<ArticulatedModel> spline = createSplineModel(filename);
+
+            // Pose it in world space
+            Vector3 pos = Vector3::zero();
+
+            if (props.containsKey("position"))
+                pos = Vector3(props["position"]);
+
+            Array<shared_ptr<Surface>> posed;
+            spline->pose(posed, CFrame(pos));
+
+            // Add it to the scene
+            for (int i = 0; i < posed.size(); ++i)
+                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
 
             printf("done\n");
         }
@@ -108,6 +136,7 @@ void World::unload()
     m_emit.clear();
     m_geometry.clear();
     m_tris.clear();
+    m_splines.clear();
 }
 
 shared_ptr<Camera> World::camera()
@@ -187,7 +216,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     emissivePoint(random, light, prob, area);
 
-    // Shoot the photon somewhere into the scene
+    // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
     float dist;
 
@@ -243,4 +272,131 @@ void World::renderWireframe(RenderDevice *dev)
     setMatrices(dev);
     Surface::renderWireframe(dev, m_geometry, Color3::white());
     dev->popState();
+}
+
+shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
+    const shared_ptr<ArticulatedModel>& model = ArticulatedModel::createEmpty("splineModel");
+
+    ArticulatedModel::Part*     part      = model->addPart("root");
+    ArticulatedModel::Geometry* geometry  = model->addGeometry("geom");
+    ArticulatedModel::Mesh*     mesh      = model->addMesh("mesh", part, geometry);
+
+    int npts = 0;
+    int slices = 8;
+    float arc = 2.0 * pif() / slices;
+
+    // Assign a material
+    mesh->material = UniversalMaterial::create(
+        PARSE_ANY(
+        UniversalMaterial::Specification {
+            lambertian = Color3(1.0, 0.7, 0.15);
+            };
+
+            glossy     = Color4(Color3(0.01), 0.2);
+        }));
+    mesh->twoSided = true;
+
+    Array<CPUVertexArray::Vertex>& vertexArray = geometry->cpuVertexArray.vertex;
+    Array<int>& indexArray = mesh->cpuIndexArray;
+
+    Array<Vector4> raw_spline = Array<Vector4>();
+
+    /* text parsing and vertex construction */
+
+    const std::string st = str.c_str();
+    std::ifstream infile(st);
+    std::string line;
+    Vector3 pt1 = Vector3(0, 0, 0);
+    Vector3 pt2 = Vector3(0, 0, 0);
+    Vector3 pt3 = Vector3(0, 0, 0);
+    float w2;
+    float w3;
+    bool comment;
+    while (std::getline(infile, line)) {
+        std::istringstream iss(line);
+        pt1 = pt2;
+        pt2 = pt3;
+        w2 = w3;
+        comment = iss.peek() == '#';
+        if (!comment) {
+            if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
+                throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+            }
+            raw_spline.append(Vector4(pt3[0], pt3[1], pt3[2], w3));
+        }
+        if (npts > 0) {
+            Vector3 diff;
+            if (npts == 1) { // first control point
+                diff = normalize(pt3 - pt2);
+            } else if (comment) { // last control point
+                diff = normalize(pt2 - pt1);
+            } else {
+                diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
+            }
+            CFrame yax = CoordinateFrame::fromYAxis(diff, pt2);
+            for (int a = 0; a < slices; a++) {
+                CPUVertexArray::Vertex& v = vertexArray.next();
+                Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
+                                                        pt2.y,
+                                                        pt2.z + w2 * sin(a * arc),
+                                                        1.0);
+                v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                v.normal  = Vector3::nan();
+                v.tangent = Vector4::nan();
+            }
+        }
+        npts++;
+    }
+    npts--;
+
+    assert(npts == raw_spline.size());
+
+    /* face construction */
+
+    float f[4] = {0,0,0,0};
+    for (int j = 0; j < npts - 1; j++) {
+        for (int i = 0; i < slices; i++) {
+            f[0] = j * slices + (i % slices);
+            f[3] = j * slices + ((i + 1) % slices);
+            f[1] = f[0] + slices;
+            f[2] = f[3] + slices;
+            debugAssert(f[4] < slices * npts);
+            indexArray.append(
+                f[0], f[1], f[2],
+                f[0], f[2], f[3]);
+        }
+    }
+
+
+    // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,
+    // normals and tangents automatically. We already ensured correct
+    // topology, so avoid the vertex merging optimization.
+    ArticulatedModel::CleanGeometrySettings geometrySettings;
+    geometrySettings.allowVertexMerging = false;
+    model->cleanGeometry(geometrySettings);
+
+    m_splines.append(raw_spline);
+
+    return model;
+}
+
+Array<PhotonBeamette> World::vizualizeSplines() {
+    Array<PhotonBeamette> beams = Array<PhotonBeamette>();
+    for (Array<Vector4> spline : m_splines) {
+        Vector4 prev = Vector4::nan();
+        for (Vector4 v : spline) {
+            if (prev.isFinite()) {
+                PhotonBeamette pb = PhotonBeamette();
+                pb.m_end = v.xyz();
+                pb.m_start = prev.xyz();
+                pb.m_dir1 = (pb.m_end - pb.m_start);
+                pb.m_dir2 = (pb.m_end - pb.m_start);
+                pb.m_diff1 = pb.m_start + Vector3(0.2, 0, 0.0);
+                pb.m_diff2 = pb.m_start - Vector3(0.0, 0, 0.2);
+                beams.append(pb);
+            }
+            prev = v;
+        }
+    }
+    return beams;
 }

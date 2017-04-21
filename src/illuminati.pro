@@ -24,8 +24,9 @@ SOURCES += app.cpp \
     photonbeamette.cpp \
     indphotonscatter.cpp \
     dirphotonscatter.cpp \
-    renderer.cpp \
-    main.cpp
+    main.cpp \
+    indrenderer.cpp \
+    utils.cpp
 
 HEADERS += app.h \
            world.h \
@@ -34,8 +35,9 @@ HEADERS += app.h \
     photonbeamette.h \
     indphotonscatter.h \
     dirphotonscatter.h \
-    renderer.h \
-    medium.h
+    medium.h \
+    indrenderer.h \
+    utils.h
 
 INCLUDEPATH += $${G3D_PATH}/build/include \
             += $${G3D_PATH}/tbb/include
@@ -72,4 +74,7 @@ QMAKE_CXXFLAGS_WARN_ON += -Waddress -Warray-bounds -Wc++0x-compat -Wchar-subscri
                           -Wsequence-point -Wsign-compare -Wstrict-aliasing -Wstrict-overflow=1 -Wswitch \
                           -Wtrigraphs -Wuninitialized -Wunused-label -Wunused-variable \
                           -Wvolatile-register-var -Wno-extra
+
+OTHER_FILES += \
+    data-files/beamsplat.vsh
 

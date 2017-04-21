@@ -2,7 +2,6 @@
 /* -*- c++ -*- */
 { 
     entities = { 
-        
         camera = Camera { 
             depthOfFieldSettings = DepthOfFieldSettings { 
                 enabled = false; 
@@ -60,9 +59,19 @@
             visualizationScale = 1; 
         }; 
         
+        cauldron = VisibleEntity { 
+            frame = Vector3(0, 0, 0 ); 
+            model = "cauldronModel"; 
+        }; 
+        
         cornellBox = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0, 0, -0.25); 
+            frame = CFrame::fromXYZYPRDegrees(0, 0, -0.25 ); 
             model = "cornellModel"; 
+        }; 
+        
+        floorLight = VisibleEntity { 
+            frame = CFrame::fromXYZYPRDegrees(0, -0.0422218, 0 ); 
+            model = "floorLight"; 
         }; 
         
         light1 = Light { 
@@ -125,12 +134,6 @@
             type = "SPOT"; 
         }; 
         
-        
-        cauldron = VisibleEntity { 
-            frame = Vector3(0, 0, 0 ); 
-            model = "cauldronModel"; 
-        }; 
-        
     }; 
     
     lightingEnvironment = LightingEnvironment { 
@@ -164,11 +167,25 @@
     }; 
     
     models = { 
+        cauldronModel = ArticulatedModel::Specification { 
+            filename = "../model/cracks.obj"; 
+            preprocess = { 
+                setMaterial(all(), Color3(1, 1, 1 ) ); 
+                transformGeometry(all(), Matrix4::scale(0.03, 0.03, 0.03 ) ) }; 
+            
+        }; 
         
         cornellModel = ArticulatedModel::Specification { 
             filename = "../model/CornellBox-Empty-CO.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
+            
+        }; 
+        
+        floorLight = ArticulatedModel::Specification { 
+            filename = "../model/floorLight.obj"; 
+            preprocess = { 
+                transformGeometry(all(), Matrix4::scale(0.02, 0.02, 0.02 ) ) }; 
             
         }; 
         
@@ -206,14 +223,6 @@
             filename = "../model/square.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(10, 10, 10 ) ) }; 
-            
-        }; 
-        
-        cauldronModel  = ArticulatedModel::Specification { 
-            filename = "../model/cracks.obj"; 
-            preprocess = { 
-                setMaterial(all(), Color3(1, 1, 1 ) ); 
-                transformGeometry(all(), Matrix4::scale(0.03, 0.03, 0.03) ) }; 
             
         }; 
         

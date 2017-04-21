@@ -9,6 +9,10 @@ public:
     IndPhotonScatter(World * world);
     ~IndPhotonScatter();
     void preprocess();
+    G3D::KDTree<PhotonBeamette> getBeams();
+
+private:
+    G3D::KDTree<PhotonBeamette> m_beams;
 };
 
 #endif // INDPHOTONSCATTER_H

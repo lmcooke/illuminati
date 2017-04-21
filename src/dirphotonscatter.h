@@ -10,9 +10,9 @@ public:
     DirPhotonScatter(World * world);
     ~DirPhotonScatter();
     void preprocess();
-    std::vector<PhotonBeamette> getBeams();
+    Array<PhotonBeamette> getBeams();
 private:
-    std::vector<PhotonBeamette> m_beams;
+    Array<PhotonBeamette> m_beams;
 };
 
 #endif // DIRPHOTONSCATTER_H
