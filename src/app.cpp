@@ -452,7 +452,8 @@ void App::gpuProcess(RenderDevice *rd)
 
     rd->pushState(m_dirFBO); {
 
-        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
+//        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
+//        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         rd->setColorClearValue(Color3::black());
         rd->clear();
