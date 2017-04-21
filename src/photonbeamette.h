@@ -10,7 +10,9 @@ public:
     Vector3 m_start;
     Vector3 m_end;
     Vector3 m_diff1; //TODO needs position and direction for differentials?
+    Vector3 m_dir1;
     Vector3 m_diff2;
+    Vector3 m_dir2;
     Power3 m_power;
 };
 
