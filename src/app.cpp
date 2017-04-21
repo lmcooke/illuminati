@@ -387,6 +387,7 @@ void App::onInit()
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
+    developerWindow->setResizable(true);
 }
 
 void App::onRender()
