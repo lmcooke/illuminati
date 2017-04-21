@@ -105,3 +105,16 @@ By Nellie Robinson, Emily Reif, Luci Cooke, and Kenji Endo
     `git branch` // Make sure you're on master. Run `git checkout master` if you aren't.
     
     `git push`
+    
+---
+
+### .gitignore
+After changes have been made to the gitignore (additions or deletions), you may need to flush cached git files to kick the gitignore into gear.
+
+First, commit any changes you've made, update local master and merge local master into personal branch.
+
+  'git rm -r --cached . // removes cached files'
+  'git add . // adds everything back'
+  'git commit -m \"fixed untracked files\"'
+  
+Then, merge local into master, and push as normal.
