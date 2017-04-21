@@ -20,9 +20,10 @@ App::App(const GApp::Settings &settings)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
-      m_useGather(false)
+      m_useGather(false),
+      m_passType(0)
 {
-    m_scenePath = dataDir + "/scene";
+    m_scenePath = FileSystem::currentDirectory() + "/scene";
 
     num_passes=5000;
 
@@ -35,9 +36,6 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dofFocus=-4.8f;
     m_PSettings.dofLens=0.2f;
     m_PSettings.dofSamples=5;
-
-//    m_ptsettings.attenuation=true;
-
 
     m_PSettings.attenuation=0.0;
     m_PSettings.scattering=0.0;
@@ -303,7 +301,13 @@ Radiance3 App::trace(const Ray &ray, int depth)
 
 void App::buildPhotonMap()
 {
+    // Make the diret photon beams, to be splatted and rendered directly.
     m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world);
+
+    // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
+    // Note that it's redunant to here calculate both of these lighting maps, but
+    // we'll later be using them at different rates (and also with different scattering properties)
+    m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world);
 
     for (int i = 0; i < NUM_PHOTONS; ++i)
     {
@@ -315,13 +319,13 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
+
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
     m_canvas->set(x, y, trace(ray, MAX_DEPTH));
 }
 
 static void dispatcher(void *arg)
 {
-
 
     App *self = (App*)arg;
 
@@ -332,10 +336,7 @@ static void dispatcher(void *arg)
 
     self->stage = App::SCATTERING;
 
-
     self->buildPhotonMap();
-
-
 
     printf("Rendering ...");
     fflush(stdout);
@@ -380,15 +381,12 @@ void App::onInit()
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
+//    m_scenePath = m_defaultScene;
+
     makeGUI();
-
-
-
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
-
-    m_scenePath = m_defaultScene;
 }
 
 void App::onRender()
@@ -396,15 +394,14 @@ void App::onRender()
 
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
-
         continueRender = true;
 
         m_photons.clear();
 
+        String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
         m_world.unload();
-        g_scenePath = m_scenePath.c_str();
-        std::cout << "Loading default scene path " + m_scenePath << std::endl;
-        m_world.load(g_scenePath);
+        m_world.load(fullpath);
+        std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
@@ -428,7 +425,7 @@ void App::renderBeams(RenderDevice *dev, World *world)
     SlowMesh mesh(PrimitiveType::LINES);
     mesh.setPointSize(1);
 
-    std::vector<PhotonBeamette> beams = m_dirBeams->getBeams();
+    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
     for (int i=0; i<beams.size(); i++) {
         PhotonBeamette beam = beams[i];
         mesh.setColor(beam.m_power / beam.m_power.max());
@@ -439,20 +436,15 @@ void App::renderBeams(RenderDevice *dev, World *world)
     dev->popState();
 }
 
-
-
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
 
     gpuProcess(rd);
-//    if (m_dirBeams)
-//    {
-//        rd->setColorClearValue(Color4(0.0, 0.0, 0.0, 0.0));
-//        rd->clear();
-//        renderBeams(rd, &m_world);
-//    }
+    if (m_dirBeams && view == App::PHOTONMAP)
+    {
+        renderBeams(rd, &m_world);
+    }
 }
-
 
 void App::gpuProcess(RenderDevice *rd)
 {
@@ -475,7 +467,7 @@ void App::gpuProcess(RenderDevice *rd)
             const shared_ptr<UniversalSurface>& surface =
                     dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
 
-            if (notNull(surface)) {
+            if (notNull(surface) && view == App::SPLAT) {
                 surface->getCoordinateFrame(cframe);
                 rd->setObjectToWorldMatrix(cframe);
                 args.setUniform("MVP", rd->projectionMatrix() *
@@ -695,14 +687,24 @@ void App::makeGUI()
     // SCENE
     GuiPane* scenesPane = paneMain->addPane("Scenes", GuiTheme::ORNATE_PANE_STYLE);
 
+    // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = paneMain->addLabel("");
-//    scenesPane->addTextBox("Directory:", &m_dirName);
-//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-//    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadDefaultScene);
+    scenesPane->addLabel("Scene Directory: ");
+    m_scenePathLabel = scenesPane->addLabel("");
+    scenesPane->addTextBox("Directory:", &m_dirName);
+    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+
+    scenesPane->addLabel("Scene Folders");
+    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
+
+    scenesPane->addLabel("View");
+    scenesPane->addRadioButton("Default", App::DEFAULT, &view);
+    scenesPane->addRadioButton("Photon Beams", App::PHOTONMAP, &view);
+    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
+
+    m_warningLabel = scenesPane->addLabel("");
+    updateScenePathLabel();
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -730,11 +732,12 @@ void App::makeGUI()
 //    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
-
     windowMain->pack();
     windowMain->setVisible(true);
 
     addWidget(windowMain);
+
+    loadSceneDirectory(m_scenePath);
 
     std::cout <<"done making GUI" << std::endl;
 }
