@@ -456,37 +456,37 @@ void App::gpuProcess(RenderDevice *rd)
 {
     Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
 
-    rd->pushState(m_dirFBO); {
+//    rd->pushState(m_dirFBO); {
 
-        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
+//        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 
-        rd->setColorClearValue(Color3::black());
-        rd->clear();
-        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+//        rd->setColorClearValue(Color3::black());
+//        rd->clear();
+//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
-        Args args;
-        // TODO : set args uniforms
+//        Args args;
+//        // TODO : set args uniforms
 
-        CFrame cframe;
+//        CFrame cframe;
 
-        for (int i = 0; i < m_sceneGeometry.size(); i++) {
-            const shared_ptr<UniversalSurface>& surface =
-                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+//        for (int i = 0; i < m_sceneGeometry.size(); i++) {
+//            const shared_ptr<UniversalSurface>& surface =
+//                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
 
-            if (notNull(surface) && view == App::SPLAT) {
-                surface->getCoordinateFrame(cframe);
-                rd->setObjectToWorldMatrix(cframe);
-                args.setUniform("MVP", rd->projectionMatrix() *
-                                        rd->cameraToWorldMatrix().inverse() * cframe);
-                surface->gpuGeom()->setShaderArgs(args);
+//            if (notNull(surface) && view == App::SPLAT) {
+//                surface->getCoordinateFrame(cframe);
+//                rd->setObjectToWorldMatrix(cframe);
+//                args.setUniform("MVP", rd->projectionMatrix() *
+//                                        rd->cameraToWorldMatrix().inverse() * cframe);
+//                surface->gpuGeom()->setShaderArgs(args);
 
-                LAUNCH_SHADER("splat.*", args);
+//                LAUNCH_SHADER("splat.*", args);
 
-            }
+//            }
 
-        }
+//        }
 
-    } rd->popState();
+//    } rd->popState();
 
 
     View v = this->view;
