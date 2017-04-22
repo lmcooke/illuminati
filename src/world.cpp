@@ -206,7 +206,7 @@ bool World::emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf)
     return true;
 }
 
-bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf)
+bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons)
 {
 
     // Select the point of emission
@@ -225,11 +225,11 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     if (!surf) return false;
 
-    // Store the beam
+    // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
     beam.m_power = light->emittedRadiance(dir)
-                 / NUM_PHOTONS
+                 / totalPhotons
                  * m_emit.size();
     return true;
 }

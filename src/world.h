@@ -59,7 +59,7 @@ public:
     bool emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf);
 
 
-    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf);
+    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons);
 
     /** Finds the first point a ray intersects with this scene
       *

@@ -4,12 +4,6 @@
 #include "world.h"
 #include "photonscatter.h"
 
-#define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
-#define MAX_DEPTH       4           /* Recursve depth of the raytracer */
-#define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
-#define EPSILON 1e-4
-#define GATHER_SAMPLES  16          /*Number of ray samples for final gather*/
-
 /**
  * @brief The renderer class. Takes in a BBH type and a World type.
  */
@@ -17,7 +11,7 @@
 class IndRenderer
 {
 public:
-    IndRenderer(World *world);
+    IndRenderer(World *world, PhotonSettings settings);
     ~IndRenderer();
 
     /** Computes the direct illumination approaching the given surface point
@@ -52,12 +46,12 @@ public:
       /**
       Sets the photon beam array that will be used to render the scene.
       */
-    void setBeams(G3D::KDTree<PhotonBeamette> beams);
+    void setBeams(std::shared_ptr<G3D::KDTree<PhotonBeamette>> beams);
 private:
     World*  m_world;
     Random  m_random;   // Random number generator
-    bool    m_useGather; // Boolean to use final gather
-    G3D::KDTree<PhotonBeamette> m_beams;
+    PhotonSettings m_PSettings; // Settings
+    std::shared_ptr<G3D::KDTree<PhotonBeamette>> m_beams;
 
 
 };

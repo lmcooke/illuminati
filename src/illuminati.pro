@@ -37,7 +37,8 @@ HEADERS += app.h \
     dirphotonscatter.h \
     medium.h \
     indrenderer.h \
-    utils.h
+    utils.h \
+    photonsettings.h
 
 INCLUDEPATH += $${G3D_PATH}/build/include \
             += $${G3D_PATH}/tbb/include
