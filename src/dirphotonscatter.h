@@ -7,7 +7,7 @@ class DirPhotonScatter
     : public PhotonScatter
 {
 public:
-    DirPhotonScatter(World * world);
+    DirPhotonScatter(World * world, PhotonSettings settings);
     ~DirPhotonScatter();
     void preprocess();
     Array<PhotonBeamette> getBeams();

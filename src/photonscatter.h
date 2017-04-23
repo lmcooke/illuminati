@@ -3,15 +3,12 @@
 #include <G3D/G3DAll.h>
 #include "photonbeamette.h"
 #include "world.h"
-
-#define MAX_DEPTH 4
-#define EPSILON 1e-4
-#define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
+#include "photonsettings.h"
 
 class PhotonScatter
 {
 public:
-    PhotonScatter(World * world);
+    PhotonScatter(World * world, PhotonSettings settings);
     ~PhotonScatter();
 
 protected:
@@ -27,7 +24,7 @@ protected:
     Array<PhotonBeamette> shootRayRecursive(PhotonBeamette emitBeam, Array<PhotonBeamette> &beamettes, int bounces);
     World* m_world;
     Random m_random;   // Random number generator
-
+    PhotonSettings m_PSettings;
 };
 
 #endif // PHOTONSCATTER_H
