@@ -42,8 +42,11 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
-            std::cout << "is cam null? " << camnull() << std::endl;
+//            std::cout << "LOAD is cam null? " << camnull() << std::endl;
 //            std::cout << "is wcam null? " << !camera() << std::endl;
+
+            std::cout << "PROJECTION ON LOAD: " << m_camera->projection().fieldOfViewAngle() << std::endl;
+            std::cout << "FRAME ON LOAD: " << m_camera->frame().isIdentity() << std::endl;
 
             printf("done\n");
         }

@@ -14,8 +14,6 @@ String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/sc
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
-//    pass(0)
-//    m_renderer(new PathTracer)
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
@@ -75,8 +73,6 @@ void App::traceCallback(int x, int y)
 {
 
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-//    m_canvas->set(x, y, trace(ray, MAX_DEPTH));
-
     m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepth));
 }
 
@@ -88,7 +84,6 @@ static void dispatcher(void *arg)
 
     int w = self->window()->width(),
         h = self->window()->height();
-
 
     self->stage = App::SCATTERING;
 
@@ -169,6 +164,7 @@ void App::onInit()
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
+    developerWindow->setResizable(true);
 }
 
 void App::onRender()
@@ -243,7 +239,22 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-    gpuProcess(rd);
+    if (!m_world.camnull()){
+        gpuProcess(rd);
+    } else {
+        swapBuffers();
+        rd->clear();
+
+        FilmSettings filmSettings = activeCamera()->filmSettings();
+        filmSettings.setBloomStrength(0.0);
+        filmSettings.setGamma(1.0); // default is 2.0
+
+        m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                                settings().hdrFramebuffer.colorGuardBandThickness.x +
+                                settings().hdrFramebuffer.depthGuardBandThickness.x,
+                                settings().hdrFramebuffer.depthGuardBandThickness.x);
+    }
+
     if (m_dirBeams && m_inDirBeams && view == App::PHOTONMAP)
     {
         renderBeams(rd, &m_world);
@@ -304,26 +315,27 @@ void App::gpuProcess(RenderDevice *rd)
             cpuDiff2.append(pb.m_diff2);
             cpuDiff2.append(pb.m_diff2);
             cpuIndex.append(i);
-//            std::cout << pb << std::endl;
         }
 
         cpuIndex.append(i);
         rd->setObjectToWorldMatrix(CFrame());
 
-        //TODO hardcoded temp, figure out how to get camera from world
-        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-        Projection cameraproj = Projection();
-        cameraproj.setFarPlaneZ(-200);
-        cameraproj.setFieldOfViewAngleDegrees(25);
-        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
-        cameraproj.setNearPlaneZ(-0.1);
-        cameraproj.setPixelOffset(Vector2(0,0));
 
-        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
+        //TODO hardcoded temp, figure out how to get camera from world
+//        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
+//        Projection cameraproj = Projection();
+//        cameraproj.setFarPlaneZ(-200);
+//        cameraproj.setFieldOfViewAngleDegrees(25);
+//        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
+//        cameraproj.setNearPlaneZ(-0.1);
+//        cameraproj.setPixelOffset(Vector2(0,0));
+
+//        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
 
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -393,9 +405,8 @@ void App::gpuProcess(RenderDevice *rd)
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
+
 }
-
-
 
 FilmSettings App::getFilmSettings()
 {
