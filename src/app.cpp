@@ -259,46 +259,9 @@ void App::gpuProcess(RenderDevice *rd)
 
     // flipFlop FBOs and textures
     bool isEvenPass = m_passes % 2 == 0;
-
     auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
-    auto prevTotalDirLight = isEvenPass ? m_totalDirLight1 : m_totalDirLight2;
-    auto prevCurrentComposite = isEvenPass ? m_currentComposite1 : m_currentComposite2;
-
     auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
-    auto nextTotalDirLight = isEvenPass ? m_totalDirLight2 : m_totalDirLight1;
-    auto nextCurrentComposite = isEvenPass ? m_currentComposite2 : m_currentComposite1;
 
-//    rd->pushState(m_dirFBO); {
-
-//        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
-
-//        rd->setColorClearValue(Color3::black());
-//        rd->clear();
-//        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
-
-//        Args args;
-//        // TODO : set args uniforms
-
-//        CFrame cframe;
-
-//        for (int i = 0; i < m_sceneGeometry.size(); i++) {
-//            const shared_ptr<UniversalSurface>& surface =
-//                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
-
-//            if (notNull(surface) && view == App::SPLAT) {
-//                surface->getCoordinateFrame(cframe);
-//                rd->setObjectToWorldMatrix(cframe);
-//                args.setUniform("MVP", rd->projectionMatrix() *
-//                                        rd->cameraToWorldMatrix().inverse() * cframe);
-//                surface->gpuGeom()->setShaderArgs(args);
-
-//                LAUNCH_SHADER("splat.*", args);
-
-//            }
-
-//        }
-
-//    } rd->popState();
 
     View v = this->view;
     if (v == DEFAULT) {
@@ -313,6 +276,9 @@ void App::gpuProcess(RenderDevice *rd)
         // mid-rendering
     }
 
+    // turns on and off beam movement so we can visualize GPU averaging
+    bool testGPUprogression = false;
+
     // beam splatting
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
@@ -324,8 +290,15 @@ void App::gpuProcess(RenderDevice *rd)
         cpuIndex.append(i);
 
         for (PhotonBeamette pb : direct_beams) {
-            cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
-            cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
+
+            if (testGPUprogression) {
+                cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
+                cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
+            } else {
+                cpuVertex.append(pb.m_start);
+                cpuVertex.append(pb.m_end);
+            }
+
             cpuDiff1.append(pb.m_diff1);
             cpuDiff1.append(pb.m_diff1);
             cpuDiff2.append(pb.m_diff2);
@@ -368,8 +341,6 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Position", gpuVertex);
         args.setAttributeArray("Diff1", gpuDiff1);
         args.setAttributeArray("Diff2", gpuDiff2);
-//        std::cout << "m_count : " << m_count << std::endl;
-//        args.setAttributeArray("timeCount", m_count);
 //        args.setIndexStream(gpuIndex);
 //        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
@@ -415,6 +386,8 @@ void App::gpuProcess(RenderDevice *rd)
     FilmSettings filmSettings = activeCamera()->filmSettings();
     filmSettings.setBloomStrength(0.0);
     filmSettings.setGamma(1.0); // default is 2.0
+    filmSettings.setVignetteTopStrength(0);
+    filmSettings.setVignetteBottomStrength(0);
 
     m_film->exposeAndRender(rd, filmSettings, nextFBO->texture(1),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +

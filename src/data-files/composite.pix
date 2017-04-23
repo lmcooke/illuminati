@@ -23,23 +23,9 @@ void main()
 	vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
 	vec4 directColor = texture(directSample, texCoords, 0.0);
 
-	// result = indirectColor + directColor;
 
-	// sample from previous texture
-	vec4 prevDirectLightContrib = ((passNum - 1)/passNum) * prevDirectLightColor;
-	vec4 currentDirectLightContrib = (1/passNum) * directColor;
-	// cumulativeDirectLight = vec4(prevDirectLightContrib.x + currentDirectLightContrib.x,
-	// 							prevDirectLightContrib.y + currentDirectLightContrib.y,
-	// 							prevDirectLightContrib.z + currentDirectLightContrib.z,
-	// 							prevDirectLightContrib.w + currentDirectLightContrib.w);
-
-
-
-	// cumulativeDirectLight = vec4(prevDirectLightColor.x + .5, 0.0, 0.0,0.0);
-	cumulativeDirectLight = directColor;
-	
-	
-
+	float contribution = 1.0/(passNum + 1.0);
+	cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
 
 	result = indirectColor + cumulativeDirectLight;
 }
