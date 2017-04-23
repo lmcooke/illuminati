@@ -7,7 +7,6 @@
 
 #include <G3D/G3DAll.h>
 
-#include "photonmap.h"
 #include "photonbeamette.h"
 #include "utils.h"
 
@@ -50,14 +49,12 @@ public:
       * first bounce is done for you). If it returns false, the photon exited
       * the scene.
       *
-      * @param random   A random number generator
-      * @param photon   Receives the photon emitted
-      * @param surf     The surface the photon hit on its first bounce
-      *
-      * @return         Whether or not there is a photon to continue scattering
+      * @param random       A random number generator
+      * @param photon       Receives the photon emitted
+      * @param surf         The surface the photon hit on its first bounce
+      * @param totalPhotons The total number of photons (for weighting)
+      * @return             Whether or not there is a photon to continue scattering
       */
-    bool emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf);
-
 
     bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons);
 

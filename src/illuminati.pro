@@ -19,7 +19,6 @@ message("G3D Path : " $${G3D_PATH})
 
 SOURCES += app.cpp \
            world.cpp \
-           photonmap.cpp \
     photonscatter.cpp \
     photonbeamette.cpp \
     indphotonscatter.cpp \
@@ -30,7 +29,6 @@ SOURCES += app.cpp \
 
 HEADERS += app.h \
            world.h \
-           photonmap.h \
     photonscatter.h \
     photonbeamette.h \
     indphotonscatter.h \
