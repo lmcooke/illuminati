@@ -42,8 +42,11 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
-            std::cout << "is cam null? " << camnull() << std::endl;
+//            std::cout << "LOAD is cam null? " << camnull() << std::endl;
 //            std::cout << "is wcam null? " << !camera() << std::endl;
+
+            std::cout << "PROJECTION ON LOAD: " << m_camera->projection().fieldOfViewAngle() << std::endl;
+            std::cout << "FRAME ON LOAD: " << m_camera->frame().isIdentity() << std::endl;
 
             printf("done\n");
         }
@@ -179,34 +182,7 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
     area = tri.area();
 }
 
-bool World::emit(Random &random, Photon &photon, shared_ptr<Surfel> &surf)
-{
-    // Select the point of emission
-    shared_ptr<Surfel> light;
-    float prob;
-    float area;
-    emissivePoint(random, light, prob, area);
-
-    // Shoot the photon somewhere into the scene
-    Vector3 dir;
-    float dist;
-
-    dir = Vector3::cosHemiRandom(light->shadingNormal, random);
-    intersect(Ray(light->position + light->geometricNormal * 1e-4, dir), dist, surf);
-
-    if (!surf) return false;
-
-    // Store the photon
-    photon.position = surf->position;
-    photon.wi = -dir;
-    photon.power = light->emittedRadiance(dir)
-                 / NUM_PHOTONS
-                 * m_emit.size();
-
-    return true;
-}
-
-bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf)
+bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons)
 {
 
     // Select the point of emission
@@ -225,11 +201,11 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     if (!surf) return false;
 
-    // Store the beam
+    // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
     beam.m_power = light->emittedRadiance(dir)
-                 / NUM_PHOTONS
+                 / totalPhotons
                  * m_emit.size();
     return true;
 }

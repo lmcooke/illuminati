@@ -1,14 +1,14 @@
 #include "photonscatter.h"
 
-PhotonScatter::PhotonScatter(World * world):
-    m_world(world)
+PhotonScatter::PhotonScatter(World * world, PhotonSettings settings):
+    m_world(world),
+    m_PSettings(settings)
 {
 }
 
 PhotonScatter::~PhotonScatter()
 {
 }
-
 
 Array<PhotonBeamette> PhotonScatter::shootRay()
 {
@@ -18,16 +18,18 @@ Array<PhotonBeamette> PhotonScatter::shootRay()
     // Emit a photon.
     PhotonBeamette beam;
     shared_ptr<Surfel> surfel;
-    m_world->emitBeam(m_random, beam, surfel);
-    // Bounce the beam in the scene and insert the bounced beam into the map.
-    shootRayRecursive(beam, beams, 0);
+    if (m_world->emitBeam(m_random, beam, surfel, m_PSettings.numBeamettes))
+    {
+        // Bounce the beam in the scene and insert the bounced beam into the map.
+        shootRayRecursive(beam, beams, 0);
+    }
     return beams;
 }
 
 Array<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, Array<PhotonBeamette> &beamettes, int bounces)
 {
     // Terminate recursion
-    if (bounces > MAX_DEPTH) {
+    if (bounces > m_PSettings.maxDepth) {
         return beamettes;
     }
 
@@ -40,15 +42,17 @@ Array<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, 
 
     // If intersection
     if (surfel){
+        // Store the photon!
+        if(bounces > 0)
+        {
+            PhotonBeamette beam = PhotonBeamette();
+            beam.m_start =  emitBeam.m_start;
+            beam.m_end = surfel->position + m_PSettings.epsilon * surfel->shadingNormal;
+            beam.m_power = emitBeam.m_power;
+            beamettes.push_back(beam);
+        }
 
-        // Don't store direct light contribution
-        PhotonBeamette beam = PhotonBeamette();
-        beam.m_start =  emitBeam.m_start;
-        beam.m_end = surfel->position + EPSILON * surfel->shadingNormal;
-        beam.m_power = emitBeam.m_power;
-        beamettes.push_back(beam);
-
-        // recursive rays
+        // Recursive rays
         Vector3 wIn = -ray.direction();
         Vector3 wOut;
         float probabilityHint = 1.0;
@@ -58,14 +62,13 @@ Array<PhotonBeamette> PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, 
 
         // Russian roulette termination
         float rand = m_random.uniform();
-        float prob = (probability.r + probability.g + probability.b) / 3.f;
+        float prob = probability.average();
         prob = weight.average();
         if (rand < prob){
             Vector3 surfelPosOffset = Utils::bump(surfel->position, wOut, surfel->shadingNormal);
-            Ray offsetRay = Ray(surfelPosOffset, wOut);
             PhotonBeamette beam2 = PhotonBeamette();
-            beam2.m_start = surfel->position;
-            beam2.m_end = emitBeam.m_start + offsetRay.direction();
+            beam2.m_start = surfelPosOffset;
+            beam2.m_end = beam2.m_start + wOut;
             beam2.m_power = emitBeam.m_power * weight * probability/prob;
             shootRayRecursive(beam2, beamettes, bounces + 1);
         }

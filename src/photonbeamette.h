@@ -21,13 +21,20 @@ public:
 /** Define BoundsTrait for the photon beamettes so we can use them in the KDTree */
 template<> struct BoundsTrait<class PhotonBeamette> {
     static void getBounds(const PhotonBeamette b, G3D::AABox& out) {
-        b.getBounds(out);
+        G3D::Box box = G3D::Box(b.m_start, b.m_end);
+        box.getBounds(out);
     }
 };
 /** Define HashTrait for the photon beamettes so we can use them in the KDTree */
 template<> struct HashTrait<class PhotonBeamette> {
     static size_t hashCode(const PhotonBeamette b) {
-        return (b.m_start + b.m_end).average();
+        return b.m_end.x + b.m_end.y*2 + b.m_end.x;
+    }
+};
+/** Define equals so that it works too?*/
+template<> struct EqualsTrait<class PhotonBeamette> {
+    static bool equals(const PhotonBeamette b, const PhotonBeamette b1) {
+            return (b.m_start == b1.m_start) && (b.m_end == b1.m_end);
     }
 };
 

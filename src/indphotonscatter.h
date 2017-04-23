@@ -6,13 +6,13 @@ class IndPhotonScatter
     :public PhotonScatter
 {
 public:
-    IndPhotonScatter(World * world);
+    IndPhotonScatter(World * world, PhotonSettings settings);
     ~IndPhotonScatter();
     void preprocess();
-    G3D::KDTree<PhotonBeamette> getBeams();
+    std::shared_ptr<G3D::KDTree<PhotonBeamette>> getBeams();
 
 private:
-    G3D::KDTree<PhotonBeamette> m_beams;
+    std::shared_ptr<G3D::KDTree<PhotonBeamette>> m_beams;
 };
 
 #endif // INDPHOTONSCATTER_H
