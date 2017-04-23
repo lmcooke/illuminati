@@ -4,54 +4,16 @@
 #include <ctime>
 #include <G3D/G3DAll.h>
 
-#include "photonmap.h"
 #include "world.h"
 #include "photonscatter.h"
 #include "indphotonscatter.h"
 #include "dirphotonscatter.h"
 #include "indrenderer.h"
-#include "app.h"
-
-#define NUM_BEAMETTES 500 /* How many beams to scatter into the scene */
+#include "photonsettings.h"
 
 //enum RenderMethod { RAY, PATH, PHOTON };
 
 #include "dirphotonscatter.h"
-
-#define NUM_PHOTONS     500         /* How many photons to gather */
-#define GATHER_RADIUS   0.1         /* Max distance between intersection point and photons in map */
-#define MAX_DEPTH       4           /* Recursve depth of the raytracer */
-#define DIRECT_SAMPLES  64         /* Number of samples to take of direct light sources */
-#define EPSILON 1e-4
-#define GATHER_SAMPLES  16          /*Number of ray samples for final gather*/
-
-// you can extend this if you want
-class PhotonSettings
-{
-public:
-
-    // all light contributions assumed to be area lights
-    bool useDirectDiffuse;
-    bool useDirectSpecular;
-    bool useIndirect;
-    bool useEmitted;
-//    bool useSkyMap;
-
-    int superSamples; // for say, stratified sampling
-    float attenuation; // refracted path absorption through non-vacuum spaces
-    float scattering;
-    float radiusScalingFactor;
-    float noiseBiasRatio;
-    bool useMedium; // enable volumetric mediums
-
-    bool lightEnabled; // TODO: assume one light source for now
-
-    bool dofEnabled;
-    float dofFocus;
-    float dofLens;
-    int dofSamples;
-
-};
 
 /** The entry point and main window manager */
 class App : public GApp
@@ -62,53 +24,6 @@ public:
 
     App(const GApp::Settings &settings = GApp::Settings());
     virtual ~App();
-
-    /**
-      *
-      * Shoot a single photon from a single light source, and add each of its
-      * bounces to the photon map
-      */
-    void scatter();
-
-    /**
-     * Traces a photon into the scene
-     */
-    void photonTrace(const Photon& emitPhoton, Array<Photon>& incidentPhotons);
-
-    /**
-     * Helper for photon trace recursion
-     */
-    void photonTraceHelper(const Photon& emitPhoton, Array<Photon>& incidentPhotons, int bounces);
-
-    /** Gathers emissive, direct, impulse and diffuse (photon map) illumination
-      * from the point under the given ray
-      */
-    Radiance3 trace(const Ray &ray, int depth);
-
-    /** Computes the direct illumination approaching the given surface point
-      *
-      * @param surf The surface point receiving illumination
-      * @param wo   Points towards the viewer viewing the surface point
-      */
-    Radiance3 direct(shared_ptr<Surfel> surf, Vector3 wo);
-
-    /** Computes the indirect illumination approaching the given surface point
-      * via the impulse directions of the surface's BSDF
-      *
-      * @param surf The surface point receiving illumination
-      * @param wo   Points towards the viewer viewing the surface point
-      */
-    Radiance3 impulse(shared_ptr<Surfel> surf, Vector3 wo, int depth);
-
-    /**
-      *
-      * Computes the indirect illumination approaching the given surface point
-      * via diffuse inter-object reflection, using the photon map.
-      *
-      * @param surf The surface point receiving illumination
-      * @param wo   Points towards the viewer viewing the surface point
-      */
-    Radiance3 diffuse(shared_ptr<Surfel> surf, Vector3 wo, int depth);
 
     /** Calls the shoot() callback until the minumum photon count is met */
     void buildPhotonMap();
@@ -161,6 +76,12 @@ private:
 
     void gpuProcess(RenderDevice *rd);
 
+    /** Makes the verts to visualize the indirection lighting */
+    void makeLinesIndirBeams(SlowMesh &mesh);
+
+    /** Makes the verts to visualize the direct lighting */
+    void makeLinesDirBeams(SlowMesh &mesh);
+
     // TODO : temp
     shared_ptr<ArticulatedModel> m_model;
     Array<shared_ptr<Surface>> m_sceneGeometry;
@@ -172,9 +93,7 @@ private:
     PhotonSettings         m_PSettings;
 //    shared_ptr<PathTracer> m_renderer;
 
-    PhotonMap              m_photons;  // Contains photons organized spatially
     Random                 m_random;   // Random number generator
-    bool                   m_useGather; // Boolean to use final gather
     int                    m_passType; // Pass type to render
 
     shared_ptr<GuiWindow> m_windowRendering;
