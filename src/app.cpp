@@ -15,8 +15,6 @@ String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/sc
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
-//    pass(0)
-//    m_renderer(new PathTracer)
       stage(App::IDLE),
       continueRender(true),
       view(App::DEFAULT),
@@ -461,6 +459,7 @@ void App::gpuProcess(RenderDevice *rd)
 
 //        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 //        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+//        std::cout << "GPUPROCESS is cam null? " << m_world.camnull() << std::endl;
 
         rd->setColorClearValue(Color3::black());
         rd->clear();
@@ -485,11 +484,9 @@ void App::gpuProcess(RenderDevice *rd)
                 LAUNCH_SHADER("splat.*", args);
 
             }
-
         }
 
     } rd->popState();
-
 
     // beam splatting
     rd->pushState(m_dirFBO); {
@@ -522,7 +519,7 @@ void App::gpuProcess(RenderDevice *rd)
         cameraproj.setFieldOfViewAngleDegrees(25);
         cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
         cameraproj.setNearPlaneZ(-0.1);
-        cameraproj.setPixelOffset(Vector2(0,0));
+        cameraproj.setPixelOffset(Vector2(0,0)); 
 
         rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
 
