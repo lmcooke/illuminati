@@ -45,6 +45,9 @@ void World::load(const String &path )
 //            std::cout << "LOAD is cam null? " << camnull() << std::endl;
 //            std::cout << "is wcam null? " << !camera() << std::endl;
 
+            std::cout << "PROJECTION ON LOAD: " << m_camera->projection().fieldOfViewAngle() << std::endl;
+            std::cout << "FRAME ON LOAD: " << m_camera->frame().isIdentity() << std::endl;
+
             printf("done\n");
         }
         else if (type == "Light")

@@ -73,8 +73,6 @@ void App::traceCallback(int x, int y)
 {
 
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-//    m_canvas->set(x, y, trace(ray, MAX_DEPTH));
-
     m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepth));
 }
 
@@ -86,7 +84,6 @@ static void dispatcher(void *arg)
 
     int w = self->window()->width(),
         h = self->window()->height();
-
 
     self->stage = App::SCATTERING;
 
@@ -216,7 +213,22 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-    gpuProcess(rd);
+    if (!m_world.camnull()){
+        gpuProcess(rd);
+    }
+
+    swapBuffers();
+    rd->clear();
+
+    FilmSettings filmSettings = activeCamera()->filmSettings();
+    filmSettings.setBloomStrength(0.0);
+    filmSettings.setGamma(1.0); // default is 2.0
+
+    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                            settings().hdrFramebuffer.colorGuardBandThickness.x +
+                            settings().hdrFramebuffer.depthGuardBandThickness.x,
+                            settings().hdrFramebuffer.depthGuardBandThickness.x);
+
     if (m_dirBeams && m_inDirBeams && view == App::PHOTONMAP)
     {
         renderBeams(rd, &m_world);
@@ -231,7 +243,6 @@ void App::gpuProcess(RenderDevice *rd)
 
 //        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
 //        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
-//        std::cout << "GPUPROCESS is cam null? " << m_world.camnull() << std::endl;
 
         rd->setColorClearValue(Color3::black());
         rd->clear();
@@ -276,23 +287,12 @@ void App::gpuProcess(RenderDevice *rd)
             cpuDiff2.append(pb.m_diff2);
             cpuDiff2.append(pb.m_diff2);
             cpuIndex.append(i);
-//            std::cout << pb << std::endl;
         }
 
         cpuIndex.append(i);
         rd->setObjectToWorldMatrix(CFrame());
 
-        //TODO hardcoded temp, figure out how to get camera from world
-        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-        Projection cameraproj = Projection();
-        cameraproj.setFarPlaneZ(-200);
-        cameraproj.setFieldOfViewAngleDegrees(25);
-        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
-        cameraproj.setNearPlaneZ(-0.1);
-        cameraproj.setPixelOffset(Vector2(0,0)); 
-
-        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
-
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -343,23 +343,7 @@ void App::gpuProcess(RenderDevice *rd)
         LAUNCH_SHADER("composite.*", argsComp);
 
     } rd->popState();
-
-
-    // TO RENDER COMPOSITITED
-    swapBuffers();
-    rd->clear();
-
-    FilmSettings filmSettings = activeCamera()->filmSettings();
-    filmSettings.setBloomStrength(0.0);
-    filmSettings.setGamma(1.0); // default is 2.0
-
-    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
-                            settings().hdrFramebuffer.colorGuardBandThickness.x +
-                            settings().hdrFramebuffer.depthGuardBandThickness.x,
-                            settings().hdrFramebuffer.depthGuardBandThickness.x);
 }
-
-
 
 FilmSettings App::getFilmSettings()
 {
