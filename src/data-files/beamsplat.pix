@@ -1,6 +1,7 @@
 #version 410
 
 in vec2 uv;
+in float timeCount;
 
 layout(location = 1) out vec4 dirColor;
 out vec3 g3d_FragColor;
@@ -8,5 +9,6 @@ out vec3 g3d_FragColor;
 void main(void) {
 
         g3d_FragColor = vec3(uv.xy, 0.0);
+
         dirColor = vec4(0.0, 1.0, 0.0, 0.0);
 }

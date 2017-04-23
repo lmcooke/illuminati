@@ -83,14 +83,22 @@ private:
     void makeLinesDirBeams(SlowMesh &mesh);
 
     // TODO : temp
+    float m_count;
+
+    int m_passes;
     shared_ptr<ArticulatedModel> m_model;
     Array<shared_ptr<Surface>> m_sceneGeometry;
 
     shared_ptr<Texture> m_dirLight;
-    shared_ptr<Texture> m_prevTexture;
+    shared_ptr<Texture> m_totalDirLight1;
+    shared_ptr<Texture> m_currentComposite1;
+    shared_ptr<Texture> m_totalDirLight2;
+    shared_ptr<Texture> m_currentComposite2;
 
     shared_ptr<Framebuffer> m_dirFBO;
-    shared_ptr<Framebuffer> m_prevFBO;
+
+    shared_ptr<Framebuffer> m_FBO1;
+    shared_ptr<Framebuffer> m_FBO2;
 
     // path flags
     PhotonSettings         m_PSettings;

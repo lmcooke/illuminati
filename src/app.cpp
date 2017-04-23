@@ -109,27 +109,46 @@ void App::onInit()
 {
 
     // GPU stuff
+    m_count = 0.f;
+
+    m_passes = 0;
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
 
-    m_prevTexture = Texture::createEmpty("App::prevTexture", m_framebuffer->width(),
+    m_totalDirLight1 = Texture::createEmpty("App::totalDirLight1", m_framebuffer->width(),
+                                          m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_currentComposite1 = Texture::createEmpty("App::currentComp1", m_framebuffer->width(),
+                                         m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_totalDirLight2 = Texture::createEmpty("App::totalDirLight2", m_framebuffer->width(),
+                                          m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_currentComposite2 = Texture::createEmpty("App::currentComp2", m_framebuffer->width(),
                                          m_framebuffer->height(), ImageFormat::RGBA16());
 
     m_dirLight->clear();
-    m_prevTexture->clear();
+    m_totalDirLight1->clear();
+    m_currentComposite1->clear();
+    m_totalDirLight2->clear();
+    m_currentComposite2->clear();
 
     m_dirFBO = Framebuffer::create(m_dirLight);
-    m_prevFBO = Framebuffer::create(m_prevTexture);
+    m_FBO1 = Framebuffer::create(m_currentComposite1);
+    m_FBO2 = Framebuffer::create(m_currentComposite2);
 
     m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
-    m_prevFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_prevTexture);
+    m_FBO1->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite1);
+    m_FBO1->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight1);
+    m_FBO2->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite2);
+    m_FBO2->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight2);
 
 
     setFrameDuration(1.0f / 60.0f);
 
 
     GApp::showRenderingStats = false;
-    renderDevice->setSwapBuffersAutomatically(false); // TODO this should be false?
+    renderDevice->setSwapBuffersAutomatically(false);
 
     ArticulatedModel::Specification spec;
     spec.filename = System::findDataFile("model/cauldron.obj");
@@ -235,6 +254,20 @@ void App::gpuProcess(RenderDevice *rd)
 {
     Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
 
+    m_count += .001;
+    m_passes += 1;
+
+    // flipFlop FBOs and textures
+    bool isEvenPass = m_passes % 2 == 0;
+
+    auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
+    auto prevTotalDirLight = isEvenPass ? m_totalDirLight1 : m_totalDirLight2;
+    auto prevCurrentComposite = isEvenPass ? m_currentComposite1 : m_currentComposite2;
+
+    auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
+    auto nextTotalDirLight = isEvenPass ? m_totalDirLight2 : m_totalDirLight1;
+    auto nextCurrentComposite = isEvenPass ? m_currentComposite2 : m_currentComposite1;
+
 //    rd->pushState(m_dirFBO); {
 
 //        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
@@ -291,8 +324,8 @@ void App::gpuProcess(RenderDevice *rd)
         cpuIndex.append(i);
 
         for (PhotonBeamette pb : direct_beams) {
-            cpuVertex.append(pb.m_start);
-            cpuVertex.append(pb.m_end);
+            cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
+            cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
             cpuDiff1.append(pb.m_diff1);
             cpuDiff1.append(pb.m_diff1);
             cpuDiff2.append(pb.m_diff2);
@@ -335,6 +368,8 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Position", gpuVertex);
         args.setAttributeArray("Diff1", gpuDiff1);
         args.setAttributeArray("Diff2", gpuDiff2);
+//        std::cout << "m_count : " << m_count << std::endl;
+//        args.setAttributeArray("timeCount", m_count);
 //        args.setIndexStream(gpuIndex);
 //        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
@@ -351,7 +386,7 @@ void App::gpuProcess(RenderDevice *rd)
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
-    rd->push2D(m_prevFBO); {
+    rd->push2D(nextFBO); {
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
@@ -361,6 +396,9 @@ void App::gpuProcess(RenderDevice *rd)
 
         argsComp.setUniform("screenHeight", rd->height());
         argsComp.setUniform("screenWidth", rd->width());
+        argsComp.setUniform("passNum", m_passes);
+
+        argsComp.setUniform("prevDirectLight", prevFBO->texture(2), Sampler::buffer());
 
         argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
         argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
@@ -378,7 +416,7 @@ void App::gpuProcess(RenderDevice *rd)
     filmSettings.setBloomStrength(0.0);
     filmSettings.setGamma(1.0); // default is 2.0
 
-    m_film->exposeAndRender(rd, filmSettings, m_prevFBO->texture(1),
+    m_film->exposeAndRender(rd, filmSettings, nextFBO->texture(1),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
