@@ -537,6 +537,9 @@ void App::gpuProcess(RenderDevice *rd)
 
         rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
 
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+        rd->setBlendFunc(RenderDevicejj);
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -565,6 +568,10 @@ void App::gpuProcess(RenderDevice *rd)
         LAUNCH_SHADER("beamsplat.*", args);
 
     } rd->popState();
+
+//    rd->pushState(m_dirFBO); {
+
+//    } rd->popState();
 
 
 
