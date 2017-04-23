@@ -206,7 +206,11 @@ void App::renderBeams(RenderDevice *dev, World *world)
     // TODO: Potentially add an option to the GUI to toggle between direct and indirect visualization?
     // i.e., toggle between makeLinesIndirBeams() and makeLinesDirBeams().
     // (Might not matter once we have fully splatted beams, which just WILL be the direct visualization)
-    makeLinesIndirBeams(mesh);
+    if (view == App::DIRBEAMS){
+        makeLinesDirBeams(mesh);
+    }else if (view == App::INDBEAMS){
+        makeLinesIndirBeams(mesh);
+    }
     mesh.render(dev);
     dev->popState();
 }
@@ -229,7 +233,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
 
-    if (m_dirBeams && m_inDirBeams && view == App::PHOTONMAP)
+    if (m_dirBeams && m_inDirBeams && (view == App::DIRBEAMS || view == App::INDBEAMS))
     {
         renderBeams(rd, &m_world);
     }
@@ -458,7 +462,8 @@ void App::makeGUI()
 
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
-    scenesPane->addRadioButton("Photon Beams", App::PHOTONMAP, &view);
+    scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
+    scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
     scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
     m_warningLabel = scenesPane->addLabel("");

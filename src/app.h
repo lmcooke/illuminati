@@ -20,7 +20,7 @@ class App : public GApp
 {
 public:
     enum Stage { IDLE, SCATTERING, GATHERING };
-    enum View { DEFAULT, PHOTONMAP, SPLAT, RENDITION };
+    enum View { DEFAULT, DIRBEAMS, INDBEAMS, SPLAT, RENDITION };
 
     App(const GApp::Settings &settings = GApp::Settings());
     virtual ~App();
@@ -45,9 +45,6 @@ public:
 
     /** Called from onInit() */
     void makeGUI();
-
-//    /** Processes user input */
-//    virtual void onUserInput(UserInput *input);
 
     Stage stage;
     View view;
@@ -91,7 +88,6 @@ private:
 
     // path flags
     PhotonSettings         m_PSettings;
-//    shared_ptr<PathTracer> m_renderer;
 
     Random                 m_random;   // Random number generator
     int                    m_passType; // Pass type to render
