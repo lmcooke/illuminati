@@ -87,7 +87,10 @@ private:
     Array<shared_ptr<Surface>> m_sceneGeometry;
 
     shared_ptr<Texture> m_dirLight;
+    shared_ptr<Texture> m_prevTexture;
+
     shared_ptr<Framebuffer> m_dirFBO;
+    shared_ptr<Framebuffer> m_prevFBO;
 
     // path flags
     PhotonSettings         m_PSettings;

@@ -111,11 +111,18 @@ void App::onInit()
     // GPU stuff
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_prevTexture = Texture::createEmpty("App::prevTexture", m_framebuffer->width(),
+                                         m_framebuffer->height(), ImageFormat::RGBA16());
+
     m_dirLight->clear();
+    m_prevTexture->clear();
 
     m_dirFBO = Framebuffer::create(m_dirLight);
+    m_prevFBO = Framebuffer::create(m_prevTexture);
 
     m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
+    m_prevFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_prevTexture);
 
 
     setFrameDuration(1.0f / 60.0f);
@@ -340,15 +347,11 @@ void App::gpuProcess(RenderDevice *rd)
 
     } rd->popState();
 
-//    rd->pushState(m_dirFBO); {
-
-//    } rd->popState();
-
 
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
-    rd->push2D(m_framebuffer); {
+    rd->push2D(m_prevFBO); {
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
@@ -375,7 +378,7 @@ void App::gpuProcess(RenderDevice *rd)
     filmSettings.setBloomStrength(0.0);
     filmSettings.setGamma(1.0); // default is 2.0
 
-    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+    m_film->exposeAndRender(rd, filmSettings, m_prevFBO->texture(1),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
