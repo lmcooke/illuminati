@@ -2,19 +2,30 @@
 
 uniform int screenHeight;
 uniform int screenWidth;
+uniform int passNum;
 
+uniform sampler2D prevDirectLight;
 uniform sampler2D indirectSample;
 uniform sampler2D directSample;
 
-out vec4 result;
+// this is displayed to the screen
+layout(location = 1) out vec4 result; 
+
+// this is averaged direct light to be sent to next pass
+layout(location = 2) out vec4 cumulativeDirectLight;
 
 void main()
 {
 
 	vec2 texCoords = vec2(gl_FragCoord.x/screenWidth, gl_FragCoord.y/screenHeight);
 
+	vec4 prevDirectLightColor = texture(prevDirectLight, texCoords, 0.0);
 	vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
 	vec4 directColor = texture(directSample, texCoords, 0.0);
 
-	result = indirectColor + directColor;
+
+	float contribution = 1.0/(passNum + 1.0);
+	cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
+
+	result = indirectColor + cumulativeDirectLight;
 }
