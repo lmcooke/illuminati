@@ -454,7 +454,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-    Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
+    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
 
     rd->pushState(m_dirFBO); {
 
@@ -493,8 +493,8 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
-        Array<Vector3>   cpuDiff1;
-        Array<Vector3>   cpuDiff2;
+        Array<Vector3>   cpuMajor;
+        Array<Vector3>   cpuMinor;
         Array<int>   cpuIndex;
         int i = 0;
         cpuIndex.append(i);
@@ -502,10 +502,10 @@ void App::gpuProcess(RenderDevice *rd)
         for (PhotonBeamette pb : direct_beams) {
             cpuVertex.append(pb.m_start);
             cpuVertex.append(pb.m_end);
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff2.append(pb.m_diff2);
-            cpuDiff2.append(pb.m_diff2);
+            cpuMajor.append(pb.m_start_major);
+            cpuMinor.append(pb.m_start_minor);
+            cpuMajor.append(pb.m_end_major);
+            cpuMinor.append(pb.m_end_minor);
             cpuIndex.append(i);
 //            std::cout << pb << std::endl;
         }
@@ -528,19 +528,20 @@ void App::gpuProcess(RenderDevice *rd)
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
                     sizeof(Vector3) * cpuVertex.size() +
-                    sizeof(Vector3) * cpuDiff1.size() +
-                    sizeof(Vector3) * cpuDiff2.size() +
+                    sizeof(Vector3) * cpuMajor.size() +
+                    sizeof(Vector3) * cpuMinor.size() +
                     sizeof(int) * cpuIndex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
-        AttributeArray gpuDiff1   = AttributeArray(cpuDiff1, vbuffer);
-        AttributeArray gpuDiff2   = AttributeArray(cpuDiff2, vbuffer);
-        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
+        AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
+        AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
+//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
-        args.setAttributeArray("Diff1", gpuDiff1);
-        args.setAttributeArray("Diff2", gpuDiff2);
+        args.setAttributeArray("Major", gpuMajor);
+        args.setAttributeArray("Minor", gpuMinor);
+        args.setUniform("Camera", Vector3(0, 1.5, 9));
 //        args.setIndexStream(gpuIndex);
 //        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information

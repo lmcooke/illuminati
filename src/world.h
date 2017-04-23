@@ -97,7 +97,7 @@ public:
     /** Returns exact beamette representation of splines used as spline lights,
      * for testing splatting
      */
-    Array<PhotonBeamette> vizualizeSplines();
+    Array<PhotonBeamette> visualizeSplines();
 
     TriTree             m_tris;     // The scene's geometry in world space
 

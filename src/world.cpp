@@ -380,22 +380,53 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
     return model;
 }
 
-Array<PhotonBeamette> World::vizualizeSplines() {
+/* TODO use this to make a real function that takes in a spline
+ * (start pt, start radius, end point, end radius, prev and next points)
+ * so that it can handle arbitrary beams */
+Array<PhotonBeamette> World::visualizeSplines() {
     Array<PhotonBeamette> beams = Array<PhotonBeamette>();
     for (Array<Vector4> spline : m_splines) {
-        Vector4 prev = Vector4::nan();
-        for (Vector4 v : spline) {
-            if (prev.isFinite()) {
-                PhotonBeamette pb = PhotonBeamette();
-                pb.m_end = v.xyz();
-                pb.m_start = prev.xyz();
-                pb.m_dir1 = (pb.m_end - pb.m_start);
-                pb.m_dir2 = (pb.m_end - pb.m_start);
-                pb.m_diff1 = pb.m_start + Vector3(0.2, 0, 0.0);
-                pb.m_diff2 = pb.m_start - Vector3(0.0, 0, 0.2);
-                beams.append(pb);
+//        Vector4 prev = Vector4::nan();
+        Vector3 prev_major = Vector3::nan();
+        Vector3 prev_minor = Vector3::nan();
+//        for (Vector4 v : spline) {
+        Array<Vector4>::iterator it;
+        Vector4 v;
+        int i = 0;
+        for (it = std::next(spline.begin()); it != spline.end(); ++it, ++i ) {
+            v = *it;
+            Vector4 prev = *std::prev(it);
+            Vector4 next = *std::next(it);
+
+            PhotonBeamette pb = PhotonBeamette();
+            pb.m_end = v.xyz();
+            pb.m_start = prev.xyz();
+            pb.m_start_major = prev_major;
+            if (i == 0) { // has no prev beam, is start beam
+                Vector3 beam = normalize(pb.m_end - pb.m_start);
+                Vector3 perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
+                pb.m_start_minor = v.w * perp;
+                pb.m_start_major = v.w * cross(perp, beam);
+            } else {
+                pb.m_start_minor = prev_minor;
+                pb.m_start_major = prev_major;
             }
-            prev = v;
+            Vector3 beam = normalize(pb.m_end - pb.m_start);
+            Vector3 beam_next = normalize(next.xyz() - v.xyz());
+            Vector3 perp;
+            if (!next.isFinite()) { // has no next beam, is end beam
+                perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
+                pb.m_end_major = v.w * cross(perp, beam);
+            } else {
+                perp = beam_next;
+                pb.m_end_major = ((beam + beam_next) / 2.0) * (v.w / dot(beam, beam_next));
+            }
+            pb.m_end_minor = v.w * perp;
+
+            prev_major = pb.m_end_major;
+            prev_minor = pb.m_end_minor;
+            beams.append(pb);
+
         }
     }
     return beams;
