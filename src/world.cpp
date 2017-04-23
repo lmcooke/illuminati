@@ -368,7 +368,8 @@ Array<PhotonBeamette> World::visualizeSplines() {
 //        for (Vector4 v : spline) {
         Array<Vector4>::iterator it;
         Vector4 v;
-        int i = 0;
+        int i = 1;
+        int n = spline.size();
         for (it = std::next(spline.begin()); it != spline.end(); ++it, ++i ) {
             v = *it;
             Vector4 prev = *std::prev(it);
@@ -378,7 +379,7 @@ Array<PhotonBeamette> World::visualizeSplines() {
             pb.m_end = v.xyz();
             pb.m_start = prev.xyz();
             pb.m_start_major = prev_major;
-            if (i == 0) { // has no prev beam, is start beam
+            if (i == 1) { // has no prev beam, is start beam
                 Vector3 beam = normalize(pb.m_end - pb.m_start);
                 Vector3 perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
                 pb.m_start_minor = v.w * perp;
@@ -390,7 +391,7 @@ Array<PhotonBeamette> World::visualizeSplines() {
             Vector3 beam = normalize(pb.m_end - pb.m_start);
             Vector3 beam_next = normalize(next.xyz() - v.xyz());
             Vector3 perp;
-            if (!next.isFinite()) { // has no next beam, is end beam
+            if (i == n - 1) { // has no next beam, is end beam
                 perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
                 pb.m_end_major = v.w * cross(perp, beam);
             } else {
@@ -402,7 +403,6 @@ Array<PhotonBeamette> World::visualizeSplines() {
             prev_major = pb.m_end_major;
             prev_minor = pb.m_end_minor;
             beams.append(pb);
-
         }
     }
     return beams;
