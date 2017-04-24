@@ -38,13 +38,15 @@ App::App(const GApp::Settings &settings)
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
 
-    m_PSettings.maxDepth=4;
+    m_PSettings.maxDepthScatter=3;
+    m_PSettings.maxDepthRender=4;
     m_PSettings.epsilon=0.0001;
     m_PSettings.numBeamettes=5000;
 
     m_PSettings.directSamples=64;
     m_PSettings.gatherRadius=0.1;
     m_PSettings.useFinalGather=false;
+    m_PSettings.dist = 0.3;
 }
 
 App::~App() { }
@@ -71,9 +73,8 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
-
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepth));
+    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 }
 
 static void dispatcher(void *arg)
@@ -195,28 +196,35 @@ void App::onCleanup()
 /** Makes the verts to visualize the indirect lighting */
 void App::makeLinesDirBeams(SlowMesh &mesh)
 {
-    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
-    for (int i=0; i<beams.size(); i++) {
-        PhotonBeamette beam = beams[i];
-        mesh.setColor(beam.m_power / beam.m_power.max());
-        mesh.makeVertex(beam.m_start);
-        mesh.makeVertex(beam.m_end);
+    if (m_dirBeams)
+    {
+        Array<PhotonBeamette> beams = m_dirBeams->getBeams();
+        for (int i=0; i<beams.size(); i++) {
+            // Apparently this is how you index into a pointer to an array?
+            PhotonBeamette beam = beams[i];
+            mesh.setColor(beam.m_power / beam.m_power.max());
+            mesh.makeVertex(beam.m_start);
+            mesh.makeVertex(beam.m_end);
+        }
     }
 }
 
 /** Makes the verts to visualize the direct lighting */
 void App::makeLinesIndirBeams(SlowMesh &mesh)
 {
-    std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
-    G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
-    G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
-
-    while (cur != end)
+    if (m_inDirBeams)
     {
-        mesh.setColor(cur->m_power / cur->m_power.max());
-        mesh.makeVertex(cur->m_start);
-        mesh.makeVertex(cur->m_end);
-        ++cur;
+        std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
+        G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
+        G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
+
+        while (cur != end)
+        {
+            mesh.setColor(cur->m_power / cur->m_power.max());
+            mesh.makeVertex(cur->m_start);
+            mesh.makeVertex(cur->m_end);
+            ++cur;
+        }
     }
 }
 
@@ -229,33 +237,26 @@ void App::renderBeams(RenderDevice *dev, World *world)
     SlowMesh mesh(PrimitiveType::LINES);
     mesh.setPointSize(1);
 
-    // TODO: Potentially add an option to the GUI to toggle between direct and indirect visualization?
-    // i.e., toggle between makeLinesIndirBeams() and makeLinesDirBeams().
-    // (Might not matter once we have fully splatted beams, which just WILL be the direct visualization)
-    makeLinesIndirBeams(mesh);
+    if (view == App::DIRBEAMS){
+        makeLinesDirBeams(mesh);
+    }else if (view == App::INDBEAMS){
+        makeLinesIndirBeams(mesh);
+    }
     mesh.render(dev);
     dev->popState();
 }
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+
     if (!m_world.camnull()){
         gpuProcess(rd);
     } else {
         swapBuffers();
         rd->clear();
-
-        FilmSettings filmSettings = activeCamera()->filmSettings();
-        filmSettings.setBloomStrength(0.0);
-        filmSettings.setGamma(1.0); // default is 2.0
-
-        m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
-                                settings().hdrFramebuffer.colorGuardBandThickness.x +
-                                settings().hdrFramebuffer.depthGuardBandThickness.x,
-                                settings().hdrFramebuffer.depthGuardBandThickness.x);
     }
 
-    if (m_dirBeams && m_inDirBeams && view == App::PHOTONMAP)
+    if (m_dirBeams && m_inDirBeams && (view == App::DIRBEAMS || view == App::INDBEAMS))
     {
         renderBeams(rd, &m_world);
     }
@@ -263,6 +264,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
+
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
 
     m_count += .001;
@@ -272,20 +274,6 @@ void App::gpuProcess(RenderDevice *rd)
     bool isEvenPass = m_passes % 2 == 0;
     auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
     auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
-
-
-    View v = this->view;
-    if (v == DEFAULT) {
-        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
-    }
-
-    if (v == PHOTONMAP) {
-//        rd->setColorClearValue(Color4(0.0,0.0,0.0,0.0));
-//        rd->clear();
-//        m_photons.render(rd, &m_world);
-    } else {
-        // mid-rendering
-    }
 
     // turns on and off beam movement so we can visualize GPU averaging
     bool testGPUprogression = false;
@@ -347,6 +335,7 @@ void App::gpuProcess(RenderDevice *rd)
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
+
     rd->push2D(nextFBO); {
         rd->setColorClearValue(Color3::black());
         rd->clear();
@@ -499,7 +488,8 @@ void App::makeGUI()
 
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
-    scenesPane->addRadioButton("Photon Beams", App::PHOTONMAP, &view);
+    scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
+    scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
     scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
     m_warningLabel = scenesPane->addLabel("");
@@ -512,15 +502,15 @@ void App::makeGUI()
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
-    settingsPane->addLabel("Radius scaling factor");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Scattering");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Attenuation");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-
+    settingsPane->addLabel("Noise:bias ratio");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
+    settingsPane->addLabel("Radius scaling factor");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->pack();
     // Lights
     GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = lightsPane->addDropDownList("Emitter");
@@ -531,6 +521,7 @@ void App::makeGUI()
 //    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
+    paneMain->pack();
     windowMain->pack();
     windowMain->setVisible(true);
 

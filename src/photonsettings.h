@@ -26,7 +26,9 @@ public:
     int dofSamples;
 
     // Recursion depth for photon scattering.
-    int maxDepth;
+    int maxDepthScatter;
+    // Recursion depth for rendering.
+    int maxDepthRender;
     // Used for bumping.
     float epsilon;
     // Number of beamettes to shoot into the scene.
@@ -40,6 +42,9 @@ public:
     float gatherRadius;
     // Whether or not to use final gather
     bool useFinalGather;
+    // Expected raymarch step along the ray when scattering.
+    // TODO: should this just be taken care of in the fog stuff?
+    float dist;
 };
 
 #endif // PHOTONSETTINGS_H
