@@ -15,7 +15,6 @@ String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/sc
 App::App(const GApp::Settings &settings)
     : GApp(settings),
 //    pass(0)
-//    m_renderer(new PathTracer)
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
@@ -40,13 +39,15 @@ App::App(const GApp::Settings &settings)
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
 
-    m_PSettings.maxDepth=4;
+    m_PSettings.maxDepthScatter=3;
+    m_PSettings.maxDepthRender=4;
     m_PSettings.epsilon=0.0001;
     m_PSettings.numBeamettes=5000;
 
     m_PSettings.directSamples=64;
     m_PSettings.gatherRadius=0.1;
     m_PSettings.useFinalGather=false;
+    m_PSettings.dist = 0.3;
 }
 
 App::~App() { }
@@ -73,11 +74,8 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
-
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-//    m_canvas->set(x, y, trace(ray, MAX_DEPTH));
-
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepth));
+    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 }
 
 static void dispatcher(void *arg)
@@ -173,28 +171,35 @@ void App::onCleanup()
 /** Makes the verts to visualize the indirect lighting */
 void App::makeLinesDirBeams(SlowMesh &mesh)
 {
-    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
-    for (int i=0; i<beams.size(); i++) {
-        PhotonBeamette beam = beams[i];
-        mesh.setColor(beam.m_power / beam.m_power.max());
-        mesh.makeVertex(beam.m_start);
-        mesh.makeVertex(beam.m_end);
+    if (m_dirBeams)
+    {
+        Array<PhotonBeamette> beams = m_dirBeams->getBeams();
+        for (int i=0; i<beams.size(); i++) {
+            // Apparently this is how you index into a pointer to an array?
+            PhotonBeamette beam = beams[i];
+            mesh.setColor(beam.m_power / beam.m_power.max());
+            mesh.makeVertex(beam.m_start);
+            mesh.makeVertex(beam.m_end);
+        }
     }
 }
 
 /** Makes the verts to visualize the direct lighting */
 void App::makeLinesIndirBeams(SlowMesh &mesh)
 {
-    std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
-    G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
-    G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
-
-    while (cur != end)
+    if (m_inDirBeams)
     {
-        mesh.setColor(cur->m_power / cur->m_power.max());
-        mesh.makeVertex(cur->m_start);
-        mesh.makeVertex(cur->m_end);
-        ++cur;
+        std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
+        G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
+        G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
+
+        while (cur != end)
+        {
+            mesh.setColor(cur->m_power / cur->m_power.max());
+            mesh.makeVertex(cur->m_start);
+            mesh.makeVertex(cur->m_end);
+            ++cur;
+        }
     }
 }
 
@@ -210,7 +215,8 @@ void App::renderBeams(RenderDevice *dev, World *world)
     // TODO: Potentially add an option to the GUI to toggle between direct and indirect visualization?
     // i.e., toggle between makeLinesIndirBeams() and makeLinesDirBeams().
     // (Might not matter once we have fully splatted beams, which just WILL be the direct visualization)
-    makeLinesIndirBeams(mesh);
+    makeLinesDirBeams(mesh);
+//    makeLinesIndirBeams(mesh);
     mesh.render(dev);
     dev->popState();
 }
@@ -218,7 +224,7 @@ void App::renderBeams(RenderDevice *dev, World *world)
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
     gpuProcess(rd);
-    if (m_dirBeams && m_inDirBeams && view == App::PHOTONMAP)
+    if (view == App::PHOTONMAP)
     {
         renderBeams(rd, &m_world);
     }
@@ -231,7 +237,6 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
 
         rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
-
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
@@ -327,7 +332,7 @@ void App::gpuProcess(RenderDevice *rd)
 
     // composite direct and indirect
     rd->push2D(m_framebuffer); {
-        rd->setColorClearValue(Color3::white() * 0.3f);
+        rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 
@@ -487,15 +492,15 @@ void App::makeGUI()
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
-    settingsPane->addLabel("Radius scaling factor");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Scattering");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Attenuation");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-
+    settingsPane->addLabel("Noise:bias ratio");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
+    settingsPane->addLabel("Radius scaling factor");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->pack();
     // Lights
     GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = lightsPane->addDropDownList("Emitter");
@@ -506,6 +511,7 @@ void App::makeGUI()
 //    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
+    paneMain->pack();
     windowMain->pack();
     windowMain->setVisible(true);
 

@@ -2,7 +2,7 @@
 
 IndPhotonScatter::IndPhotonScatter(World * world, PhotonSettings settings)
     : PhotonScatter(world, settings),
-      m_beams(std::make_shared<G3D::KDTree<PhotonBeamette>>())
+      m_KDTreeBeams(std::make_shared<G3D::KDTree<PhotonBeamette>>())
 {
     preprocess();
 }
@@ -13,22 +13,33 @@ IndPhotonScatter::~IndPhotonScatter()
 
 void IndPhotonScatter::preprocess()
 {
+    Array<PhotonBeamette> tempBeamettes = Array<PhotonBeamette>();
+    Array<PhotonBeamette> newBeams;
     // Send out a beam, recursivly bounce it around, and then store it in our beams array.
     for (int i=0; i<m_PSettings.numBeamettes; i++)
     {
-        Array<PhotonBeamette> newBeams = shootRay();
-        for (int i=0; i<newBeams.size(); i++)
-        {
-            printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettes);
-            m_beams->insert(newBeams[i]);
-        }
+        shootRay(newBeams);
+        tempBeamettes.append(newBeams);
+        printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettes);
     }
-    m_beams->balance();
+
     printf("\rBuilding indirect photon beamette map ... done       \n");
+    std::cout << "started making KD tree" <<std::endl;
+    m_KDTreeBeams->insert(tempBeamettes);
+//    m_KDTreeBeams->balance();
+    std::cout << "finished making KD tree" <<std::endl;
+}
+
+void IndPhotonScatter::phaseFxn(Vector3 wi, Vector3 &wo)
+{
+    float a = m_random.uniform();
+    float b = m_random.uniform();
+    wo.x = b*wi.y - a*wi.z;
+    wo.y = -a*wi.x;
+    wo.z = b*wi.x;
 }
 
 std::shared_ptr<G3D::KDTree<PhotonBeamette>> IndPhotonScatter::getBeams()
 {
-    return m_beams;
+    return m_KDTreeBeams;
 }
-
