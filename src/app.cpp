@@ -38,13 +38,15 @@ App::App(const GApp::Settings &settings)
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
 
-    m_PSettings.maxDepth=4;
+    m_PSettings.maxDepthScatter=3;
+    m_PSettings.maxDepthRender=4;
     m_PSettings.epsilon=0.0001;
     m_PSettings.numBeamettes=5000;
 
     m_PSettings.directSamples=64;
     m_PSettings.gatherRadius=0.1;
     m_PSettings.useFinalGather=false;
+    m_PSettings.dist = 0.3;
 }
 
 App::~App() { }
@@ -71,9 +73,8 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
-
     Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepth));
+    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 }
 
 static void dispatcher(void *arg)
@@ -195,28 +196,35 @@ void App::onCleanup()
 /** Makes the verts to visualize the indirect lighting */
 void App::makeLinesDirBeams(SlowMesh &mesh)
 {
-    Array<PhotonBeamette> beams = m_dirBeams->getBeams();
-    for (int i=0; i<beams.size(); i++) {
-        PhotonBeamette beam = beams[i];
-        mesh.setColor(beam.m_power / beam.m_power.max());
-        mesh.makeVertex(beam.m_start);
-        mesh.makeVertex(beam.m_end);
+    if (m_dirBeams)
+    {
+        Array<PhotonBeamette> beams = m_dirBeams->getBeams();
+        for (int i=0; i<beams.size(); i++) {
+            // Apparently this is how you index into a pointer to an array?
+            PhotonBeamette beam = beams[i];
+            mesh.setColor(beam.m_power / beam.m_power.max());
+            mesh.makeVertex(beam.m_start);
+            mesh.makeVertex(beam.m_end);
+        }
     }
 }
 
 /** Makes the verts to visualize the direct lighting */
 void App::makeLinesIndirBeams(SlowMesh &mesh)
 {
-    std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
-    G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
-    G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
-
-    while (cur != end)
+    if (m_inDirBeams)
     {
-        mesh.setColor(cur->m_power / cur->m_power.max());
-        mesh.makeVertex(cur->m_start);
-        mesh.makeVertex(cur->m_end);
-        ++cur;
+        std::shared_ptr<G3D::KDTree<PhotonBeamette>> t = m_inDirBeams->getBeams();
+        G3D::KDTree<PhotonBeamette>::Iterator end = t->end();
+        G3D::KDTree<PhotonBeamette>::Iterator cur = t->begin();
+
+        while (cur != end)
+        {
+            mesh.setColor(cur->m_power / cur->m_power.max());
+            mesh.makeVertex(cur->m_start);
+            mesh.makeVertex(cur->m_end);
+            ++cur;
+        }
     }
 }
 
@@ -240,6 +248,7 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+
     if (!m_world.camnull()){
         gpuProcess(rd);
     } else {
@@ -255,7 +264,8 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-    Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
+
+    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
 
     m_count += .001;
     m_passes += 1;
@@ -272,14 +282,13 @@ void App::gpuProcess(RenderDevice *rd)
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
-        Array<Vector3>   cpuDiff1;
-        Array<Vector3>   cpuDiff2;
+        Array<Vector3>   cpuMajor;
+        Array<Vector3>   cpuMinor;
         Array<int>   cpuIndex;
         int i = 0;
         cpuIndex.append(i);
 
         for (PhotonBeamette pb : direct_beams) {
-
             if (testGPUprogression) {
                 cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
                 cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
@@ -287,11 +296,10 @@ void App::gpuProcess(RenderDevice *rd)
                 cpuVertex.append(pb.m_start);
                 cpuVertex.append(pb.m_end);
             }
-
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff2.append(pb.m_diff2);
-            cpuDiff2.append(pb.m_diff2);
+            cpuMajor.append(pb.m_start_major);
+            cpuMinor.append(pb.m_start_minor);
+            cpuMajor.append(pb.m_end_major);
+            cpuMinor.append(pb.m_end_minor);
             cpuIndex.append(i);
         }
 
@@ -305,19 +313,20 @@ void App::gpuProcess(RenderDevice *rd)
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
                     sizeof(Vector3) * cpuVertex.size() +
-                    sizeof(Vector3) * cpuDiff1.size() +
-                    sizeof(Vector3) * cpuDiff2.size() +
+                    sizeof(Vector3) * cpuMajor.size() +
+                    sizeof(Vector3) * cpuMinor.size() +
                     sizeof(int) * cpuIndex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
-        AttributeArray gpuDiff1   = AttributeArray(cpuDiff1, vbuffer);
-        AttributeArray gpuDiff2   = AttributeArray(cpuDiff2, vbuffer);
-        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
+        AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
+        AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
+//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
-        args.setAttributeArray("Diff1", gpuDiff1);
-        args.setAttributeArray("Diff2", gpuDiff2);
+        args.setAttributeArray("Major", gpuMajor);
+        args.setAttributeArray("Minor", gpuMinor);
+        args.setUniform("Camera", Vector3(0, 1.5, 9));
 //        args.setIndexStream(gpuIndex);
 //        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
@@ -334,6 +343,7 @@ void App::gpuProcess(RenderDevice *rd)
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
+
     rd->push2D(nextFBO); {
         rd->setColorClearValue(Color3::black());
         rd->clear();
@@ -500,15 +510,15 @@ void App::makeGUI()
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
-    settingsPane->addLabel("Radius scaling factor");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Scattering");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Attenuation");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-
+    settingsPane->addLabel("Noise:bias ratio");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
+    settingsPane->addLabel("Radius scaling factor");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->pack();
     // Lights
     GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = lightsPane->addDropDownList("Emitter");
@@ -519,6 +529,7 @@ void App::makeGUI()
 //    lightsPane->addLabel("Attenuation");
     lightsPane->pack();
 
+    paneMain->pack();
     windowMain->pack();
     windowMain->setVisible(true);
 

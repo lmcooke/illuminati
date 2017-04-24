@@ -10,5 +10,5 @@ void main(void) {
 
         g3d_FragColor = vec3(uv.xy, 0.0);
 
-        dirColor = vec4(0.0, 1.0, 0.0, 0.0);
+        //dirColor = vec4(0.0, 1.0, 0.0, 0.0);
 }

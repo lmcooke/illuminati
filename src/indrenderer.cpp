@@ -72,7 +72,7 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
 
     Radiance3 rad;
     // If first bounce, final gather
-    if (depth == m_PSettings.maxDepth && m_PSettings.useFinalGather){
+    if (depth == m_PSettings.maxDepthRender && m_PSettings.useFinalGather){
         for (int i=0; i < m_PSettings.gatherSamples; i++){
             // get a random sample direction from this sample point
             Vector3 wInGather = wo;
@@ -127,7 +127,8 @@ Radiance3 IndRenderer::trace(const Ray &ray, int depth)
                + direct(surf, wo)
                + diffuse(surf, wo, depth)
                + impulse(surf, wo, depth);
-        surf_radiance *= Utils::exp(dist, Radiance3(0.0));
+        surf_radiance *= Utils::exp(dist, Radiance3(m_PSettings.attenuation));
+
         final += surf_radiance;
     }
 

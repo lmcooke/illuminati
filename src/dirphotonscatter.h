@@ -10,6 +10,7 @@ public:
     DirPhotonScatter(World * world, PhotonSettings settings);
     ~DirPhotonScatter();
     void preprocess();
+    void phaseFxn(Vector3 wi, Vector3 &wo);
     Array<PhotonBeamette> getBeams();
 private:
     Array<PhotonBeamette> m_beams;
