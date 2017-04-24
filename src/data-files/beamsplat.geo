@@ -10,6 +10,10 @@ uniform mat4 MVP;
 uniform vec3 Camera;
 
 out vec2 uv;
+out vec3 start_major;
+out vec3 start_minor;
+out vec3 end_major;
+out vec3 end_minor;
 
 void main() {
 

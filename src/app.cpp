@@ -296,9 +296,7 @@ void App::gpuProcess(RenderDevice *rd)
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
-        Array<int>   cpuIndex;
-        int i = 0;
-        cpuIndex.append(i);
+//        Texture axis = Texture::createEmpty("axis", direct_beams.size(), 4);
 
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
@@ -312,23 +310,9 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            cpuIndex.append(i);
         }
 
-        cpuIndex.append(i);
         rd->setObjectToWorldMatrix(CFrame());
-
-
-        //TODO hardcoded temp, figure out how to get camera from world
-//        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-//        Projection cameraproj = Projection();
-//        cameraproj.setFarPlaneZ(-200);
-//        cameraproj.setFieldOfViewAngleDegrees(25);
-//        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
-//        cameraproj.setNearPlaneZ(-0.1);
-//        cameraproj.setPixelOffset(Vector2(0,0));
-
-//        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
 
         rd->setColorClearValue(Color3::black());
         rd->clear();
@@ -339,12 +323,10 @@ void App::gpuProcess(RenderDevice *rd)
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
                     sizeof(Vector3) * cpuVertex.size() +
                     sizeof(Vector3) * cpuMajor.size() +
-                    sizeof(Vector3) * cpuMinor.size() +
-                    sizeof(int) * cpuIndex.size());
+                    sizeof(Vector3) * cpuMinor.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
         AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
         AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
-//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
@@ -352,9 +334,6 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setUniform("Camera", Vector3(0, 1.5, 9));
-//        args.setIndexStream(gpuIndex);
-//        rd->setObjectToWorldMatrix(CoordinateFrame());
-        //TODO pass in spline information
 
         args.setUniform("MVP", rd->invertYMatrix() *
                                 rd->projectionMatrix() *

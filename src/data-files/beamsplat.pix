@@ -1,6 +1,9 @@
 #version 410
 
+//uniform sampler2D axis;
+
 in vec2 uv;
+in vec3 Major;
 in float timeCount;
 
 layout(location = 1) out vec4 dirColor;
@@ -8,7 +11,9 @@ out vec3 g3d_FragColor;
 
 void main(void) {
 
+        //vec3 axis = texture2D(
         g3d_FragColor = vec3(uv.xy, 0.0);
+        g3d_FragColor.b = length(Major);
 
         //dirColor = vec4(0.0, 1.0, 0.0, 0.0);
 }
