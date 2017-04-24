@@ -229,9 +229,6 @@ void App::renderBeams(RenderDevice *dev, World *world)
     SlowMesh mesh(PrimitiveType::LINES);
     mesh.setPointSize(1);
 
-    // TODO: Potentially add an option to the GUI to toggle between direct and indirect visualization?
-    // i.e., toggle between makeLinesIndirBeams() and makeLinesDirBeams().
-    // (Might not matter once we have fully splatted beams, which just WILL be the direct visualization)
     if (view == App::DIRBEAMS){
         makeLinesDirBeams(mesh);
     }else if (view == App::INDBEAMS){
@@ -248,15 +245,6 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
     } else {
         swapBuffers();
         rd->clear();
-
-        FilmSettings filmSettings = activeCamera()->filmSettings();
-        filmSettings.setBloomStrength(0.0);
-        filmSettings.setGamma(1.0); // default is 2.0
-
-        m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
-                                settings().hdrFramebuffer.colorGuardBandThickness.x +
-                                settings().hdrFramebuffer.depthGuardBandThickness.x,
-                                settings().hdrFramebuffer.depthGuardBandThickness.x);
     }
 
     if (m_dirBeams && m_inDirBeams && (view == App::DIRBEAMS || view == App::INDBEAMS))
@@ -276,20 +264,6 @@ void App::gpuProcess(RenderDevice *rd)
     bool isEvenPass = m_passes % 2 == 0;
     auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
     auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
-
-
-    View v = this->view;
-    if (v == DEFAULT) {
-        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
-    }
-
-    if (v == PHOTONMAP) {
-//        rd->setColorClearValue(Color4(0.0,0.0,0.0,0.0));
-//        rd->clear();
-//        m_photons.render(rd, &m_world);
-    } else {
-        // mid-rendering
-    }
 
     // turns on and off beam movement so we can visualize GPU averaging
     bool testGPUprogression = false;
@@ -323,19 +297,6 @@ void App::gpuProcess(RenderDevice *rd)
 
         cpuIndex.append(i);
         rd->setObjectToWorldMatrix(CFrame());
-
-
-        //TODO hardcoded temp, figure out how to get camera from world
-//        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-//        Projection cameraproj = Projection();
-//        cameraproj.setFarPlaneZ(-200);
-//        cameraproj.setFieldOfViewAngleDegrees(25);
-//        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
-//        cameraproj.setNearPlaneZ(-0.1);
-//        cameraproj.setPixelOffset(Vector2(0,0));
-
-//        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
-
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
