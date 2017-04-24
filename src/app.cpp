@@ -14,7 +14,6 @@ String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/sc
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
-//    pass(0)
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
@@ -87,7 +86,6 @@ static void dispatcher(void *arg)
     int w = self->window()->width(),
         h = self->window()->height();
 
-
     self->stage = App::SCATTERING;
 
     self->buildPhotonMap();
@@ -107,20 +105,46 @@ void App::onInit()
 {
 
     // GPU stuff
+    m_count = 0.f;
+
+    m_passes = 0;
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_totalDirLight1 = Texture::createEmpty("App::totalDirLight1", m_framebuffer->width(),
+                                          m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_currentComposite1 = Texture::createEmpty("App::currentComp1", m_framebuffer->width(),
+                                         m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_totalDirLight2 = Texture::createEmpty("App::totalDirLight2", m_framebuffer->width(),
+                                          m_framebuffer->height(), ImageFormat::RGBA16());
+
+    m_currentComposite2 = Texture::createEmpty("App::currentComp2", m_framebuffer->width(),
+                                         m_framebuffer->height(), ImageFormat::RGBA16());
+
     m_dirLight->clear();
+    m_totalDirLight1->clear();
+    m_currentComposite1->clear();
+    m_totalDirLight2->clear();
+    m_currentComposite2->clear();
 
     m_dirFBO = Framebuffer::create(m_dirLight);
+    m_FBO1 = Framebuffer::create(m_currentComposite1);
+    m_FBO2 = Framebuffer::create(m_currentComposite2);
 
     m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
+    m_FBO1->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite1);
+    m_FBO1->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight1);
+    m_FBO2->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite2);
+    m_FBO2->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight2);
 
 
     setFrameDuration(1.0f / 60.0f);
 
 
     GApp::showRenderingStats = false;
-    renderDevice->setSwapBuffersAutomatically(false); // TODO this should be false?
+    renderDevice->setSwapBuffersAutomatically(false);
 
     ArticulatedModel::Specification spec;
     spec.filename = System::findDataFile("model/cauldron.obj");
@@ -141,6 +165,7 @@ void App::onInit()
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
+    developerWindow->setResizable(true);
 }
 
 void App::onRender()
@@ -223,7 +248,23 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-    gpuProcess(rd);
+
+    if (!m_world.camnull()){
+        gpuProcess(rd);
+    } else {
+        swapBuffers();
+        rd->clear();
+
+        FilmSettings filmSettings = activeCamera()->filmSettings();
+        filmSettings.setBloomStrength(0.0);
+        filmSettings.setGamma(1.0); // default is 2.0
+
+        m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+                                settings().hdrFramebuffer.colorGuardBandThickness.x +
+                                settings().hdrFramebuffer.depthGuardBandThickness.x,
+                                settings().hdrFramebuffer.depthGuardBandThickness.x);
+    }
+
     if (view == App::PHOTONMAP)
     {
         renderBeams(rd, &m_world);
@@ -232,89 +273,96 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-    Array<PhotonBeamette> direct_beams = m_world.vizualizeSplines();
 
-    rd->pushState(m_dirFBO); {
+    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
 
-        rd->setProjectionAndCameraMatrix(m_debugCamera->projection(), m_debugCamera->frame());
-        rd->setColorClearValue(Color3::black());
-        rd->clear();
-        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+    m_count += .001;
+    m_passes += 1;
 
-        Args args;
-        // TODO : set args uniforms
+    // flipFlop FBOs and textures
+    bool isEvenPass = m_passes % 2 == 0;
+    auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
+    auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
 
-        CFrame cframe;
 
-        for (int i = 0; i < m_sceneGeometry.size(); i++) {
-            const shared_ptr<UniversalSurface>& surface =
-                    dynamic_pointer_cast<UniversalSurface>(m_sceneGeometry[i]);
+    View v = this->view;
+    if (v == DEFAULT) {
+        v = stage == SCATTERING ? PHOTONMAP : RENDITION;
+    }
 
-            if (notNull(surface) && view == App::SPLAT) {
-                surface->getCoordinateFrame(cframe);
-                rd->setObjectToWorldMatrix(cframe);
-                args.setUniform("MVP", rd->projectionMatrix() *
-                                        rd->cameraToWorldMatrix().inverse() * cframe);
-                surface->gpuGeom()->setShaderArgs(args);
+    if (v == PHOTONMAP) {
+//        rd->setColorClearValue(Color4(0.0,0.0,0.0,0.0));
+//        rd->clear();
+//        m_photons.render(rd, &m_world);
+    } else {
+        // mid-rendering
+    }
 
-                LAUNCH_SHADER("splat.*", args);
-            }
-        }
-    } rd->popState();
-
+    // turns on and off beam movement so we can visualize GPU averaging
+    bool testGPUprogression = false;
 
     // beam splatting
     rd->pushState(m_dirFBO); {
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
-        Array<Vector3>   cpuDiff1;
-        Array<Vector3>   cpuDiff2;
+        Array<Vector3>   cpuMajor;
+        Array<Vector3>   cpuMinor;
         Array<int>   cpuIndex;
         int i = 0;
         cpuIndex.append(i);
 
         for (PhotonBeamette pb : direct_beams) {
-            cpuVertex.append(pb.m_start);
-            cpuVertex.append(pb.m_end);
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff1.append(pb.m_diff1);
-            cpuDiff2.append(pb.m_diff2);
-            cpuDiff2.append(pb.m_diff2);
+            if (testGPUprogression) {
+                cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
+                cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
+            } else {
+                cpuVertex.append(pb.m_start);
+                cpuVertex.append(pb.m_end);
+            }
+            cpuMajor.append(pb.m_start_major);
+            cpuMinor.append(pb.m_start_minor);
+            cpuMajor.append(pb.m_end_major);
+            cpuMinor.append(pb.m_end_minor);
             cpuIndex.append(i);
-//            std::cout << pb << std::endl;
         }
 
         cpuIndex.append(i);
         rd->setObjectToWorldMatrix(CFrame());
 
+
         //TODO hardcoded temp, figure out how to get camera from world
-        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-        Projection cameraproj = Projection();
-        cameraproj.setFarPlaneZ(-200);
-        cameraproj.setFieldOfViewAngleDegrees(25);
-        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
-        cameraproj.setNearPlaneZ(-0.1);
-        cameraproj.setPixelOffset(Vector2(0,0));
+//        CFrame cameraframe = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
+//        Projection cameraproj = Projection();
+//        cameraproj.setFarPlaneZ(-200);
+//        cameraproj.setFieldOfViewAngleDegrees(25);
+//        cameraproj.setFieldOfViewDirection(FOVDirection::VERTICAL);
+//        cameraproj.setNearPlaneZ(-0.1);
+//        cameraproj.setPixelOffset(Vector2(0,0));
 
-        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
+//        rd->setProjectionAndCameraMatrix(cameraproj, cameraframe);
 
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
                     sizeof(Vector3) * cpuVertex.size() +
-                    sizeof(Vector3) * cpuDiff1.size() +
-                    sizeof(Vector3) * cpuDiff2.size() +
+                    sizeof(Vector3) * cpuMajor.size() +
+                    sizeof(Vector3) * cpuMinor.size() +
                     sizeof(int) * cpuIndex.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
-        AttributeArray gpuDiff1   = AttributeArray(cpuDiff1, vbuffer);
-        AttributeArray gpuDiff2   = AttributeArray(cpuDiff2, vbuffer);
-        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
+        AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
+        AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
+//        IndexStream gpuIndex       = IndexStream(cpuIndex, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
-        args.setAttributeArray("Diff1", gpuDiff1);
-        args.setAttributeArray("Diff2", gpuDiff2);
+        args.setAttributeArray("Major", gpuMajor);
+        args.setAttributeArray("Minor", gpuMinor);
+        args.setUniform("Camera", Vector3(0, 1.5, 9));
 //        args.setIndexStream(gpuIndex);
 //        rd->setObjectToWorldMatrix(CoordinateFrame());
         //TODO pass in spline information
@@ -331,7 +379,8 @@ void App::gpuProcess(RenderDevice *rd)
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
-    rd->push2D(m_framebuffer); {
+
+    rd->push2D(nextFBO); {
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
@@ -341,6 +390,9 @@ void App::gpuProcess(RenderDevice *rd)
 
         argsComp.setUniform("screenHeight", rd->height());
         argsComp.setUniform("screenWidth", rd->width());
+        argsComp.setUniform("passNum", m_passes);
+
+        argsComp.setUniform("prevDirectLight", prevFBO->texture(2), Sampler::buffer());
 
         argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
         argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
@@ -357,14 +409,15 @@ void App::gpuProcess(RenderDevice *rd)
     FilmSettings filmSettings = activeCamera()->filmSettings();
     filmSettings.setBloomStrength(0.0);
     filmSettings.setGamma(1.0); // default is 2.0
+    filmSettings.setVignetteTopStrength(0);
+    filmSettings.setVignetteBottomStrength(0);
 
-    m_film->exposeAndRender(rd, filmSettings, m_framebuffer->texture(0),
+    m_film->exposeAndRender(rd, filmSettings, nextFBO->texture(1),
                             settings().hdrFramebuffer.colorGuardBandThickness.x +
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
+
 }
-
-
 
 FilmSettings App::getFilmSettings()
 {
