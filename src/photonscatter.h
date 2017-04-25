@@ -30,10 +30,18 @@ protected:
 
     /**
      * @brief calculateAndStoreBeam calculates the power, direction, etc of the beam, and stores it in the array.
-     * @param emitBeam
-     * @param surfel
-     * @param beamettes
+     * @param startPt   start point
+     * @param endPt     end point
+     * @param prev      start point of the beam that emitted this beam
+     * @param next      end point of the beam following from this beam
+     * @param startRad  radius at start of beam
+     * @param endRad    radius at end of beam
+     * @param power     power
      */
+    void calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector3 prev, Vector3 next,
+                               float startRad, float endRad, Color3 power);
+
+    /* Temporary, use other calculateAndStoreBeam instead. */
     void calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3 power);
 
     /**

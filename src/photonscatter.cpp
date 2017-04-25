@@ -151,12 +151,6 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
     }
 }
 
-/**
- * @brief calculateAndStoreBeam calculates the power, direction, etc of the beam, and stores it in the array.
- * @param emitBeam
- * @param surfel
- * @param beamettes
- */
 void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3 power)
 {
     PhotonBeamette beam = PhotonBeamette();
@@ -165,3 +159,49 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3
     beam.m_power = power;
     m_beams.push_back(beam);
 }
+
+/**
+ * @brief calculateAndStoreBeam calculates the power, direction, etc of the beam, and stores it in the array.
+ * @param startPt   start point
+ * @param endPt     end point
+ * @param prev      start point of the beam that emitted this beam
+ * @param next      end point of the beam following from this beam
+ * @param startRad  radius at start of beam
+ * @param endRad    radius at end of beam
+ * @param power     power
+ */
+void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector3 prev,
+                                          Vector3 next, float startRad, float endRad, Color3 power)
+{
+    PhotonBeamette beam = PhotonBeamette();
+    beam.m_start =  startPt;
+    beam.m_end = endPt;
+    beam.m_power = power;
+
+    Vector3 vbeam = normalize(endPt - startPt);
+
+    //start
+    if (prev.isNaN()) { // beam is light source? will cut edge perpendicular to beam
+        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        beam.m_start_major = startRad * cross(perp, vbeam);
+        beam.m_start_minor = startRad * perp;
+    } else {
+        Vector3 beam_prev = normalize(startPt - prev);
+        beam.m_start_major = ((vbeam + beam_prev) / 2.0) * (startRad / dot(vbeam, beam_prev));
+        beam.m_start_minor = startRad * beam_prev;
+    }
+
+    // end
+    if (next.isNaN()) { // beam has no child? will cut edge perpendicular to beam
+        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        beam.m_end_minor = endRad * perp;
+        beam.m_end_major = endRad * cross(perp, vbeam);
+    } else {
+        Vector3 beam_next = normalize(next - endPt);
+        beam.m_end_major = ((vbeam + beam_next) / 2.0) * (endRad / dot(vbeam, beam_next));
+        beam.m_end_minor = endRad * beam_next;
+    }
+
+    m_beams.push_back(beam);
+}
+

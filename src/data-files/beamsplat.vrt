@@ -1,5 +1,7 @@
 #version 410
 
+uniform sampler2D axis;
+
 in vec3 Position;
 in vec3 Major;
 in vec3 Minor;

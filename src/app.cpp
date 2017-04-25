@@ -284,7 +284,7 @@ void App::gpuProcess(RenderDevice *rd)
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
-//        Texture axis = Texture::createEmpty("axis", direct_beams.size(), 4);
+//        Array<Vector4>   axisMajor;
 
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
@@ -294,11 +294,37 @@ void App::gpuProcess(RenderDevice *rd)
                 cpuVertex.append(pb.m_start);
                 cpuVertex.append(pb.m_end);
             }
+/*
+            // scale constants for debugging
+            const float d = 1.0;
+            const float w = 1.0;
+
+            vec3 start = pb.m_start;
+            vec3 end = pb.m_end;
+            vec3 look = normalize(start.xyz - Vector3(0, 1.5, 9));
+            vec3 beam = normalize(end.xyz - start.xyz);
+            vec3 b_perp = normalize(cross(beam, look));
+
+            vec3 maj0 = major[0];
+            vec3 maj1 = major[1];
+            vec3 b_major0 = dot(maj0, beam) * beam * d;
+            vec3 beam_major1 = dot(maj1, beam) * beam * d;
+
+            float b_start_w = length(minor[0]) * w;
+            float b_end_w = length(minor[1]) * w;
+
+            cpuVertex.append(start + b_perp * b_start_w - b_major0);
+            cpuVertex.append(start - b_perp * b_start_w - b_major0);
+            cpuVertex.append(end + b_perp * b_end_w + beam_major1);
+            cpuVertex.append(end - b_perp * b_end_w + beam_major1);
+*/
+
             cpuMajor.append(pb.m_start_major);
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
         }
+//        shared_ptr<Texture> axis = Texture::fromMemory("axis", cpuMajor.getCArray(), ImageFormat::RGB8(), direct_beams.size() * 2, 4, 0);
 
         rd->setObjectToWorldMatrix(CFrame());
 
@@ -321,6 +347,7 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Position", gpuVertex);
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
+//        args.setImageUniform("axis", axis);
         args.setUniform("Camera", Vector3(0, 1.5, 9));
 
         args.setUniform("MVP", rd->invertYMatrix() *
