@@ -62,6 +62,61 @@ Vector3 Utils::closestPointOnLine(Vector3 point, Vector3 lineS, Vector3 lineE)
     return lineS + lineE*t;
 }
 
+/**
+ * @brief Utils:interpolate - Catmull Rom interpolation between points p1 and p2, using neightbors p0, p3, and t position
+ * @param p0
+ * @param p1
+ * @param p2
+ * @param p3
+ * @param t
+ */
+Vector3 Utils::interpolate(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t){
+
+    // Using 4 points and t, find coefficents for the polynomial that defines these points
+
+    Vector3 A = 2.f * p1;
+    Vector3 B = p2 - p0;
+    Vector3 C = 2.f * p0 - 5.f * p1 + 4.f * p2 - p3;
+    Vector3 D = -p0 + 3.f * p1 - 3.f * p2 + p3;
+
+    // Cubic polynomial
+    Vector3 pos = A + (B * t) + (C * t * t) + (D * t * t * t);
+
+    return pos;
+}
+
+/**
+ * @brief catmullRomSpline
+ * @param splinePoints
+ * @param numPoints
+ * @param alpha - alpha value (ranges from 0 to 1) for knot parameterization
+ */
+void Utils::catmullRomSpline(Array<Vector3> &splinePoints, int numPoints, float alpha){
+    // TODO: don't hardcode alpha, allow 0, 0.5, or 1
+
+    splinePoints.resize(0, false);
+    if (splinePoints.length() != numPoints){
+        splinePoints.resize(numPoints);
+    }
+
+    int bound = floor(1.f/numPoints);
+
+    return;
+}
+
+/**
+ * @brief calculateT
+ * @param prevT
+ * @param point1
+ * @param point2
+ */
+float Utils::calculateT(float prevT, Vector3 point1, Vector3 point2, float alpha){
+    float a = pow(point2.x - point1.x, 2.f) + pow(point2.y - point1.y, 2.f) + pow(point2.z - point1.z, 2.f);
+    float b = pow(a, 0.5f);
+    float c = pow(b, alpha);
+    return (c + prevT);
+}
+
 
 
 
