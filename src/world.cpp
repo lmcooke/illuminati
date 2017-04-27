@@ -96,7 +96,8 @@ void World::load(const String &path )
 
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
-                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
+//                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
+                m_geometry.append(posed[i]);
 
             printf("done\n");
         }
@@ -109,7 +110,7 @@ void World::load(const String &path )
     // Build bounding interval hierarchy for scene geometry
     Array<Tri> triArray;
 
-    Surface::getTris( m_geometry, m_verts, triArray );
+    Surface::getTris(m_geometry, m_verts, triArray );
     for (int i = 0; i < triArray.size(); ++i)
     {
         triArray[i].material()->setStorage(COPY_TO_CPU);
@@ -122,6 +123,7 @@ void World::load(const String &path )
                 dynamic_pointer_cast<UniversalMaterial>(m);
 
             if ( mtl->emissive().notBlack() ) {
+                printf("EMISSIVE %f\n", mtl->emissive().mean().r);
                 m_emit.append(triArray[i]);
             }
         }
@@ -152,6 +154,9 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
     // Pick an emissive triangle uniformly at random
     int i = random.integer(0, m_emit.size() - 1);
     const Tri& tri = m_emit[i];
+
+    printf("length m_emit: %i\n", m_emit.length());
+    printf("indexing with index %i\n", i);
 
     // Pick a point in that triangle uniformly at random
     // http://books.google.com/books?id=fvA7zLEFWZgC&pg=PA24#v=onepage&q&f=false
@@ -190,7 +195,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     float prob;
     float area;
 
-    emissivePoint(random, light, prob, area);
+    World::emissivePoint(random, light, prob, area);
 
     // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
@@ -250,30 +255,44 @@ void World::renderWireframe(RenderDevice *dev)
     dev->popState();
 }
 
-shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
-    const shared_ptr<ArticulatedModel>& model = ArticulatedModel::createEmpty("splineModel");
 
-    ArticulatedModel::Part*     part      = model->addPart("root");
-    ArticulatedModel::Geometry* geometry  = model->addGeometry("geom");
-    ArticulatedModel::Mesh*     mesh      = model->addMesh("mesh", part, geometry);
+shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
+    const shared_ptr<ArticulatedModel>& modelBody = ArticulatedModel::createEmpty("splineModel");
+
+    ArticulatedModel::Part*     partBody      = modelBody->addPart("rootBody");
+    ArticulatedModel::Geometry* geometryBody  = modelBody->addGeometry("geomBody");
+    ArticulatedModel::Mesh*     meshBody      = modelBody->addMesh("meshBody", partBody, geometryBody);
+
+    const shared_ptr<ArticulatedModel> &modelEmitter = ArticulatedModel::createEmpty("splineModel");
+
+    ArticulatedModel::Part*     partEmitter      = modelEmitter->addPart("rootEmitter");
+    ArticulatedModel::Geometry* geometryEmitter  = modelEmitter->addGeometry("geomEmitter");
+    ArticulatedModel::Mesh*     meshEmitter      = modelEmitter->addMesh("meshEmitter", partEmitter, geometryEmitter);
 
     int npts = 0;
     int slices = 8;
     float arc = 2.0 * pif() / slices;
 
     // Assign a material
-    mesh->material = UniversalMaterial::create(
+    meshBody->material = UniversalMaterial::create(
         PARSE_ANY(
         UniversalMaterial::Specification {
             lambertian = Color3(1.0, 0.7, 0.15);
-            };
-
             glossy     = Color4(Color3(0.01), 0.2);
         }));
-    mesh->twoSided = true;
 
-    Array<CPUVertexArray::Vertex>& vertexArray = geometry->cpuVertexArray.vertex;
-    Array<int>& indexArray = mesh->cpuIndexArray;
+    UniversalMaterial::Specification spec = UniversalMaterial::Specification();
+    spec.setLambertian(Texture::Specification(Color4(1.0, 0.7, 0.15, 0.0)));
+    spec.setEmissive(Texture::Specification(Color4(1.0, 1.0, 1.0, 1.0)));
+    spec.setGlossy(Texture::Specification(Color4(Color3(0.01), 0.2)));
+    meshEmitter->material = UniversalMaterial::create(spec);
+    meshEmitter->twoSided = true;
+
+    Array<CPUVertexArray::Vertex>& vertexArray = geometryBody->cpuVertexArray.vertex;
+    Array<int>& indexArray = meshBody->cpuIndexArray;
+
+    Array<CPUVertexArray::Vertex>& vertexArrayEmitter = geometryEmitter->cpuVertexArray.vertex;
+    Array<int>& indexArrayEmitter = meshEmitter->cpuIndexArray;
 
     Array<Vector4> raw_spline = Array<Vector4>();
 
@@ -316,6 +335,10 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
                                                         pt2.y,
                                                         pt2.z + w2 * sin(a * arc),
                                                         1.0);
+                if (npts == 1){ // first control point
+
+                }
+
                 v.position = Vector3(tmp.x, tmp.y, tmp.z);
                 v.normal  = Vector3::nan();
                 v.tangent = Vector4::nan();
@@ -343,17 +366,16 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
         }
     }
 
-
     // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,
     // normals and tangents automatically. We already ensured correct
     // topology, so avoid the vertex merging optimization.
     ArticulatedModel::CleanGeometrySettings geometrySettings;
     geometrySettings.allowVertexMerging = false;
-    model->cleanGeometry(geometrySettings);
+    modelBody->cleanGeometry(geometrySettings);
 
     m_splines.append(raw_spline);
 
-    return model;
+    return modelBody;
 }
 
 /* TODO use this to make a real function that takes in a spline
