@@ -1,21 +1,19 @@
 #version 410
 
-uniform sampler2D axis;
-
 in vec3 Position;
 in vec3 Major;
 in vec3 Minor;
-in int Index;
+in vec3 Power;
 
 out vec3 major;
 out vec3 minor;
-out int index;
+out vec3 power_geo;
 
 void main(void) {
 
         gl_Position = vec4(Position, 1.0);
         major = Major;
         minor = Minor;
-        index = Index;
+        power_geo = Power;
 
 }

@@ -1,25 +1,13 @@
 #version 410
 #define M_PI 3.1415926535897932384626433832795
 
-uniform sampler2D axis;
-
 in vec2 uv;
-in vec3 Major;
-in float timeCount;
-flat in int id;
+in vec3 power;
 
 out vec3 g3d_FragColor;
 
 void main(void) {
 
         float val = sin((0.5 - abs(uv.y - 0.5)) * M_PI / 2.0);
-        g3d_FragColor = vec3(val);
-        //g3d_FragColor.b = val;
-
-        //g3d_FragColor.r = id * 0.2 + 0.2;
-        //g3d_FragColor.r = 0.0;
-        //g3d_FragColor.g = 0.0;
-        //g3d_FragColor.r = length(texture(axis, vec2(1, id)).xyz) * 5.0;
-        //g3d_FragColor.g = texture(axis, vec2(2, id)).w * 0.2;
-
+        g3d_FragColor = vec3(val * power);
 }

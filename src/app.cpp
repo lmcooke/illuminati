@@ -284,11 +284,9 @@ void App::gpuProcess(RenderDevice *rd)
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
+        Array<Color3>     cpuPower;
 
-        Array<float>     axisfloats;
-        Array<int>       cpuIndex;
-
-        int i = 0;
+        //int i = 0;
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
                 cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
@@ -302,34 +300,9 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            cpuIndex.append(i);
-            cpuIndex.append(i);
-            i++;
-
-            Vector3 a = pb.m_start_major;
-            Vector3 b = pb.m_start_minor;
-            Vector3 c = pb.m_end_major;
-            Vector3 d = pb.m_end_minor;
-//            a = Vector3(1.0, 2.0, 3.0);
-//            b = a;
-//            c = a;
-//            d = a;
-            axisfloats.append(a.x, a.y, a.z, 0.0); //sorry
-            axisfloats.append(b.x, b.y, b.z, 1.0);
-            axisfloats.append(c.x, c.y, c.z, 2.0);
-            axisfloats.append(d.x, d.y, d.z, 3.0);
+            cpuPower.append(pb.m_power);
+            cpuPower.append(pb.m_power);
         }
-        shared_ptr<Texture> axis =
-                Texture::fromMemory("axis",
-                                    axisfloats.getCArray(),
-                                     ImageFormat::floatFormat(4),
-                                    4,
-                                    direct_beams.size(),
-                                    1,
-                                    1,
-                                    Texture::Encoding(ImageFormat::AUTO()),
-                                    Texture::Dimension::DIM_2D,
-                                    false);
 
         rd->setObjectToWorldMatrix(CFrame());
         rd->setColorClearValue(Color3::black());
@@ -342,29 +315,19 @@ void App::gpuProcess(RenderDevice *rd)
                     sizeof(Vector3) * cpuVertex.size() +
                     sizeof(Vector3) * cpuMajor.size() +
                     sizeof(Vector3) * cpuMinor.size() +
-                    sizeof(int) * cpuIndex.size());
+                    sizeof(Color3) * cpuPower.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
         AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
         AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
-        AttributeArray gpuIndex  = AttributeArray(cpuIndex, vbuffer);
+        AttributeArray gpuPower  = AttributeArray(cpuPower, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
-        args.setAttributeArray("Index", gpuIndex);
-
-        args.setUniform("axis", axis, Sampler(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP), false);
+        args.setAttributeArray("Power", gpuPower);
         args.setUniform("Camera", Vector3(0, 1.5, 9));
-
-        std::cout << axis->readTexel(0,0).toString() << std::endl;
-        std::cout << axis->readTexel(1,0).toString() << std::endl;
-        std::cout << axis->readTexel(2,0).toString() << std::endl;
-        std::cout << axis->readTexel(3,0).toString() << std::endl;
-        //std::cout << axis->readTexel(4,0).toString() << std::endl;
-        std::cout << axis->readTexel(0,4).toString() << std::endl;
-        std::cout << std::endl;
 
         args.setUniform("MVP", rd->invertYMatrix() *
                                 rd->projectionMatrix() *
