@@ -80,6 +80,7 @@ protected:
      * @param bounces
      * @return
      */
+
     bool scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, float &dist, int bounces);
     World* m_world;
     Random m_random;   // Random number generator

@@ -31,6 +31,33 @@ public:
     static float cone(float dist, float gatherRadius);
 
     /**
+     * @brief Utils:interpolate - Catmull Rom interpolation between points p1 and p2, using neightbors p0, p3, and t position
+     * @param p0
+     * @param p1
+     * @param p2
+     * @param p3
+     * @param t
+     */
+    static Vector3 interpolate(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t);
+
+    /**
+     * @brief catmullRomSpline
+     * @param splinePoints
+     * @param numPoints
+     * @param alpha - alpha value (ranges from 0 to 1) for knot parameterization
+     */
+    static void catmullRomSpline(Array<Vector3> &splinePoints, int numPoints, float alpha);
+
+    /**
+     * @brief calculateT
+     * @param prevT
+     * @param point1
+     * @param point2
+     * @param alpha
+     */
+    static float calculateT(float prevT, Vector3 point1, Vector3 point2, float alpha);
+
+    /**
      * @brief Utils::closestPointOnLine
      * @param point
      * @param lineS

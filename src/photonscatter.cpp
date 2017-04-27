@@ -151,6 +151,7 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
     }
 }
 
+// Temp, later use startRad, endRad version
 void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3 power)
 {
     PhotonBeamette beam = PhotonBeamette();
