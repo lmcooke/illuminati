@@ -5,14 +5,17 @@ uniform sampler2D axis;
 in vec3 Position;
 in vec3 Major;
 in vec3 Minor;
+in int Index;
 
 out vec3 major;
 out vec3 minor;
+out int index;
 
 void main(void) {
 
         gl_Position = vec4(Position, 1.0);
         major = Major;
         minor = Minor;
+        index = Index;
 
 }
