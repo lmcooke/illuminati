@@ -284,8 +284,9 @@ void App::gpuProcess(RenderDevice *rd)
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
-//        Array<Vector4>   axisMajor;
+        Array<Color3>     cpuPower;
 
+        //int i = 0;
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
                 cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
@@ -294,40 +295,16 @@ void App::gpuProcess(RenderDevice *rd)
                 cpuVertex.append(pb.m_start);
                 cpuVertex.append(pb.m_end);
             }
-/*
-            // scale constants for debugging
-            const float d = 1.0;
-            const float w = 1.0;
-
-            vec3 start = pb.m_start;
-            vec3 end = pb.m_end;
-            vec3 look = normalize(start.xyz - Vector3(0, 1.5, 9));
-            vec3 beam = normalize(end.xyz - start.xyz);
-            vec3 b_perp = normalize(cross(beam, look));
-
-            vec3 maj0 = major[0];
-            vec3 maj1 = major[1];
-            vec3 b_major0 = dot(maj0, beam) * beam * d;
-            vec3 beam_major1 = dot(maj1, beam) * beam * d;
-
-            float b_start_w = length(minor[0]) * w;
-            float b_end_w = length(minor[1]) * w;
-
-            cpuVertex.append(start + b_perp * b_start_w - b_major0);
-            cpuVertex.append(start - b_perp * b_start_w - b_major0);
-            cpuVertex.append(end + b_perp * b_end_w + beam_major1);
-            cpuVertex.append(end - b_perp * b_end_w + beam_major1);
-*/
 
             cpuMajor.append(pb.m_start_major);
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
+            cpuPower.append(pb.m_power);
+            cpuPower.append(pb.m_power);
         }
-//        shared_ptr<Texture> axis = Texture::fromMemory("axis", cpuMajor.getCArray(), ImageFormat::RGB8(), direct_beams.size() * 2, 4, 0);
 
         rd->setObjectToWorldMatrix(CFrame());
-
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
@@ -337,17 +314,19 @@ void App::gpuProcess(RenderDevice *rd)
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
                     sizeof(Vector3) * cpuVertex.size() +
                     sizeof(Vector3) * cpuMajor.size() +
-                    sizeof(Vector3) * cpuMinor.size());
+                    sizeof(Vector3) * cpuMinor.size() +
+                    sizeof(Color3) * cpuPower.size());
         AttributeArray gpuVertex   = AttributeArray(cpuVertex, vbuffer);
         AttributeArray gpuMajor   = AttributeArray(cpuMajor, vbuffer);
         AttributeArray gpuMinor   = AttributeArray(cpuMinor, vbuffer);
+        AttributeArray gpuPower  = AttributeArray(cpuPower, vbuffer);
         Args args;
 
         args.setPrimitiveType(PrimitiveType::LINES);
         args.setAttributeArray("Position", gpuVertex);
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
-//        args.setImageUniform("axis", axis);
+        args.setAttributeArray("Power", gpuPower);
         args.setUniform("Camera", Vector3(0, 1.5, 9));
 
         args.setUniform("MVP", rd->invertYMatrix() *

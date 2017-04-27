@@ -424,6 +424,7 @@ Array<PhotonBeamette> World::visualizeSplines() {
 
             prev_major = pb.m_end_major;
             prev_minor = pb.m_end_minor;
+            pb.m_power = Color3(0.7, 0.5, 1.0); // TODO unhardcode
             beams.append(pb);
         }
     }
