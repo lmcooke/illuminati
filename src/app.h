@@ -117,6 +117,7 @@ private:
     World               m_world;    // The scene being rendered
     shared_ptr<Image3>  m_canvas;   // Output buffer for raytrace()
     shared_ptr<Thread>  m_dispatch; // Spawns rendering threads
+    float               m_radius; // Current radius of the beams to be rendered
 
 #if 0
     bool                m_pointLights; // true if these are turned on

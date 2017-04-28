@@ -17,7 +17,8 @@ App::App(const GApp::Settings &settings)
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
-      m_passType(0)
+      m_passType(0),
+      m_radius(1)
 {
     m_scenePath = FileSystem::currentDirectory() + "/scene";
 
@@ -41,12 +42,13 @@ App::App(const GApp::Settings &settings)
     m_PSettings.maxDepthScatter=3;
     m_PSettings.maxDepthRender=4;
     m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettes=5000;
+    m_PSettings.numBeamettesDir=20;
+    m_PSettings.numBeamettesInDir=20000;
 
     m_PSettings.directSamples=64;
     m_PSettings.gatherRadius=0.1;
-    m_PSettings.useFinalGather=false;
-    m_PSettings.dist = 0.3;
+    m_PSettings.useFinalGather=true;
+    m_PSettings.dist = 5;
 }
 
 App::~App() { }
@@ -200,7 +202,6 @@ void App::makeLinesDirBeams(SlowMesh &mesh)
     {
         Array<PhotonBeamette> beams = m_dirBeams->getBeams();
         for (int i=0; i<beams.size(); i++) {
-            // Apparently this is how you index into a pointer to an array?
             PhotonBeamette beam = beams[i];
             mesh.setColor(beam.m_power / beam.m_power.max());
             mesh.makeVertex(beam.m_start);
@@ -249,7 +250,9 @@ void App::renderBeams(RenderDevice *dev, World *world)
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
 
-    if (!m_world.camnull()){
+    if (!m_world.camnull() && m_dirBeams){
+        m_dirBeams->setRadius(m_radius);
+        m_dirBeams->makeBeams();
         gpuProcess(rd);
     } else {
         swapBuffers();
@@ -266,8 +269,11 @@ void App::gpuProcess(RenderDevice *rd)
 {
 
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+    direct_beams.append(m_dirBeams->getBeams());
+//    direct_beams = m_dirBeams->getBeams();
 
     m_count += .001;
+    m_radius = max(m_radius*0.75, 0.1);
     m_passes += 1;
 
     // flipFlop FBOs and textures

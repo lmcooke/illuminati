@@ -4,12 +4,12 @@
 #include "photonbeamette.h"
 #include "world.h"
 #include "photonsettings.h"
-
 class PhotonScatter
 {
 public:
     PhotonScatter(World * world, PhotonSettings settings);
     ~PhotonScatter();
+    void setRadius(float radius);
 
 protected:
     /** Initializes datastructure, loops over photon beams to create and shoot them*/
@@ -26,7 +26,7 @@ protected:
      * to be added to the KD tree or array.
      * Returns an array of PhotonBeams
      */
-    void shootRay(Array<PhotonBeamette> &beams);
+    void shootRay(Array<PhotonBeamette> &beams, int numBeams);
 
     /**
      * @brief calculateAndStoreBeam calculates the power, direction, etc of the beam, and stores it in the array.
@@ -40,10 +40,6 @@ protected:
      */
     void calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector3 prev, Vector3 next,
                                float startRad, float endRad, Color3 power);
-
-    /* Temporary, use other calculateAndStoreBeam instead. */
-    void calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3 power);
-
     /**
      * @brief scatterIntoFog A beam that starts at startPt and, if it were to continue forward, would go in direction
      * origDirection. But it doesn't! Instead, it scatters some other direction based on the phase function.
@@ -86,6 +82,7 @@ protected:
     Random m_random;   // Random number generator
     PhotonSettings m_PSettings;
     Array<PhotonBeamette> m_beams;
+    float m_radius;
 };
 
 #endif // PHOTONSCATTER_H
