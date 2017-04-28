@@ -85,11 +85,11 @@ public:
     /** Renders the world in wireframe */
     void renderWireframe(RenderDevice *dev);
 
-    /** Reads in spline file and parses it into a G3D Model.
+    /** Reads in spline file and parses it into a G3D Model, composed of the curve body and an emitter
      *  Spline files consist of a series of points, one per line, represented as:
      *  x y z radius
      *  The last line must be a comment starting with a #. */
-    shared_ptr<ArticulatedModel> createSplineModel(const String& str);
+    Array<shared_ptr<ArticulatedModel>> createSplineModel(const String& str);
 
     /** Returns exact beamette representation of splines used as spline lights,
      * for testing splatting
