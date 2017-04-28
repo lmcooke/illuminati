@@ -2,7 +2,6 @@
 /* -*- c++ -*- */
 { 
     entities = { 
-        
         camera = Camera { 
             depthOfFieldSettings = DepthOfFieldSettings { 
                 enabled = false; 
@@ -40,7 +39,7 @@
                 vignetteTopStrength = 0.5; 
             }; 
             
-            frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 ); 
+            frame = CFrame::fromXYZYPRDegrees(0, 1, 6 ); 
             motionBlurSettings = MotionBlurSettings { 
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
@@ -60,14 +59,14 @@
             visualizationScale = 1; 
         }; 
         
-        cornellBox = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0, 0, -0.25); 
-            model = "cornellModel"; 
+        cracks = VisibleEntity { 
+            frame = Vector3(0, 0, 0 ); 
+            model = "cracksModel"; 
         }; 
-
-        circleLight = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0, 0, 0); 
-            model = "circleLight"; 
+        
+        floorLight = VisibleEntity { 
+            frame = CFrame::fromXYZYPRDegrees(0, -0.1, 0 ); 
+            model = "floorLight"; 
         }; 
         
         light1 = Light { 
@@ -130,12 +129,6 @@
             type = "SPOT"; 
         }; 
         
-        
-        cauldron = VisibleEntity { 
-            frame = Vector3(0, 0, 0 ); 
-            model = "cauldronModel"; 
-        }; 
-        
     }; 
     
     lightingEnvironment = LightingEnvironment { 
@@ -169,7 +162,6 @@
     }; 
     
     models = { 
-        
         cornellModel = ArticulatedModel::Specification { 
             filename = "../model/CornellBox-Empty-CO.obj"; 
             preprocess = { 
@@ -177,10 +169,18 @@
             
         }; 
         
-        glassBall = ArticulatedModel::Specification { 
-            filename = "../model/sphereGlass.obj"; 
+        cracksModel = ArticulatedModel::Specification { 
+            filename = "../model/cracks.obj"; 
             preprocess = { 
-                transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
+                setMaterial(all(), Color3(1, 1, 1 ) ); 
+                transformGeometry(all(), Matrix4::scale(0.03, 0.03, 0.03 ) ) }; 
+            
+        }; 
+        
+        floorLight = ArticulatedModel::Specification { 
+            filename = "../model/floorLight.obj"; 
+            preprocess = { 
+                transformGeometry(all(), Matrix4::scale(0.018, 0.018, 0.018 ) ) }; 
             
         }; 
         
@@ -190,8 +190,6 @@
                 transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
             
         }; 
-
-
         
         mirrorBall = ArticulatedModel::Specification { 
             filename = "../model/sphere.obj"; 
@@ -223,22 +221,7 @@
             
         }; 
         
-        cauldronModel  = ArticulatedModel::Specification { 
-            filename = "../model/cauldronGap.obj"; 
-            preprocess = { 
-                setMaterial(all(), Color3(1, 1, 1) ); 
-                transformGeometry(all(), Matrix4::scale(0.04, 0.04, 0.04) ) }; 
-            
-        }; 
-
-        circleLight = ArticulatedModel::Specification { 
-            filename = "../model/circleLight.obj"; 
-            preprocess = { 
-                transformGeometry(all(), Matrix4::scale(0.035, 0.035, 0.035) ) }; 
-            
-        }; 
-        
     }; 
     
-    name = "Cauldron (Photon Beams)"; 
+    name = "Cracks No Box (Photon Beams)"; 
 } 
