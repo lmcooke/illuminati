@@ -32,7 +32,8 @@ public:
     // Used for bumping.
     float epsilon;
     // Number of beamettes to shoot into the scene.
-    int numBeamettes;
+    int numBeamettesDir;
+    int numBeamettesInDir;
     // Number of samples to take of direct light sources.
     int directSamples;
     // number of ray samples for final gather.

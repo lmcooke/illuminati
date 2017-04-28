@@ -2,7 +2,8 @@
 
 PhotonScatter::PhotonScatter(World * world, PhotonSettings settings):
     m_world(world),
-    m_PSettings(settings)
+    m_PSettings(settings),
+    m_radius(1)
 {
 }
 
@@ -10,13 +11,13 @@ PhotonScatter::~PhotonScatter()
 {
 }
 
-void PhotonScatter::shootRay(Array<PhotonBeamette> &beams)
+void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams)
 {
     m_beams.clear();
     // Emit a photon.
     PhotonBeamette beam;
     shared_ptr<Surfel> surfel;
-    if (m_world->emitBeam(m_random, beam, surfel, m_PSettings.numBeamettes))
+    if (m_world->emitBeam(m_random, beam, surfel, numBeams))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
         shootRayRecursive(beam, 0);
@@ -46,7 +47,9 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
         // Store the photon!
         if(bounces > 0)
         {
-            calculateAndStoreBeam(emitBeam.m_start, surfel->position, emitBeam.m_power);
+            Vector3 prev = -(emitBeam.m_start - surfel->position) * 1.1;
+            Vector3 next = (emitBeam.m_start - surfel->position) * 1.1;
+            calculateAndStoreBeam(emitBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emitBeam.m_power);
         }
 
         // Choose a direction to shoot the beam based on the surfel's BSDF
@@ -145,20 +148,12 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
     if (!hitSurf && dist < inf())
     {
         Vector3 beamEndPt = emitBeam.m_start + direction * marchDist;
-        calculateAndStoreBeam(emitBeam.m_start, beamEndPt, emitBeam.m_power);
+        Vector3 prev = -(emitBeam.m_start - beamEndPt) * 1.1;
+        Vector3 next = (emitBeam.m_start - beamEndPt) * 1.1;
+        calculateAndStoreBeam(emitBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emitBeam.m_power);
         scatterForward(beamEndPt, direction, emitBeam.m_power, bounces);
         scatterIntoFog(beamEndPt, direction, emitBeam.m_power, bounces);
     }
-}
-
-// Temp, later use startRad, endRad version
-void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Color3 power)
-{
-    PhotonBeamette beam = PhotonBeamette();
-    beam.m_start =  startPt;
-    beam.m_end = endPt;
-    beam.m_power = power;
-    m_beams.push_back(beam);
 }
 
 /**
@@ -177,13 +172,13 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     PhotonBeamette beam = PhotonBeamette();
     beam.m_start =  startPt;
     beam.m_end = endPt;
-    beam.m_power = power;
+    beam.m_power = power/pow(m_radius, 2);
 
     Vector3 vbeam = normalize(endPt - startPt);
 
     //start
     if (prev.isNaN()) { // beam is light source? will cut edge perpendicular to beam
-        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        Vector3 perp = (!vbeam.x) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_start_major = startRad * cross(perp, vbeam);
         beam.m_start_minor = startRad * perp;
     } else {
@@ -194,7 +189,7 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
 
     // end
     if (next.isNaN()) { // beam has no child? will cut edge perpendicular to beam
-        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        Vector3 perp = (!vbeam.x) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_end_minor = endRad * perp;
         beam.m_end_major = endRad * cross(perp, vbeam);
     } else {
@@ -202,7 +197,10 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
         beam.m_end_major = ((vbeam + beam_next) / 2.0) * (endRad / dot(vbeam, beam_next));
         beam.m_end_minor = endRad * beam_next;
     }
-
     m_beams.push_back(beam);
 }
 
+void PhotonScatter::setRadius(float radius)
+{
+    m_radius = radius;
+}

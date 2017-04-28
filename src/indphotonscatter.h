@@ -11,6 +11,7 @@ public:
     void preprocess();
     void phaseFxn(Vector3 wi, Vector3 &wo);
     std::shared_ptr<G3D::KDTree<PhotonBeamette>> getBeams();
+    void makeBeams();
 protected:
     std::shared_ptr<G3D::KDTree<PhotonBeamette>> m_KDTreeBeams;
 private:

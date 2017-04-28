@@ -12,6 +12,7 @@ public:
     void preprocess();
     void phaseFxn(Vector3 wi, Vector3 &wo);
     Array<PhotonBeamette> getBeams();
+    void makeBeams();
 private:
     Array<PhotonBeamette> m_beams;
 };
