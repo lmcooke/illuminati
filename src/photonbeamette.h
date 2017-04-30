@@ -15,6 +15,7 @@ public:
     Vector3 m_start_minor;
     Vector3 m_end_major;
     Vector3 m_end_minor;
+    bool m_isCurve;
     Power3 m_power;
 };
 

@@ -92,7 +92,7 @@ void World::load(const String &path )
 
             Array<shared_ptr<Surface>> posed;
             spline->pose(posed, CFrame(pos));
-//            emitter->pose(posed, CFrame(pos));
+            emitter->pose(posed, CFrame(pos));
 
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
@@ -192,7 +192,6 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     float area;
 
     World::emissivePoint(random, light, prob, area);
-
     // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
     float dist;
@@ -278,7 +277,7 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
 
     UniversalMaterial::Specification spec = UniversalMaterial::Specification();
     spec.setLambertian(Texture::Specification(Color4(1.0, 0.7, 0.15, 0.0)));
-    spec.setEmissive(Texture::Specification(Color4(1.0, 1.0, 1.0, 1.0)));
+    spec.setEmissive(Texture::Specification(Color4(4.0, 4.0, 4.0, 1.0)));
     meshEmitter->material = UniversalMaterial::create(spec);
     meshEmitter->twoSided = true;
 
@@ -334,6 +333,16 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
                 v.tangent = Vector4::nan();
 
                 if (npts == 1){ // If first control point
+
+                    // Center point
+                    if (a == 0){
+                        CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
+                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+                        v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                        v.normal = Vector3::nan();
+                        v.tangent = Vector4::nan();
+                    }
+
                     CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
                     Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
                                                             pt2.y,
@@ -369,17 +378,12 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     }
 
     /* emitter face construction*/
-    float fEmit[4] = {0, 0, 0, 0};
-    for (int i =0; i < slices; i++){
-        fEmit[0] = i % slices;
-        fEmit[3] = ((i+1) % slices);
-        fEmit[1] = fEmit[0] + slices;
-        fEmit[2] = fEmit[3] + slices;
-        indexArrayEmitter.append(fEmit[0], fEmit[1], fEmit[2], fEmit[0], fEmit[2], fEmit[3]);
-    }
-
-    for (int j = 0; j < vertexArrayEmitter.length(); j++){
-        printf("emitter: %f, %f, %f\n", (float) vertexArrayEmitter[j].position.x,(float) vertexArrayEmitter[j].position.y, (float) vertexArrayEmitter[j].position.z);
+    float fEmit[3] = {0, 0, 0};
+    for (int i = 0; i < slices; i++){
+        fEmit[0] = 0;
+        fEmit[1] = i % slices + 1;
+        fEmit[2] = ((i+1) % slices) + 1;
+        indexArrayEmitter.append(fEmit[0], fEmit[1], fEmit[2]);
     }
 
     // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,
@@ -391,7 +395,8 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
 
     ArticulatedModel::CleanGeometrySettings geometrySettingsEmitter;
     geometrySettingsEmitter.allowVertexMerging = false;
-//    geometrySettingsEmitter.forceComputeTangents = true;
+    geometrySettingsEmitter.forceComputeNormals = true;
+    geometrySettingsEmitter.forceComputeTangents = true;
     modelEmitter->cleanGeometry(geometrySettingsEmitter);
 
     m_splines.append(raw_spline);

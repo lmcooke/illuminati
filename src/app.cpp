@@ -38,6 +38,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.scattering=0.0;
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
+    m_PSettings.followRatio=0.0;
 
     m_PSettings.maxDepthScatter=3;
     m_PSettings.maxDepthRender=4;
@@ -141,9 +142,7 @@ void App::onInit()
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite2);
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight2);
 
-
     setFrameDuration(1.0f / 60.0f);
-
 
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
@@ -156,12 +155,10 @@ void App::onInit()
     m_model = ArticulatedModel::create(spec);
     m_model->pose(m_sceneGeometry, Point3(0.f, 0.f, 0.f));
 
-
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-//    m_scenePath = m_defaultScene;
 
     makeGUI();
 
@@ -270,7 +267,6 @@ void App::gpuProcess(RenderDevice *rd)
 
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     direct_beams.append(m_dirBeams->getBeams());
-//    direct_beams = m_dirBeams->getBeams();
 
     m_count += .001;
     m_radius = max(m_radius*0.75, 0.1);
@@ -342,7 +338,6 @@ void App::gpuProcess(RenderDevice *rd)
         LAUNCH_SHADER("beamsplat.*", args);
 
     } rd->popState();
-
 
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
@@ -417,7 +412,7 @@ void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
 
-    updateScenePathLabel();
+//    updateScenePathLabel();
     m_warningLabel->setCaption("");
     m_ddl->clear();
 
@@ -475,7 +470,10 @@ void App::makeGUI()
     shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
                                                      debugWindow->theme(),
                                                      Rect2D::xywh(0,0,60,60),
-                                                     GuiTheme::MENU_WINDOW_STYLE);
+                                                     GuiTheme::NORMAL_WINDOW_STYLE);
+
+    windowMain->setResizable(true);
+
     GuiPane* paneMain = windowMain->pane();
 
     // INFO
@@ -490,22 +488,21 @@ void App::makeGUI()
     // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
 
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = scenesPane->addLabel("");
-    scenesPane->addTextBox("Directory:", &m_dirName);
-    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+//    scenesPane->addLabel("Scene Directory: ");
+//    m_scenePathLabel = scenesPane->addLabel("");
+//    scenesPane->addTextBox("Directory:", &m_dirName);
+//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
+//    scenesPane->addLabel("Scene Folders");
+//    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
 
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
-    scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
-    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
+//    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
     m_warningLabel = scenesPane->addLabel("");
-    updateScenePathLabel();
+//    updateScenePathLabel();
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -513,7 +510,13 @@ void App::makeGUI()
 
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
-//    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
+//    GuiScrollPane* settingsScrollPane = paneMain->addScrollPane(true, false, GuiTheme::BORDERED_SCROLL_PANE_STYLE);
+//    settingsScrollPane->setEnabled(true);
+//    settingsScrollPane->pack();
+
+    //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
+    settingsPane->addLabel("Follow Curves Tendency");
+    settingsPane->addNumberBox(GuiText(""), &m_PSettings.followRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.00f);
     settingsPane->addLabel("Scattering");
     settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addLabel("Attenuation");
