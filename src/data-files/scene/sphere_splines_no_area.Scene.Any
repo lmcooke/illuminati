@@ -70,9 +70,9 @@
             model = "sphereModel"; 
         }; 
         
-        spline = SplineLight {
+        spline1 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
-            model = "splineModel";
+            model = "splineModel1";
         };
     }; 
     
@@ -123,11 +123,15 @@
             
         }; 
 
-        splineModel = ArticulatedModel::Specification {
+        splineModel1 = ArticulatedModel::Specification {
             filename = "model/spline4.txt";
         };
+
+        splineModel2 = ArticulatedModel::Specification{
+            filename = "model/spline5.txt";
+        }
         
     }; 
     
-    name = "Sphere Test (Photon Beams)"; 
+    name = "Sphere with Splines (no area) (Photon Beams)"; 
 } 

@@ -53,7 +53,8 @@ SOURCES       = app.cpp \
 		dirphotonscatter.cpp \
 		main.cpp \
 		indrenderer.cpp \
-		utils.cpp 
+		utils.cpp \
+		emitter.cpp 
 OBJECTS       = app.o \
 		world.o \
 		photonscatter.o \
@@ -62,7 +63,8 @@ OBJECTS       = app.o \
 		dirphotonscatter.o \
 		main.o \
 		indrenderer.o \
-		utils.o
+		utils.o \
+		emitter.o
 DIST          = ../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/features/spec_pre.prf \
 		../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/common/shell-unix.conf \
 		../../../../../../sys/shared/psfu/contrib/projects/qt5.2.0/5.2.0/gcc_64/mkspecs/common/unix.conf \
@@ -4142,6 +4144,9 @@ utils.o: utils.cpp utils.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o utils.o utils.cpp
+
+emitter.o: emitter.cpp emitter.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o emitter.o emitter.cpp
 
 ####### Install
 

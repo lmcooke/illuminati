@@ -185,7 +185,6 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
 
 bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons)
 {
-
     // Select the point of emission
     shared_ptr<Surfel> light;
     float prob;
