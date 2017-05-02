@@ -43,15 +43,15 @@ App::App(const GApp::Settings &settings)
     m_PSettings.maxDepthScatter=4;
     m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettesDir=10;
+    m_PSettings.numBeamettesDir=100;
     m_PSettings.numBeamettesInDir=2000;
 
     m_PSettings.directSamples=64;
-    m_PSettings.gatherRadius=0.1;
+    m_PSettings.gatherRadius=0.2;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
     m_PSettings.dist = .4;
-    m_PSettings.beamIntensity = 3;
+    m_PSettings.beamIntensity = 1;
 }
 
 App::~App() { }
@@ -496,6 +496,7 @@ void App::makeGUI()
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
+    scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
 

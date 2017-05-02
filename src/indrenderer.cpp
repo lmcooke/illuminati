@@ -104,7 +104,7 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
             Vector3 wi =  beam.m_end - beam.m_start;
             Radiance3 scatter = surf->finiteScatteringDensity(wi, wo.direction());
             float c = std::fmax(Utils::cone(dist, m_PSettings.gatherRadius), 0.0);
-            rad += beam.m_power * c * scatter/m_PSettings.numBeamettesInDir;
+            rad += beam.m_power * c * scatter/fmin(m_PSettings.numBeamettesInDir, m_beams->size());
         }
     }
 

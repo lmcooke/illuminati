@@ -87,7 +87,7 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
 void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color3 power, int bounces)
 {
     float rand = m_random.uniform();
-    if (rand < (1 - m_PSettings.attenuation))
+    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
     {
         // Do some Russian Roulette stuff here.
         PhotonBeamette beam2 = PhotonBeamette();
@@ -96,8 +96,8 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
-        beam2.m_power = power/(1 - fmin(m_PSettings.attenuation, 0.01));
-        shootRayRecursive(beam2, bounces);
+        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        shootRayRecursive(beam2, bounces );
     }
 }
 
@@ -152,6 +152,7 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
+
         Vector3 beamEndPt = emitBeam.m_start + direction * marchDist;
         Vector3 prev = -(emitBeam.m_start - beamEndPt) * 1.1;
         Vector3 next = (emitBeam.m_start - beamEndPt) * 1.1;
