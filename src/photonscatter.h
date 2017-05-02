@@ -70,24 +70,32 @@ protected:
     void scatterForward(Vector3 startPt, Vector3 origDirection, Color3 power, int bounces);
 
     /**
-     * @brief shootRayRecursive Given a potential beam, store it (as long as it's not going off into the abyss).
+     * @brief shootRayRecursiveStraight Given a potential beam, store it (as long as it's not going off into the abyss).
      * Then, scatter it off a surfel, into fog, and/or forward.
-     * @param emitBeam
+     * @param emittedBeam
      * @param bounces
      */
-    void shootRayRecursive(PhotonBeamette emitBeam, int bounces);
+    void shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bounces);
+
+    /**
+     * @brief shootRayRecursiveCurve Given a potential beam, defined by a spline, store it (as long as it's not going off into the abyss).
+     * Then, scatter it off a surfel, into fog, and/or forward.
+     * @param emittedBeam
+     * @param bounces
+     */
+    void shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces);
 
     /**
      * @brief scatterOffSurf Standard old scattering function. Scatter and see what you hit! Only catch is
      * that if the raymarch distance is closer than what you hit, don't continue.
-     * @param emitBeam
+     * @param emittedBeam
      * @param marchDist
      * @param dist
      * @param bounces
      * @return
      */
 
-    bool scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, float &dist, int bounces);
+    bool scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist, float &dist, int bounces);
     World* m_world;
     Random m_random;   // Random number generator
     PhotonSettings m_PSettings;

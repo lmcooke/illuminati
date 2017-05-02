@@ -7,6 +7,7 @@
 
 #include <G3D/G3DAll.h>
 
+#include "photonsettings.h"
 #include "photonbeamette.h"
 #include "emitter.h"
 #include "utils.h"
@@ -102,14 +103,17 @@ public:
 
     bool camnull() { return !m_camera; }
 
+    void setSettings(PhotonSettings settings){
+        m_PSettings = settings;
+    }
+
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
     Array<Emitter> m_emit;  // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
-    Array<shared_ptr<Surface>> m_spline_geometry; // for previewing purposes
-    Array<shared_ptr<Surface>> m_spline_emitters; // each spline has an emissive circle area light
-
+    Array<shared_ptr<Surface>> m_splineGeometry; // for previewing purposes
+    PhotonSettings m_PSettings; // Settings from UI
     Array<Array<Vector4>> m_splines; // collection of spline lights, each light represented by x, y, z, radius
 };
 

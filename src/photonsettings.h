@@ -17,6 +17,7 @@ public:
     float radiusScalingFactor;
     float noiseBiasRatio;
     bool useMedium; // enable volumetric mediums
+    bool renderSplines;
 
     bool lightEnabled; // TODO: assume one light source for now
 

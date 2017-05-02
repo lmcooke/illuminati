@@ -42,8 +42,6 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
-//            std::cout << "LOAD is cam null? " << camnull() << std::endl;
-//            std::cout << "is wcam null? " << !camera() << std::endl;
 
             printf("done\n");
         }
@@ -90,14 +88,16 @@ void World::load(const String &path )
             if (props.containsKey("position"))
                 pos = Vector3(props["position"]);
 
-            Array<shared_ptr<Surface>> posed;
-            spline->pose(posed, CFrame(pos));
-            emitter->pose(posed, CFrame(pos));
+            Array<shared_ptr<Surface>> posedGeo;
+            Array<shared_ptr<Surface>> posedSpline;
+            spline->pose(posedSpline, CFrame(pos));
+            emitter->pose(posedGeo, CFrame(pos));
 
-            // Add it to the scene
-            for (int i = 0; i < posed.size(); ++i)
-//                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
-                m_geometry.append(posed[i]);
+            if (m_PSettings.renderSplines){
+                m_geometry.append(posedSpline);
+            }
+
+            m_geometry.append(posedGeo);
 
             printf("done\n");
         }
@@ -125,9 +125,11 @@ void World::load(const String &path )
             if ( mtl->emissive().notBlack() ) {
 
                 std::string name = triArray[i].surface()->name().c_str();
-                name = name[0];
-                int id = std::atoi(name.c_str());
-
+                int id = -1;
+                if (name.find("spline") != std::string::npos) {
+                    name = name[0];
+                    id = std::atoi(name.c_str());
+                }
                 Emitter emitter = Emitter(id, triArray[i]);
                 m_emit.append(emitter);
             }
@@ -212,6 +214,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     beam.m_end = surf->position;
     beam.m_start = light->position;
     beam.m_power = light->emittedRadiance(dir)* m_emit.size();
+    beam.m_splineID = id;
     return true;
 }
 
@@ -286,7 +289,6 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     spec.setLambertian(Texture::Specification(Color4(1.0, 0.7, 0.15, 0.0)));
     spec.setEmissive(Texture::Specification(Color4(4.0, 4.0, 4.0, 1.0)));
     meshEmitter->material = UniversalMaterial::create(spec);
-    meshEmitter->twoSided = true;
 
     Array<CPUVertexArray::Vertex>& vertexArray = geometryBody->cpuVertexArray.vertex;
     Array<int>& indexArray = meshBody->cpuIndexArray;
@@ -390,7 +392,7 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
         fEmit[0] = 0;
         fEmit[1] = i % slices + 1;
         fEmit[2] = ((i+1) % slices) + 1;
-        indexArrayEmitter.append(fEmit[0], fEmit[1], fEmit[2]);
+        indexArrayEmitter.append(fEmit[2], fEmit[1], fEmit[0]);
     }
 
     // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,

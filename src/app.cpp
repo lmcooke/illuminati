@@ -60,6 +60,8 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dist = .4;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
+
+    m_PSettings.renderSplines = false;
 }
 
 App::~App() { }
@@ -243,6 +245,7 @@ void App::onRender()
 
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
         m_world.unload();
+        m_world.setSettings(m_PSettings);
         m_world.load(fullpath);
         std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
@@ -579,7 +582,7 @@ void App::makeGUI()
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
     scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-
+    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -599,7 +602,7 @@ void App::makeGUI()
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = settingsPane->addDropDownList("Emitter");
     settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
-    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 5.0f, 0.005f);
+    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);

@@ -20,7 +20,11 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings.beamSpread))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
-        shootRayRecursive(beam, initBounceNum);
+        if (beam.m_splineID > 0){
+            shootRayRecursiveCurve(beam, initBounceNum);
+        }else{
+            shootRayRecursiveStraight(beam, initBounceNum);
+        }
     }
     beams = m_beams;
 }
@@ -28,17 +32,17 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
 /**
  * @brief scatterOffSurf Standard old scattering function. Scatter and see what you hit! Only catch is
  * that if the raymarch distance is closer than what you hit, don't continue.
- * @param emitBeam
+ * @param emittedBeam
  * @param marchDist
  * @param dist
  * @param bounces
  * @return
  */
-bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, float &dist, int bounces)
+bool PhotonScatter::scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist, float &dist, int bounces)
 {
     shared_ptr<Surfel> surfel;
-    Vector3 direction =  emitBeam.m_end - emitBeam.m_start;
-    Ray ray = Ray(emitBeam.m_start, direction);
+    Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
+    Ray ray = Ray(emittedBeam.m_start, direction);
     m_world->intersect(ray, dist, surfel);
 
     // If the surfel intersected with an object and is closer than our step size,
@@ -47,9 +51,9 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
         // Store the photon!
         if(bounces > 0)
         {
-            Vector3 prev = -(emitBeam.m_start - surfel->position) * 1.1;
-            Vector3 next = (emitBeam.m_start - surfel->position) * 1.1;
-            calculateAndStoreBeam(emitBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emitBeam.m_power);
+            Vector3 prev = -(emittedBeam.m_start - surfel->position) * 1.1;
+            Vector3 next = (emittedBeam.m_start - surfel->position) * 1.1;
+            calculateAndStoreBeam(emittedBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emittedBeam.m_power);
         }
 
         // Choose a direction to shoot the beam based on the surfel's BSDF
@@ -69,8 +73,8 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
             PhotonBeamette beam2 = PhotonBeamette();
             beam2.m_start = surfelPosOffset;
             beam2.m_end = beam2.m_start + wOut;
-            beam2.m_power = emitBeam.m_power * weight;
-            shootRayRecursive(beam2, bounces + 1);
+            beam2.m_power = emittedBeam.m_power * weight;
+            shootRayRecursiveStraight(beam2, bounces + 1);
         }
         return true;
     }
@@ -97,7 +101,7 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
         beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
-        shootRayRecursive(beam2, bounces );
+        shootRayRecursiveStraight(beam2, bounces );
     }
 }
 
@@ -123,17 +127,17 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
         beam2.m_start = startPt;
         beam2.m_end = beam2.m_start + wOut;
         beam2.m_power = power/fmax(m_PSettings.scattering, 0.001);
-        shootRayRecursive(beam2, bounces + 1);
+        shootRayRecursiveStraight(beam2, bounces + 1);
     }
 }
 
 /**
- * @brief shootRayRecursive Given a potential beam, store it (as long as it's not going off into the abyss).
+ * @brief shootRayRecursiveStraight Given a potential beam, store it (as long as it's not going off into the abyss).
  * Then, scatter it off a surfel, into fog, and/or forward.
- * @param emitBeam
+ * @param emittedBeam
  * @param bounces
  */
-void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
+void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bounces)
 {
     // Terminate recursion
     if (bounces > m_PSettings.maxDepthScatter) {
@@ -145,24 +149,63 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
-    Vector3 direction =  emitBeam.m_end - emitBeam.m_start;
-    bool hitSurf = scatterOffSurf(emitBeam, marchDist, dist, bounces);
+    Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
+    bool hitSurf = scatterOffSurf(emittedBeam, marchDist, dist, bounces);
 
     // If the marched distance is closer than the nearest surface along the same ray (ie, hitSurf is true), then we're in fog.
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
 
-        Vector3 beamEndPt = emitBeam.m_start + direction * marchDist;
-        Vector3 prev = -(emitBeam.m_start - beamEndPt) * 1.1;
-        Vector3 next = (emitBeam.m_start - beamEndPt) * 1.1;
+        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
+        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
+        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
         if(bounces > 0)
         {
-            calculateAndStoreBeam(emitBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emitBeam.m_power);
+            calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
         }
 
-        scatterIntoFog(beamEndPt, direction, emitBeam.m_power, bounces);
-        scatterForward(beamEndPt, direction, emitBeam.m_power, bounces);
+        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
+        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+    }
+}
+
+/**
+ * @brief shootRayRecursiveCurve Given a potential beam, defined by a spline, store it (as long as it's not going off into the abyss).
+ * Then, scatter it off a surfel, into fog, and/or forward.
+ * @param emittedBeam
+ * @param bounces
+ */
+void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces)
+{
+    // Terminate recursion
+    if (bounces > m_PSettings.maxDepthScatter) {
+        return;
+    }
+
+    // A random distance to step forward along the beam.
+    float marchDist = m_random.uniform()*getRayMarchDist();
+
+    // Shoot the ray into the world and find the surfel it intersects with.
+    float dist = inf();
+    Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
+    bool hitSurf = scatterOffSurf(emittedBeam, marchDist, dist, bounces);
+
+    // If the marched distance is closer than the nearest surface along the same ray (ie, hitSurf is true), then we're in fog.
+    // Store the ray with the point here. Then, scatter forward and out.
+    if (!hitSurf && dist < inf())
+    {
+
+        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
+        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
+        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
+        if(bounces > 0)
+        {
+            calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
+        }
+
+        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
+        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
     }
 }
 
