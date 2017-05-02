@@ -24,6 +24,7 @@ public:
     float dofFocus;
     float dofLens;
     int dofSamples;
+    float followRatio;
 
     // Recursion depth for photon scattering.
     int maxDepthScatter;

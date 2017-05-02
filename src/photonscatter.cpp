@@ -21,7 +21,6 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
         shootRayRecursive(beam, initBounceNum);
-        std::cout << "-----------------" <<std::endl;
     }
     beams = m_beams;
 }

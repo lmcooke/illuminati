@@ -38,6 +38,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.scattering=0.0;
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
+    m_PSettings.followRatio=0.0;
 
     m_PSettings.maxDepthScatter=4;
     m_PSettings.maxDepthRender=3;
@@ -144,9 +145,7 @@ void App::onInit()
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite2);
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight2);
 
-
     setFrameDuration(1.0f / 60.0f);
-
 
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
@@ -159,12 +158,10 @@ void App::onInit()
     m_model = ArticulatedModel::create(spec);
     m_model->pose(m_sceneGeometry, Point3(0.f, 0.f, 0.f));
 
-
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-//    m_scenePath = m_defaultScene;
 
     makeGUI();
 
@@ -345,7 +342,6 @@ void App::gpuProcess(RenderDevice *rd)
 
     } rd->popState();
 
-
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
@@ -412,7 +408,9 @@ void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
 
-    updateScenePathLabel();
+
+//    updateScenePathLabel();
+
     m_ddl->clear();
 
     Array<String> sceneFiles;
@@ -469,7 +467,10 @@ void App::makeGUI()
     shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
                                                      debugWindow->theme(),
                                                      Rect2D::xywh(0,0,60,60),
-                                                     GuiTheme::MENU_WINDOW_STYLE);
+                                                     GuiTheme::NORMAL_WINDOW_STYLE);
+
+    windowMain->setResizable(true);
+
     GuiPane* paneMain = windowMain->pane();
 
     // INFO
@@ -484,10 +485,10 @@ void App::makeGUI()
     // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
 
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = scenesPane->addLabel("");
-    scenesPane->addTextBox("Directory:", &m_dirName);
-    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+//    scenesPane->addLabel("Scene Directory: ");
+//    m_scenePathLabel = scenesPane->addLabel("");
+//    scenesPane->addTextBox("Directory:", &m_dirName);
+//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
 //    scenesPane->addLabel("Scene Folders");
 //    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
@@ -495,10 +496,8 @@ void App::makeGUI()
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
-    scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
-    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
+//    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
-    updateScenePathLabel();
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -513,6 +512,7 @@ void App::makeGUI()
     settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    settingsPane->pack();
+
     // Lights
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = settingsPane->addDropDownList("Emitter");
