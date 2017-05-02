@@ -42,11 +42,6 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
-//            std::cout << "LOAD is cam null? " << camnull() << std::endl;
-//            std::cout << "is wcam null? " << !camera() << std::endl;
-
-            std::cout << "PROJECTION ON LOAD: " << m_camera->projection().fieldOfViewAngle() << std::endl;
-            std::cout << "FRAME ON LOAD: " << m_camera->frame().isIdentity() << std::endl;
 
             printf("done\n");
         }
@@ -83,7 +78,9 @@ void World::load(const String &path )
             String filename = FileSystem::resolve(spec.filename);
             printf("%s ... ", spec.filename.c_str());
 
-            shared_ptr<ArticulatedModel> spline = createSplineModel(filename);
+            Array<shared_ptr<ArticulatedModel>> splineArray= createSplineModel(filename);
+            shared_ptr<ArticulatedModel> spline = splineArray[0];
+            shared_ptr<ArticulatedModel> emitter = splineArray[1];
 
             // Pose it in world space
             Vector3 pos = Vector3::zero();
@@ -91,13 +88,21 @@ void World::load(const String &path )
             if (props.containsKey("position"))
                 pos = Vector3(props["position"]);
 
-            Array<shared_ptr<Surface>> posed;
-            spline->pose(posed, CFrame(pos));
+            Array<shared_ptr<Surface>> posedGeo;
+            Array<shared_ptr<Surface>> posedSpline;
+            spline->pose(posedSpline, CFrame(pos));
+            emitter->pose(posedGeo, CFrame(pos));
 
             // Add it to the scene
-            for (int i = 0; i < posed.size(); ++i)
+           /* for (int i = 0; i < posed.size(); ++i)
                 m_spline_geometry.append(posed[i]); // TODO keep separate spline list
                 //m_geometry.append(posed[i]); // just for testing spline accuracy
+                        */
+            if (m_PSettings.renderSplines){
+                m_geometry.append(posedSpline);
+            }
+
+            m_geometry.append(posedGeo);
 
             printf("done\n");
         }
@@ -110,7 +115,7 @@ void World::load(const String &path )
     // Build bounding interval hierarchy for scene geometry
     Array<Tri> triArray;
 
-    Surface::getTris( m_geometry, m_verts, triArray );
+    Surface::getTris(m_geometry, m_verts, triArray);
     for (int i = 0; i < triArray.size(); ++i)
     {
         triArray[i].material()->setStorage(COPY_TO_CPU);
@@ -123,7 +128,15 @@ void World::load(const String &path )
                 dynamic_pointer_cast<UniversalMaterial>(m);
 
             if ( mtl->emissive().notBlack() ) {
-                m_emit.append(triArray[i]);
+
+                std::string name = triArray[i].surface()->name().c_str();
+                int id = -1;
+                if (name.find("spline") != std::string::npos) {
+                    name = name[0];
+                    id = std::atoi(name.c_str());
+                }
+                Emitter emitter = Emitter(id, triArray[i]);
+                m_emit.append(emitter);
             }
         }
     }
@@ -132,7 +145,6 @@ void World::load(const String &path )
 
     printf( "%d light-emitting triangle(s) in scene.\n", (int) m_emit.size() );
     fflush( stdout );
-
 }
 
 void World::unload()
@@ -148,11 +160,12 @@ shared_ptr<Camera> World::camera()
     return m_camera;
 }
 
-void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area)
+void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area, int &id)
 {
     // Pick an emissive triangle uniformly at random
     int i = random.integer(0, m_emit.size() - 1);
-    const Tri& tri = m_emit[i];
+    const Tri& tri = m_emit[i].tri();
+    id = m_emit[i].index();
 
     // Pick a point in that triangle uniformly at random
     // http://books.google.com/books?id=fvA7zLEFWZgC&pg=PA24#v=onepage&q&f=false
@@ -176,6 +189,7 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
     //     there has to be a better way ...
     Ray ray(point + normal * 1e-4, -normal);
     float dist = 0;
+
     intersect(ray, dist, surf);
 
     prob = 1.f / m_emit.size() / tri.area();
@@ -183,21 +197,20 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
     area = tri.area();
 }
 
-bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons)
+bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons, float beamSpread)
 {
-
     // Select the point of emission
     shared_ptr<Surfel> light;
     float prob;
     float area;
+    int id;
 
-    emissivePoint(random, light, prob, area);
-
+    World::emissivePoint(random, light, prob, area, id);
     // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
     float dist;
 
-    dir = Vector3::cosHemiRandom(light->shadingNormal, random);
+    dir = Vector3::cosPowHemiRandom(light->shadingNormal, 1./beamSpread, random);
     intersect(Ray(light->position + light->geometricNormal * 1e-4, dir), dist, surf);
 
     if (!surf) return false;
@@ -205,9 +218,8 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
-    beam.m_power = light->emittedRadiance(dir)
-                 / totalPhotons
-                 * m_emit.size();
+    beam.m_power = light->emittedRadiance(dir)* m_emit.size();
+    beam.m_splineID = id;
     return true;
 }
 
@@ -251,30 +263,43 @@ void World::renderWireframe(RenderDevice *dev)
     dev->popState();
 }
 
-shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
-    const shared_ptr<ArticulatedModel>& model = ArticulatedModel::createEmpty("splineModel");
+Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) {
+    const shared_ptr<ArticulatedModel>& modelBody = ArticulatedModel::createEmpty("splineModel");
+    std::string                 nameRoot      = std::to_string(m_splines.length() + 1) + std::string("spline");
+    String                      name          = String(nameRoot.c_str());
 
-    ArticulatedModel::Part*     part      = model->addPart("root");
-    ArticulatedModel::Geometry* geometry  = model->addGeometry("geom");
-    ArticulatedModel::Mesh*     mesh      = model->addMesh("mesh", part, geometry);
+    ArticulatedModel::Part*     partBody      = modelBody->addPart(name + "_rootBody");
+    ArticulatedModel::Geometry* geometryBody  = modelBody->addGeometry(name + "_geomBody");
+    ArticulatedModel::Mesh*     meshBody      = modelBody->addMesh(name + "_meshBody", partBody, geometryBody);
+
+    const shared_ptr<ArticulatedModel> &modelEmitter = ArticulatedModel::createEmpty("splineModel");
+
+    ArticulatedModel::Part*     partEmitter      = modelEmitter->addPart(name + "_rootEmitter");
+    ArticulatedModel::Geometry* geometryEmitter  = modelEmitter->addGeometry(name + "_geomEmitter");
+    ArticulatedModel::Mesh*     meshEmitter      = modelEmitter->addMesh(name + "_meshEmitter", partEmitter, geometryEmitter);
 
     int npts = 0;
     int slices = 8;
     float arc = 2.0 * pif() / slices;
 
     // Assign a material
-    mesh->material = UniversalMaterial::create(
+    meshBody->material = UniversalMaterial::create(
         PARSE_ANY(
         UniversalMaterial::Specification {
             lambertian = Color3(1.0, 0.7, 0.15);
-            };
-
             glossy     = Color4(Color3(0.01), 0.2);
         }));
-    mesh->twoSided = true;
 
-    Array<CPUVertexArray::Vertex>& vertexArray = geometry->cpuVertexArray.vertex;
-    Array<int>& indexArray = mesh->cpuIndexArray;
+    UniversalMaterial::Specification spec = UniversalMaterial::Specification();
+    spec.setLambertian(Texture::Specification(Color4(1.0, 0.7, 0.15, 0.0)));
+    spec.setEmissive(Texture::Specification(Color4(4.0, 4.0, 4.0, 1.0)));
+    meshEmitter->material = UniversalMaterial::create(spec);
+
+    Array<CPUVertexArray::Vertex>& vertexArray = geometryBody->cpuVertexArray.vertex;
+    Array<int>& indexArray = meshBody->cpuIndexArray;
+
+    Array<CPUVertexArray::Vertex>& vertexArrayEmitter = geometryEmitter->cpuVertexArray.vertex;
+    Array<int>& indexArrayEmitter = meshEmitter->cpuIndexArray;
 
     Array<Vector4> raw_spline = Array<Vector4>();
 
@@ -328,6 +353,28 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
                 v.position = Vector3(tmp.x, tmp.y, tmp.z);
                 v.normal  = Vector3::nan();
                 v.tangent = Vector4::nan();
+
+                if (npts == 1){ // If first control point
+
+                    // Center point
+                    if (a == 0){
+                        CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
+                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+                        v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                        v.normal = Vector3::nan();
+                        v.tangent = Vector4::nan();
+                    }
+
+                    CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
+                    Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
+                                                            pt2.y,
+                                                            pt2.z + w2 * sin(a * arc),
+                                                            1.0);
+
+                    v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                    v.normal  = Vector3::nan();
+                    v.tangent = Vector4::nan();
+                }
             }
         }
         npts++;
@@ -352,17 +399,32 @@ shared_ptr<ArticulatedModel> World::createSplineModel(const String& str) {
         }
     }
 
+    /* emitter face construction*/
+    float fEmit[3] = {0, 0, 0};
+    for (int i = 0; i < slices; i++){
+        fEmit[0] = 0;
+        fEmit[1] = i % slices + 1;
+        fEmit[2] = ((i+1) % slices) + 1;
+        indexArrayEmitter.append(fEmit[2], fEmit[1], fEmit[0]);
+    }
 
     // Tell the ArticulatedModel to generate bounding boxes, GPU vertex arrays,
     // normals and tangents automatically. We already ensured correct
     // topology, so avoid the vertex merging optimization.
     ArticulatedModel::CleanGeometrySettings geometrySettings;
     geometrySettings.allowVertexMerging = false;
-    model->cleanGeometry(geometrySettings);
+    modelBody->cleanGeometry(geometrySettings);
+
+    ArticulatedModel::CleanGeometrySettings geometrySettingsEmitter;
+    geometrySettingsEmitter.allowVertexMerging = false;
+    geometrySettingsEmitter.forceComputeNormals = true;
+    geometrySettingsEmitter.forceComputeTangents = true;
+    modelEmitter->cleanGeometry(geometrySettingsEmitter);
 
     m_splines.append(raw_spline);
 
-    return model;
+    Array<shared_ptr<ArticulatedModel>> out = Array<shared_ptr<ArticulatedModel>>(modelBody, modelEmitter);
+    return out;
 }
 
 

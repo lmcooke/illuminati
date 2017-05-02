@@ -7,7 +7,9 @@
 
 #include <G3D/G3DAll.h>
 
+#include "photonsettings.h"
 #include "photonbeamette.h"
+#include "emitter.h"
 #include "utils.h"
 
 /** Represents a static scene with triangle mesh geometry, multiple lights, and
@@ -42,7 +44,7 @@ public:
       *                 all light-emitting points in the scene
       * @param area     The area of the emitter chosen
       */
-    void emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area);
+    void emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area, int &id);
 
     /** Emits a photon into the scene. If this method returns true, the
       * resulting photon will have already been shot into the scene (i.e. the
@@ -53,10 +55,11 @@ public:
       * @param photon       Receives the photon emitted
       * @param surf         The surface the photon hit on its first bounce
       * @param totalPhotons The total number of photons (for weighting)
+      * @param id           The spline unique id/index
       * @return             Whether or not there is a photon to continue scattering
       */
 
-    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons);
+    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons, float beamSpread);
 
     /** Finds the first point a ray intersects with this scene
       *
@@ -85,11 +88,11 @@ public:
     /** Renders the world in wireframe */
     void renderWireframe(RenderDevice *dev);
 
-    /** Reads in spline file and parses it into a G3D Model.
+    /** Reads in spline file and parses it into a G3D Model, composed of the curve body and an emitter
      *  Spline files consist of a series of points, one per line, represented as:
      *  x y z radius
      *  The last line must be a comment starting with a #. */
-    shared_ptr<ArticulatedModel> createSplineModel(const String& str);
+    Array<shared_ptr<ArticulatedModel>> createSplineModel(const String& str);
 
     /** Returns exact beamette representation of splines used as spline lights,
      * for testing splatting
@@ -100,13 +103,17 @@ public:
 
     bool camnull() { return !m_camera; }
 
+    void setSettings(PhotonSettings settings){
+        m_PSettings = settings;
+    }
+
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
-    Array<Tri>          m_emit;     // Triangles that emit light
+    Array<Emitter> m_emit;  // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
-    Array<shared_ptr<Surface>> m_spline_geometry; // for previewing purposes
-
+    Array<shared_ptr<Surface>> m_splineGeometry; // for previewing purposes
+    PhotonSettings m_PSettings; // Settings from UI
     Array<Array<Vector4>> m_splines; // collection of spline lights, each light represented by x, y, z, radius
 };
 

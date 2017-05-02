@@ -37,6 +37,8 @@ public:
     /** Called once at application startup */
     virtual void onInit();
 
+    virtual bool onEvent(const GEvent& e) override;
+
     /** Called once at application shutdown */
     virtual void onCleanup();
 
@@ -65,9 +67,15 @@ public:
     static bool m_kill;
     void toggleWindowPath();
 
+    void setGatherRadius();
+
     int             pass; // how many passes we have taken for a given pixel
     int             num_passes;
     bool            continueRender;
+
+    int m_maxPasses;
+
+    int indRenderCount;
 
 private:
 
@@ -78,6 +86,8 @@ private:
 
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
+
+
 
     // TODO : temp
     float m_count;
@@ -117,6 +127,7 @@ private:
     World               m_world;    // The scene being rendered
     shared_ptr<Image3>  m_canvas;   // Output buffer for raytrace()
     shared_ptr<Thread>  m_dispatch; // Spawns rendering threads
+    float               m_radius; // Current radius of the beams to be rendered
 
 #if 0
     bool                m_pointLights; // true if these are turned on
@@ -134,7 +145,6 @@ private:
     GuiDropDownList*    m_ddl;
     GuiDropDownList*    m_renderdl;
     GuiDropDownList*    m_lightdl;
-    GuiLabel*           m_warningLabel;
     GuiLabel*           m_scenePathLabel;
     String              m_dirName;
     void updateScenePathLabel();

@@ -16,11 +16,11 @@ void IndPhotonScatter::preprocess()
     Array<PhotonBeamette> tempBeamettes = Array<PhotonBeamette>();
     Array<PhotonBeamette> newBeams;
     // Send out a beam, recursivly bounce it around, and then store it in our beams array.
-    for (int i=0; i<m_PSettings.numBeamettes; i++)
+    for (int i=0; i<m_PSettings.numBeamettesInDir; i++)
     {
-        shootRay(newBeams);
+        shootRay(newBeams, m_PSettings.numBeamettesInDir, 0);
         tempBeamettes.append(newBeams);
-        printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettes);
+        printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettesInDir);
     }
 
     printf("\rBuilding indirect photon beamette map ... done       \n");
@@ -39,7 +39,20 @@ void IndPhotonScatter::phaseFxn(Vector3 wi, Vector3 &wo)
     wo.z = b*wi.x;
 }
 
+float IndPhotonScatter::getRayMarchDist()
+{
+    return m_PSettings.dist;
+}
+
 std::shared_ptr<G3D::KDTree<PhotonBeamette>> IndPhotonScatter::getBeams()
 {
     return m_KDTreeBeams;
 }
+
+void IndPhotonScatter::makeBeams()
+{
+    m_KDTreeBeams->clear();
+    preprocess();
+}
+
+

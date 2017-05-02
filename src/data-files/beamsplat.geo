@@ -69,7 +69,7 @@ void main() {
     }
 
     {
-            gl_Position = vec4(start - start_perp, 1.0) * mat;
+            gl_Position = MVP * vec4(start - start_perp, 1.0);
 
             start_pt = s;
             end_pt = e;

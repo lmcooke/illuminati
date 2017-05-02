@@ -99,9 +99,30 @@ void Utils::catmullRomSpline(Array<Vector3> &splinePoints, int numPoints, float 
         splinePoints.resize(numPoints);
     }
 
-    int bound = floor(1.f/numPoints);
+    float resolution = 1.f/numPoints;
+
+    int bound = floor(1.f/resolution);
+
+    for (int i=1; i <= bound; i++){
+        float t = i * resolution;
+//        Vector3 newPos = d
+    }
 
     return;
+}
+
+/**
+ * @brief getSplineIndex - Clamps index within bounds (need at least 4 points to make a spline
+ * @param index
+ * @param length
+ * @return
+ */
+int Utils::getSplineIndex(int length, int index){
+//    int out = index;
+//    if (index < 0){
+//        index = length - 1;
+//    }
+    return 0;
 }
 
 /**

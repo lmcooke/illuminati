@@ -58,7 +58,7 @@ void main(void) {
     // cross-section of beam with radius r should have pi*r^2 = power
     // (this is computed in geometry shader, but use following line to debug)
     //powr = vec3(0.02) / (M_PI * pow(uv.x, 2)); // hardcoded for debugging
-    powr *= 0.02;
+    powr *= 0.005;
     val = sin(acos(val));
     g3d_FragColor = vec3(val * powr);
 }

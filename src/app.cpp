@@ -5,6 +5,8 @@
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
 
+static Random &rng = Random::common();
+
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
@@ -17,7 +19,8 @@ App::App(const GApp::Settings &settings)
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
-      m_passType(0)
+      m_passType(0),
+      m_radius(1)
 {
     m_scenePath = FileSystem::currentDirectory() + "/scene";
 
@@ -37,16 +40,28 @@ App::App(const GApp::Settings &settings)
     m_PSettings.scattering=0.0;
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
+    m_PSettings.followRatio=0.0;
 
-    m_PSettings.maxDepthScatter=3;
-    m_PSettings.maxDepthRender=4;
+    m_PSettings.maxDepthScatter=4;
+    m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettes=5000;
+    m_PSettings.numBeamettesDir=100;
+    m_PSettings.numBeamettesInDir=2000;
 
     m_PSettings.directSamples=64;
+
+    m_PSettings.gatherRadius=0.2;
+    m_PSettings.useFinalGather=true;
+    m_PSettings.dist = 5;
+    m_maxPasses = 3;
     m_PSettings.gatherRadius=0.1;
     m_PSettings.useFinalGather=false;
-    m_PSettings.dist = 0.3;
+    m_PSettings.gatherSamples=50;
+    m_PSettings.dist = .4;
+    m_PSettings.beamIntensity = 1;
+    m_PSettings.beamSpread = 1;
+
+    m_PSettings.renderSplines = false;
 }
 
 App::~App() { }
@@ -69,17 +84,43 @@ void App::buildPhotonMap()
     // Create renderer
     m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
     m_indRenderer->setBeams(m_inDirBeams->getBeams());
+
 }
 
 void App::traceCallback(int x, int y)
 {
-    Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+    if (continueRender) {
+
+        // TODO : keep random or just use .5f?
+        double dx = rng.uniform(), dy = rng.uniform();
+
+        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+
+        if (indRenderCount == 0) {
+            m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+
+        } else {
+
+            Radiance3 prev = m_canvas->get(x,y);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+
+            float indCountFl = static_cast<float>(indRenderCount);
+
+            float prevContrib = indCountFl / (indCountFl + 1.f);
+            float nextContrib = 1.f / (indCountFl + 1.f);
+
+            m_canvas->set(x, y, prevContrib * prev +
+                                nextContrib * sample);
+        }
+
+
+    }
 }
 
 static void dispatcher(void *arg)
 {
-
     App *self = (App*)arg;
 
 
@@ -90,16 +131,29 @@ static void dispatcher(void *arg)
 
     self->buildPhotonMap();
 
-    printf("Rendering ...");
-    fflush(stdout);
-    self->stage = App::GATHERING;
-    Thread::runConcurrently(Point2int32(0, 0),
-                            Point2int32(w, h),
-                            [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
-    printf("done\n");
+
+    for (int i = 0; i < self->m_maxPasses; i++) {
+        printf("Rendering ...");
+        std::cout << " Pass: " << i << std::endl;
+        fflush(stdout);
+
+        self->indRenderCount = i;
+        self->setGatherRadius();
+
+        self->stage = App::GATHERING;
+        Thread::runConcurrently(Point2int32(0, 0),
+                                Point2int32(w, h),
+                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
+
+        printf("done\n");
+    }
+
+
 
     self->stage = App::IDLE;
 }
+
+
 
 void App::onInit()
 {
@@ -139,9 +193,9 @@ void App::onInit()
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite2);
     m_FBO2->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight2);
 
-
     setFrameDuration(1.0f / 60.0f);
 
+    indRenderCount = 0;
 
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
@@ -154,18 +208,32 @@ void App::onInit()
     m_model = ArticulatedModel::create(spec);
     m_model->pose(m_sceneGeometry, Point3(0.f, 0.f, 0.f));
 
-
     // Set up GUI
     createDeveloperHUD();
     developerWindow->setVisible(false);
     developerWindow->cameraControlWindow->setVisible(false);
-//    m_scenePath = m_defaultScene;
 
     makeGUI();
 
     m_canvas = Image3::createEmpty(window()->width(),
                                    window()->height());
     developerWindow->setResizable(true);
+}
+
+bool App::onEvent(const GEvent &e)
+{
+    if (GApp::onEvent(e)) { return true; }
+
+    if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
+
+        // pause renderer
+        continueRender = false;
+
+        // TODO : clear m_canvas and restart with updated camera
+
+        return true;
+    }
+    return false;
 }
 
 void App::onRender()
@@ -177,13 +245,16 @@ void App::onRender()
 
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
         m_world.unload();
+        m_world.setSettings(m_PSettings);
         m_world.load(fullpath);
         std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
+        std::cout << "onRender" << std::endl;
         m_dispatch->start();
     } else {
+        std::cout << "onRender: false" << std::endl;
         continueRender=false;
     }
 }
@@ -200,7 +271,6 @@ void App::makeLinesDirBeams(SlowMesh &mesh)
     {
         Array<PhotonBeamette> beams = m_dirBeams->getBeams();
         for (int i=0; i<beams.size(); i++) {
-            // Apparently this is how you index into a pointer to an array?
             PhotonBeamette beam = beams[i];
             mesh.setColor(beam.m_power / beam.m_power.max());
             mesh.makeVertex(beam.m_start);
@@ -248,10 +318,20 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
+//    std::cout << "onGraphics3D 1" << std::endl;
+    if (!m_world.camnull() && m_dirBeams){
 
-    if (!m_world.camnull()){
+
+        m_dirBeams->setRadius(m_radius);
+
+
+        m_dirBeams->makeBeams();
+
+
         gpuProcess(rd);
     } else {
+
+
         swapBuffers();
         rd->clear();
     }
@@ -264,10 +344,13 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-
-    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+//    std::cout << "gpuProcess 1" << std::endl;
+    //Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
+    direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
+    m_radius = max(m_radius*0.8, 0.05);
     m_passes += 1;
 
     // flipFlop FBOs and textures
@@ -306,8 +389,9 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            cpuPower.append(pb.m_power);
-            cpuPower.append(pb.m_power);
+            //std::cout << (pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2)).toString() << std::endl;
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
         }
 
         rd->setObjectToWorldMatrix(CFrame());
@@ -341,7 +425,6 @@ void App::gpuProcess(RenderDevice *rd)
         debugAssertGLOk();
 
     } rd->popState();
-
 
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
@@ -386,6 +469,13 @@ void App::gpuProcess(RenderDevice *rd)
 
 }
 
+// sets the gather radius of the indirect renderer
+void App::setGatherRadius()
+{
+    // TODO : is .04 a reasonable amount to decrease the indirect gather radius by?
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
+}
+
 FilmSettings App::getFilmSettings()
 {
     FilmSettings s;
@@ -402,13 +492,6 @@ void App::changeDataDirectory()
     Array<String> sceneFiles;
     FileSystem::getFiles(m_dirName + "*.Any", sceneFiles);
 
-    // if no files found return
-    if (!sceneFiles.size())
-    {
-        m_warningLabel->setCaption("Sorry, no scene files found");
-        return;
-    }
-
     loadSceneDirectory(m_dirName);
 }
 
@@ -416,8 +499,9 @@ void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
 
-    updateScenePathLabel();
-    m_warningLabel->setCaption("");
+
+//    updateScenePathLabel();
+
     m_ddl->clear();
 
     Array<String> sceneFiles;
@@ -474,13 +558,16 @@ void App::makeGUI()
     shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
                                                      debugWindow->theme(),
                                                      Rect2D::xywh(0,0,60,60),
-                                                     GuiTheme::MENU_WINDOW_STYLE);
+                                                     GuiTheme::NORMAL_WINDOW_STYLE);
+
+    windowMain->setResizable(true);
+
     GuiPane* paneMain = windowMain->pane();
 
     // INFO
     GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
     infoPane->addButton("Save Image", this, &App::saveCanvas);
-    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
     infoPane->pack();
 
     // SCENE
@@ -489,48 +576,47 @@ void App::makeGUI()
     // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
 
-    scenesPane->addLabel("Scene Directory: ");
-    m_scenePathLabel = scenesPane->addLabel("");
-    scenesPane->addTextBox("Directory:", &m_dirName);
-    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
+//    scenesPane->addLabel("Scene Directory: ");
+//    m_scenePathLabel = scenesPane->addLabel("");
+//    scenesPane->addTextBox("Directory:", &m_dirName);
+//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
+//    scenesPane->addLabel("Scene Folders");
+//    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
 
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
-    scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
-    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-
-    m_warningLabel = scenesPane->addLabel("");
-    updateScenePathLabel();
+    scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
+//    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
+    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
     scenesPane->pack();
 
     // RENDERING
-    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
+    GuiPane* settingsPane = paneMain->addPane("Settings and Lights", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addLabel("Scattering");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addLabel("Attenuation");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
-    settingsPane->addLabel("Radius scaling factor");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->pack();
+    settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+//    settingsPane->pack();
+
     // Lights
-    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-    m_lightdl = lightsPane->addDropDownList("Emitter");
-    lightsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
+    m_lightdl = settingsPane->addDropDownList("Emitter");
+    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
+
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
 //    lightsPane->addLabel("Attenuation");
-    lightsPane->pack();
+//    lightsPane->pack();
+    settingsPane->pack();
 
     paneMain->pack();
     windowMain->pack();

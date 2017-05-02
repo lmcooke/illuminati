@@ -58,6 +58,14 @@ public:
     static float calculateT(float prevT, Vector3 point1, Vector3 point2, float alpha);
 
     /**
+     * @brief getSplineIndex
+     * @param index
+     * @param length
+     * @return
+     */
+    static int getSplineIndex(int length, int index);
+
+    /**
      * @brief Utils::closestPointOnLine
      * @param point
      * @param lineS
