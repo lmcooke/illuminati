@@ -17,10 +17,11 @@ Radiance3 IndRenderer::direct(std::shared_ptr<Surfel> surf, Vector3 wo)
     std::shared_ptr<Surfel> light;
     float P_light;
     float area;
+    int id;
 
     for (int i = 0; i < m_PSettings.directSamples; ++i)
     {
-        m_world->emissivePoint(m_random, light, P_light, area);
+        m_world->emissivePoint(m_random, light, P_light, area, id);
 
         Vector3 wi = light->position - surf->position;
         float dist = wi.length();
