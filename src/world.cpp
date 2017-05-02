@@ -123,7 +123,13 @@ void World::load(const String &path )
                 dynamic_pointer_cast<UniversalMaterial>(m);
 
             if ( mtl->emissive().notBlack() ) {
-                m_emit.append(triArray[i]);
+
+                std::string name = triArray[i].surface()->name().c_str();
+                name = name[0];
+                int id = std::atoi(name.c_str());
+
+                Emitter emitter = Emitter(id, triArray[i]);
+                m_emit.append(emitter);
             }
         }
     }
@@ -151,7 +157,7 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
 {
     // Pick an emissive triangle uniformly at random
     int i = random.integer(0, m_emit.size() - 1);
-    const Tri& tri = m_emit[i];
+    const Tri& tri = m_emit[i].tri();
 
     // Pick a point in that triangle uniformly at random
     // http://books.google.com/books?id=fvA7zLEFWZgC&pg=PA24#v=onepage&q&f=false
@@ -203,9 +209,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
-    beam.m_power = light->emittedRadiance(dir)
-                 / totalPhotons
-                 * m_emit.size();
+    beam.m_power = light->emittedRadiance(dir)* m_emit.size();
     return true;
 }
 
@@ -251,16 +255,18 @@ void World::renderWireframe(RenderDevice *dev)
 
 Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) {
     const shared_ptr<ArticulatedModel>& modelBody = ArticulatedModel::createEmpty("splineModel");
+    std::string                 nameRoot      = std::to_string(m_splines.length() + 1) + std::string("spline");
+    String                      name          = String(nameRoot.c_str());
 
-    ArticulatedModel::Part*     partBody      = modelBody->addPart("rootBody");
-    ArticulatedModel::Geometry* geometryBody  = modelBody->addGeometry("geomBody");
-    ArticulatedModel::Mesh*     meshBody      = modelBody->addMesh("meshBody", partBody, geometryBody);
+    ArticulatedModel::Part*     partBody      = modelBody->addPart(name + "_rootBody");
+    ArticulatedModel::Geometry* geometryBody  = modelBody->addGeometry(name + "_geomBody");
+    ArticulatedModel::Mesh*     meshBody      = modelBody->addMesh(name + "_meshBody", partBody, geometryBody);
 
     const shared_ptr<ArticulatedModel> &modelEmitter = ArticulatedModel::createEmpty("splineModel");
 
-    ArticulatedModel::Part*     partEmitter      = modelEmitter->addPart("rootEmitter");
-    ArticulatedModel::Geometry* geometryEmitter  = modelEmitter->addGeometry("geomEmitter");
-    ArticulatedModel::Mesh*     meshEmitter      = modelEmitter->addMesh("meshEmitter", partEmitter, geometryEmitter);
+    ArticulatedModel::Part*     partEmitter      = modelEmitter->addPart(name + "_rootEmitter");
+    ArticulatedModel::Geometry* geometryEmitter  = modelEmitter->addGeometry(name + "_geomEmitter");
+    ArticulatedModel::Mesh*     meshEmitter      = modelEmitter->addMesh(name + "_meshEmitter", partEmitter, geometryEmitter);
 
     int npts = 0;
     int slices = 8;
