@@ -110,7 +110,6 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
             rad += beam.m_power * c * scatter/fmin(m_PSettings.numBeamettesInDir, m_beams->size());
         }
     }
-
     return rad;
 }
 
@@ -137,7 +136,6 @@ Radiance3 IndRenderer::trace(const Ray &ray, int depth)
 
         final += surf_radiance;
     }
-
     return final;
 }
 
