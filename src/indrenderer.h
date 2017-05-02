@@ -47,11 +47,16 @@ public:
       Sets the photon beam array that will be used to render the scene.
       */
     void setBeams(std::shared_ptr<G3D::KDTree<PhotonBeamette>> beams);
+
+    void setGatherRadius(float rad);
+
 private:
     World*  m_world;
     Random  m_random;   // Random number generator
     PhotonSettings m_PSettings; // Settings
     std::shared_ptr<G3D::KDTree<PhotonBeamette>> m_beams;
+
+    float m_gatherRadius;
 
 
 };
