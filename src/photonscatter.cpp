@@ -199,7 +199,7 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
         beam.m_end_major = endRad * cross(perp, vbeam);
     } else {
         Vector3 beam_next = normalize(next - endPt);
-        beam.m_end_major = ((vbeam + beam_next) / 2.0) * (endRad / dot(vbeam, beam_next));
+        beam.m_end_major = ((vbeam + beam_next) / 2.0) * (endRad / max(1.f, dot(vbeam, beam_next)));
         beam.m_end_minor = endRad * beam_next;
     }
 
