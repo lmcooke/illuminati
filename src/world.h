@@ -58,7 +58,7 @@ public:
       * @return             Whether or not there is a photon to continue scattering
       */
 
-    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons);
+    bool emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons, float beamSpread);
 
     /** Finds the first point a ray intersects with this scene
       *

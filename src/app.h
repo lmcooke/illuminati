@@ -37,6 +37,8 @@ public:
     /** Called once at application startup */
     virtual void onInit();
 
+    virtual bool onEvent(const GEvent& e) override;
+
     /** Called once at application shutdown */
     virtual void onCleanup();
 
@@ -65,9 +67,15 @@ public:
     static bool m_kill;
     void toggleWindowPath();
 
+    void setGatherRadius();
+
     int             pass; // how many passes we have taken for a given pixel
     int             num_passes;
     bool            continueRender;
+
+    int m_maxPasses;
+
+    int indRenderCount;
 
 private:
 
@@ -78,6 +86,8 @@ private:
 
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
+
+
 
     // TODO : temp
     float m_count;

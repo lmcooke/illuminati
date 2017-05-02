@@ -23,8 +23,8 @@ protected:
 
 
     /**
-    /** * @brief getRayMarchDist gets the distance to march into the fog. Will match the settings for indirect scattering.
-    /** */
+    * @brief getRayMarchDist gets the distance to march into the fog. Will match the settings for indirect scattering.
+    */
     virtual float getRayMarchDist() = 0;
 
     /**

@@ -5,6 +5,8 @@
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
 
+static Random &rng = Random::common();
+
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
@@ -43,15 +45,21 @@ App::App(const GApp::Settings &settings)
     m_PSettings.maxDepthScatter=4;
     m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettesDir=10;
+    m_PSettings.numBeamettesDir=100;
     m_PSettings.numBeamettesInDir=2000;
 
     m_PSettings.directSamples=64;
+
+    m_PSettings.gatherRadius=0.2;
+    m_PSettings.useFinalGather=true;
+    m_PSettings.dist = 5;
+    m_maxPasses = 3;
     m_PSettings.gatherRadius=0.1;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
     m_PSettings.dist = .4;
-    m_PSettings.beamIntensity = 3;
+    m_PSettings.beamIntensity = 1;
+    m_PSettings.beamSpread = 1;
 }
 
 App::~App() { }
@@ -79,13 +87,38 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
-    Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+    if (continueRender) {
+
+        // TODO : keep random or just use .5f?
+        double dx = rng.uniform(), dy = rng.uniform();
+
+        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+
+        if (indRenderCount == 0) {
+            m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+
+        } else {
+
+            Radiance3 prev = m_canvas->get(x,y);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+
+            float indCountFl = static_cast<float>(indRenderCount);
+
+            float prevContrib = indCountFl / (indCountFl + 1.f);
+            float nextContrib = 1.f / (indCountFl + 1.f);
+
+            m_canvas->set(x, y, prevContrib * prev +
+                                nextContrib * sample);
+        }
+
+
+    }
 }
 
 static void dispatcher(void *arg)
 {
-
     App *self = (App*)arg;
 
 
@@ -96,16 +129,29 @@ static void dispatcher(void *arg)
 
     self->buildPhotonMap();
 
-    printf("Rendering ...");
-    fflush(stdout);
-    self->stage = App::GATHERING;
-    Thread::runConcurrently(Point2int32(0, 0),
-                            Point2int32(w, h),
-                            [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
-    printf("done\n");
+
+    for (int i = 0; i < self->m_maxPasses; i++) {
+        printf("Rendering ...");
+        std::cout << " Pass: " << i << std::endl;
+        fflush(stdout);
+
+        self->indRenderCount = i;
+        self->setGatherRadius();
+
+        self->stage = App::GATHERING;
+        Thread::runConcurrently(Point2int32(0, 0),
+                                Point2int32(w, h),
+                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
+
+        printf("done\n");
+    }
+
+
 
     self->stage = App::IDLE;
 }
+
+
 
 void App::onInit()
 {
@@ -147,6 +193,8 @@ void App::onInit()
 
     setFrameDuration(1.0f / 60.0f);
 
+    indRenderCount = 0;
+
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
 
@@ -170,6 +218,22 @@ void App::onInit()
     developerWindow->setResizable(true);
 }
 
+bool App::onEvent(const GEvent &e)
+{
+    if (GApp::onEvent(e)) { return true; }
+
+    if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
+
+        // pause renderer
+        continueRender = false;
+
+        // TODO : clear m_canvas and restart with updated camera
+
+        return true;
+    }
+    return false;
+}
+
 void App::onRender()
 {
 
@@ -184,8 +248,10 @@ void App::onRender()
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
+        std::cout << "onRender" << std::endl;
         m_dispatch->start();
     } else {
+        std::cout << "onRender: false" << std::endl;
         continueRender=false;
     }
 }
@@ -249,12 +315,20 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-
+//    std::cout << "onGraphics3D 1" << std::endl;
     if (!m_world.camnull() && m_dirBeams){
+
+
         m_dirBeams->setRadius(m_radius);
+
+
         m_dirBeams->makeBeams();
+
+
         gpuProcess(rd);
     } else {
+
+
         swapBuffers();
         rd->clear();
     }
@@ -267,7 +341,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-
+//    std::cout << "gpuProcess 1" << std::endl;
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     direct_beams.append(m_dirBeams->getBeams());
 
@@ -385,6 +459,13 @@ void App::gpuProcess(RenderDevice *rd)
 
 }
 
+// sets the gather radius of the indirect renderer
+void App::setGatherRadius()
+{
+    // TODO : is .04 a reasonable amount to decrease the indirect gather radius by?
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
+}
+
 FilmSettings App::getFilmSettings()
 {
     FilmSettings s;
@@ -496,6 +577,7 @@ void App::makeGUI()
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
+    scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
 
@@ -517,6 +599,8 @@ void App::makeGUI()
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = settingsPane->addDropDownList("Emitter");
     settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 5.0f, 0.005f);
+
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
