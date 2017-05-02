@@ -49,7 +49,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.numBeamettesInDir=20000;
 
     m_PSettings.directSamples=64;
-    m_PSettings.gatherRadius=0.1;
+    m_PSettings.gatherRadius=0.2;
     m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
 }
@@ -87,7 +87,10 @@ void App::traceCallback(int x, int y)
 
         if (indRenderCount == 0) {
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+
         } else {
+
             Radiance3 prev = m_canvas->get(x,y);
             Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
 
@@ -95,11 +98,6 @@ void App::traceCallback(int x, int y)
 
             float prevContrib = indCountFl / (indCountFl + 1.f);
             float nextContrib = 1.f / (indCountFl + 1.f);
-
-//            std::cout << "=========" << std::endl;
-//            std::cout << "current count : " << indCountFl << std::endl;
-//            std::cout << "prevContrib: " << prevContrib << std::endl;
-//            std::cout << "nextContrib: " << nextContrib << std::endl;
 
             m_canvas->set(x, y, prevContrib * prev +
                                 nextContrib * sample);
@@ -128,6 +126,7 @@ static void dispatcher(void *arg)
         fflush(stdout);
 
         self->indRenderCount = i;
+        self->setGatherRadius();
 
         self->stage = App::GATHERING;
         Thread::runConcurrently(Point2int32(0, 0),
@@ -140,6 +139,11 @@ static void dispatcher(void *arg)
 
 
     self->stage = App::IDLE;
+}
+
+void App::setGatherRadius()
+{
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
 }
 
 void App::onInit()

@@ -67,6 +67,8 @@ public:
     static bool m_kill;
     void toggleWindowPath();
 
+    void setGatherRadius();
+
     int             pass; // how many passes we have taken for a given pixel
     int             num_passes;
     bool            continueRender;
