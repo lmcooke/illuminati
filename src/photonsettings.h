@@ -46,6 +46,8 @@ public:
     // Expected raymarch step along the ray when scattering.
     // TODO: should this just be taken care of in the fog stuff?
     float dist;
+    // The rendered intensity scale
+    float beamIntensity;
 };
 
 #endif // PHOTONSETTINGS_H

@@ -204,9 +204,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
-    beam.m_power = light->emittedRadiance(dir)
-                 / totalPhotons
-                 * m_emit.size();
+    beam.m_power = light->emittedRadiance(dir)* m_emit.size();
     return true;
 }
 

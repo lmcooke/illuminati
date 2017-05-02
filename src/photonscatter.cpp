@@ -11,7 +11,7 @@ PhotonScatter::~PhotonScatter()
 {
 }
 
-void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams)
+void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int initBounceNum)
 {
     m_beams.clear();
     // Emit a photon.
@@ -20,7 +20,8 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams)
     if (m_world->emitBeam(m_random, beam, surfel, numBeams))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
-        shootRayRecursive(beam, 0);
+        shootRayRecursive(beam, initBounceNum);
+        std::cout << "-----------------" <<std::endl;
     }
     beams = m_beams;
 }
@@ -59,6 +60,7 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
         Color3 weight = Color3(1.0);
         surfel->scatter(PathDirection::SOURCE_TO_EYE, wIn, false, m_random, weight, wOut, probabilityHint);
         Color3 probability = surfel->probabilityOfScattering(PathDirection::SOURCE_TO_EYE, wIn, m_random);
+        weight = weight.clamp(0.0, 1.0);
 
         // Russian roulette termination
         float rand = m_random.uniform();
@@ -68,7 +70,7 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emitBeam, float marchDist, fl
             PhotonBeamette beam2 = PhotonBeamette();
             beam2.m_start = surfelPosOffset;
             beam2.m_end = beam2.m_start + wOut;
-            beam2.m_power = emitBeam.m_power * weight * probability/probability.average();
+            beam2.m_power = emitBeam.m_power * weight;
             shootRayRecursive(beam2, bounces + 1);
         }
         return true;
@@ -92,7 +94,10 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
         PhotonBeamette beam2 = PhotonBeamette();
         beam2.m_start = startPt;
         beam2.m_end = beam2.m_start + origDirection;
-        beam2.m_power = power/(1 - m_PSettings.attenuation);
+
+        // Attenuate over the distance
+        float dist = length(beam2.m_start - beam2.m_end);
+        beam2.m_power = power/(1 - fmin(m_PSettings.attenuation, 0.01));
         shootRayRecursive(beam2, bounces);
     }
 }
@@ -111,14 +116,15 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
     Vector3 wOut;
     phaseFxn(wIn, wOut);
     float rand = m_random.uniform();
+
     if (rand < m_PSettings.scattering)
     {
         // Do some Russian Roulette stuff here.
         PhotonBeamette beam2 = PhotonBeamette();
         beam2.m_start = startPt;
         beam2.m_end = beam2.m_start + wOut;
-        beam2.m_power = power/m_PSettings.scattering;
-        shootRayRecursive(beam2, bounces);
+        beam2.m_power = power/fmax(m_PSettings.scattering, 0.001);
+        shootRayRecursive(beam2, bounces + 1);
     }
 }
 
@@ -136,7 +142,7 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
     }
 
     // A random distance to step forward along the beam.
-    float marchDist = m_random.uniform()*m_PSettings.dist;
+    float marchDist = m_random.uniform()*getRayMarchDist();
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -150,9 +156,13 @@ void PhotonScatter::shootRayRecursive(PhotonBeamette emitBeam, int bounces)
         Vector3 beamEndPt = emitBeam.m_start + direction * marchDist;
         Vector3 prev = -(emitBeam.m_start - beamEndPt) * 1.1;
         Vector3 next = (emitBeam.m_start - beamEndPt) * 1.1;
-        calculateAndStoreBeam(emitBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emitBeam.m_power);
-        scatterForward(beamEndPt, direction, emitBeam.m_power, bounces);
+        if(bounces > 0)
+        {
+            calculateAndStoreBeam(emitBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emitBeam.m_power);
+        }
+
         scatterIntoFog(beamEndPt, direction, emitBeam.m_power, bounces);
+        scatterForward(beamEndPt, direction, emitBeam.m_power, bounces);
     }
 }
 
@@ -172,8 +182,10 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     PhotonBeamette beam = PhotonBeamette();
     beam.m_start =  startPt;
     beam.m_end = endPt;
-    beam.m_power = power/pow(m_radius, 2);
 
+    // We want the total light contribution to the screen from a single beam to be constant
+    // regardless of the width of the beam.
+    beam.m_power = power/(startRad + endRad)/2;
     Vector3 vbeam = normalize(endPt - startPt);
 
     //start

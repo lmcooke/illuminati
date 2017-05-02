@@ -39,16 +39,18 @@ App::App(const GApp::Settings &settings)
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.5;
 
-    m_PSettings.maxDepthScatter=3;
-    m_PSettings.maxDepthRender=4;
+    m_PSettings.maxDepthScatter=4;
+    m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettesDir=20;
-    m_PSettings.numBeamettesInDir=20000;
+    m_PSettings.numBeamettesDir=10;
+    m_PSettings.numBeamettesInDir=2000;
 
     m_PSettings.directSamples=64;
     m_PSettings.gatherRadius=0.1;
-    m_PSettings.useFinalGather=true;
-    m_PSettings.dist = 5;
+    m_PSettings.useFinalGather=false;
+    m_PSettings.gatherSamples=50;
+    m_PSettings.dist = .4;
+    m_PSettings.beamIntensity = 3;
 }
 
 App::~App() { }
@@ -71,6 +73,7 @@ void App::buildPhotonMap()
     // Create renderer
     m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
     m_indRenderer->setBeams(m_inDirBeams->getBeams());
+
 }
 
 void App::traceCallback(int x, int y)
@@ -270,10 +273,9 @@ void App::gpuProcess(RenderDevice *rd)
 
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     direct_beams.append(m_dirBeams->getBeams());
-//    direct_beams = m_dirBeams->getBeams();
 
     m_count += .001;
-    m_radius = max(m_radius*0.75, 0.1);
+    m_radius = max(m_radius*0.8, 0.05);
     m_passes += 1;
 
     // flipFlop FBOs and textures
@@ -306,8 +308,8 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            cpuPower.append(pb.m_power);
-            cpuPower.append(pb.m_power);
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
         }
 
         rd->setObjectToWorldMatrix(CFrame());
@@ -403,13 +405,6 @@ void App::changeDataDirectory()
     Array<String> sceneFiles;
     FileSystem::getFiles(m_dirName + "*.Any", sceneFiles);
 
-    // if no files found return
-    if (!sceneFiles.size())
-    {
-        m_warningLabel->setCaption("Sorry, no scene files found");
-        return;
-    }
-
     loadSceneDirectory(m_dirName);
 }
 
@@ -418,7 +413,6 @@ void App::loadSceneDirectory(String directory)
     setScenePath(directory.c_str());
 
     updateScenePathLabel();
-    m_warningLabel->setCaption("");
     m_ddl->clear();
 
     Array<String> sceneFiles;
@@ -481,7 +475,7 @@ void App::makeGUI()
     // INFO
     GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
     infoPane->addButton("Save Image", this, &App::saveCanvas);
-    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
     infoPane->pack();
 
     // SCENE
@@ -495,8 +489,8 @@ void App::makeGUI()
     scenesPane->addTextBox("Directory:", &m_dirName);
     scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
 
-    scenesPane->addLabel("Scene Folders");
-    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
+//    scenesPane->addLabel("Scene Folders");
+//    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
 
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
@@ -504,7 +498,6 @@ void App::makeGUI()
     scenesPane->addRadioButton("Photon Beams (Ind)", App::INDBEAMS, &view);
     scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
 
-    m_warningLabel = scenesPane->addLabel("");
     updateScenePathLabel();
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
@@ -512,26 +505,24 @@ void App::makeGUI()
     scenesPane->pack();
 
     // RENDERING
-    GuiPane* settingsPane = paneMain->addPane("Settings", GuiTheme::ORNATE_PANE_STYLE);
+    GuiPane* settingsPane = paneMain->addPane("Settings and Lights", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addLabel("Scattering");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addLabel("Attenuation");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addLabel("Noise:bias ratio");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.0f);
-    settingsPane->addLabel("Radius scaling factor");
-    settingsPane->addNumberBox(GuiText(""), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->pack();
+    settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+//    settingsPane->pack();
     // Lights
-    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-    m_lightdl = lightsPane->addDropDownList("Emitter");
-    lightsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
+    m_lightdl = settingsPane->addDropDownList("Emitter");
+    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
 //    lightsPane->addLabel("Attenuation");
-    lightsPane->pack();
+//    lightsPane->pack();
+    settingsPane->pack();
 
     paneMain->pack();
     windowMain->pack();

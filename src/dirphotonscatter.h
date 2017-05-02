@@ -13,6 +13,7 @@ public:
     void phaseFxn(Vector3 wi, Vector3 &wo);
     Array<PhotonBeamette> getBeams();
     void makeBeams();
+    float getRayMarchDist();
 private:
     Array<PhotonBeamette> m_beams;
 };

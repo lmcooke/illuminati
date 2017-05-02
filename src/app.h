@@ -135,7 +135,6 @@ private:
     GuiDropDownList*    m_ddl;
     GuiDropDownList*    m_renderdl;
     GuiDropDownList*    m_lightdl;
-    GuiLabel*           m_warningLabel;
     GuiLabel*           m_scenePathLabel;
     String              m_dirName;
     void updateScenePathLabel();
