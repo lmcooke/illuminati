@@ -49,6 +49,8 @@ public:
     float dist;
     // The rendered intensity scale
     float beamIntensity;
+    // Spread of the beam (angle that light can scatter from the emittor)
+    float beamSpread;
 };
 
 #endif // PHOTONSETTINGS_H

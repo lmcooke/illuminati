@@ -59,6 +59,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.gatherSamples=50;
     m_PSettings.dist = .4;
     m_PSettings.beamIntensity = 1;
+    m_PSettings.beamSpread = 1;
 }
 
 App::~App() { }
@@ -598,6 +599,8 @@ void App::makeGUI()
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
     m_lightdl = settingsPane->addDropDownList("Emitter");
     settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 5.0f, 0.005f);
+
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");

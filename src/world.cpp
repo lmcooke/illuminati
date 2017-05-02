@@ -190,7 +190,7 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
     area = tri.area();
 }
 
-bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons)
+bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &surf, int totalPhotons, float beamSpread)
 {
     // Select the point of emission
     shared_ptr<Surfel> light;
@@ -203,7 +203,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     Vector3 dir;
     float dist;
 
-    dir = Vector3::cosHemiRandom(light->shadingNormal, random);
+    dir = Vector3::cosPowHemiRandom(light->shadingNormal, 1./beamSpread, random);
     intersect(Ray(light->position + light->geometricNormal * 1e-4, dir), dist, surf);
 
     if (!surf) return false;

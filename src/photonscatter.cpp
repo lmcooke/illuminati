@@ -17,7 +17,7 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     // Emit a photon.
     PhotonBeamette beam;
     shared_ptr<Surfel> surfel;
-    if (m_world->emitBeam(m_random, beam, surfel, numBeams))
+    if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings.beamSpread))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
         shootRayRecursive(beam, initBounceNum);

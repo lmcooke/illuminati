@@ -1,6 +1,6 @@
 //Maya ASCII 2016 scene
 //Name: batman.ma
-//Last modified: Tue, May 02, 2017 11:41:56 AM
+//Last modified: Tue, May 02, 2017 12:44:53 PM
 //Codeset: UTF-8
 requires maya "2016";
 requires -nodeType "mentalrayFramebuffer" -nodeType "mentalrayOptions" -nodeType "mentalrayGlobals"
@@ -4753,8 +4753,8 @@ createNode mesh -n "baseShape" -p "base";
 	setAttr ".dr" 1;
 createNode transform -n "emittor1";
 	rename -uid "58C8C53A-E941-496F-5DA0-05AA59B87A79";
-	setAttr ".t" -type "double3" 0 0 4.4535574786985279 ;
-	setAttr ".s" -type "double3" 0.85512853003346923 0.85512853003346923 0.85512853003346923 ;
+	setAttr ".t" -type "double3" 0 1.5406334611809456 4.4535574786985279 ;
+	setAttr ".s" -type "double3" 0.92556308304729951 0.92556308304729951 0.92556308304729951 ;
 	setAttr ".rp" -type "double3" 0 13.995361266393997 -14.283960542644815 ;
 	setAttr ".sp" -type "double3" 0 13.995361266393997 -14.283960542644815 ;
 createNode mesh -n "emittorShape1" -p "emittor1";
@@ -4762,30 +4762,22 @@ createNode mesh -n "emittorShape1" -p "emittor1";
 	setAttr -k off ".v";
 	setAttr ".vir" yes;
 	setAttr ".vif" yes;
-	setAttr ".pv" -type "double2" 0.5 0.5 ;
+	setAttr ".pv" -type "double2" 0.5 0.125 ;
 	setAttr ".uvst[0].uvsn" -type "string" "map1";
-	setAttr -s 9 ".uvst[0].uvsp[0:8]" -type "float2" 0.375 0 0.625 0 0.375
-		 0.25 0.625 0.25 0.50393677 0.25 0.50393677 0 0.375 0.1411124 0.625 0.1411124 0.50393677
-		 0.1411124;
+	setAttr -s 8 ".uvst[0].uvsp[0:7]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.50393677 0.25 0.50393677 0 0.375 0.1411124 0.625 0.1411124;
 	setAttr ".cuvs" -type "string" "map1";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 9 ".vt[0:8]"  -6.17508554 8.3168211 -12.26839924 6.17508554 8.3168211 -12.26839924
+	setAttr -s 8 ".vt[0:7]"  -6.17508554 8.3168211 -12.26839924 6.17508554 8.3168211 -12.26839924
 		 -6.17508554 19.74194527 -16.096441269 6.17508554 19.74194527 -16.096441269 0.19447739 21.54130173 -16.69932365
-		 0.19447739 6.51746416 -11.6655159 -8.19149399 14.23812199 -14.25235939 8.19149399 14.23812199 -14.25235939
-		 0.20794645 14.30387211 -14.27438927;
-	setAttr -s 12 ".ed[0:11]"  0 5 0 2 4 0 0 6 0 1 7 0 4 3 0 5 1 0 5 8 1
-		 6 2 0 7 3 0 8 4 1 7 8 1 8 6 1;
-	setAttr -s 4 -ch 16 ".fc[0:3]" -type "polyFaces" 
-		f 4 0 6 11 -3
-		mu 0 4 0 5 8 6
-		f 4 -7 5 3 10
-		mu 0 4 8 5 1 7
-		f 4 -10 -11 8 -5
-		mu 0 4 4 8 7 3
-		f 4 -12 9 -2 -8
-		mu 0 4 6 8 4 2;
+		 0.19447739 6.51746416 -11.6655159 -8.19149399 14.23812199 -14.25235939 8.19149399 14.23812199 -14.25235939;
+	setAttr -s 8 ".ed[0:7]"  0 5 0 2 4 0 0 6 0 1 7 0 4 3 0 5 1 0 6 2 0
+		 7 3 0;
+	setAttr -ch 8 ".fc[0]" -type "polyFaces" 
+		f 8 -3 0 5 3 7 -5 -2 -7
+		mu 0 8 6 0 5 1 7 3 4 2;
 	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
 	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
@@ -4793,13 +4785,13 @@ createNode mesh -n "emittorShape1" -p "emittor1";
 	setAttr ".dr" 1;
 createNode transform -n "persp1";
 	rename -uid "63E53F24-D84D-2150-AD1B-6BB9706FF7C0";
-	setAttr ".t" -type "double3" -26.673317769479009 19.524098274467171 33.835978676245503 ;
-	setAttr ".r" -type "double3" -5.7383527296252632 -29.000000000004565 2.2728125832156273e-16 ;
+	setAttr ".t" -type "double3" -0.63088320694715505 39.740140396286236 45.958745953810137 ;
+	setAttr ".r" -type "double3" -23.138352729625904 -0.60000000000451237 -4.9698891919644783e-17 ;
 createNode camera -n "persp1Shape" -p "persp1";
 	rename -uid "E06AF5DA-B645-68FC-7051-878FB69232B5";
 	setAttr -k off ".v";
 	setAttr ".fl" 34.999999999999986;
-	setAttr ".coi" 55.295219909577625;
+	setAttr ".coi" 65.516221794600952;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
