@@ -52,6 +52,9 @@ App::App(const GApp::Settings &settings)
     m_PSettings.gatherRadius=0.2;
     m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
+
+    m_maxPasses = 3;
+
 }
 
 App::~App() { }
@@ -81,6 +84,7 @@ void App::traceCallback(int x, int y)
 
     if (continueRender) {
 
+        // TODO : keep random or just use .5f?
         double dx = rng.uniform(), dy = rng.uniform();
 
         Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
@@ -120,7 +124,7 @@ static void dispatcher(void *arg)
     self->buildPhotonMap();
 
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < self->m_maxPasses; i++) {
         printf("Rendering ...");
         std::cout << " Pass: " << i << std::endl;
         fflush(stdout);
@@ -141,10 +145,7 @@ static void dispatcher(void *arg)
     self->stage = App::IDLE;
 }
 
-void App::setGatherRadius()
-{
-    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
-}
+
 
 void App::onInit()
 {
@@ -217,25 +218,10 @@ bool App::onEvent(const GEvent &e)
 
     if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
 
-//        m_dispatch->terminate();
-
-//        m_canvas = Image3::createEmpty(window()->width(),
-//                                       window()->height());
-
         // pause renderer
         continueRender = false;
 
-//        m_canvas = Image3::createEmpty(window()->width(),
-//                                       window()->height());
-
-        // restart
-//        m_dispatch->terminate();
-//        std::cout << "oE 1" << std::endl;
-//        shared_ptr<Thread> newThread = Thread::create("Newdispatcher", dispatcher, this);
-//        std::cout << "oE 2" << std::endl;
-//        newThread ->start();
-//        std::cout << "oE 3" << std::endl;
-
+        // TODO : clear m_canvas and restart with updated camera
 
         return true;
     }
@@ -465,6 +451,13 @@ void App::gpuProcess(RenderDevice *rd)
                             settings().hdrFramebuffer.depthGuardBandThickness.x,
                             settings().hdrFramebuffer.depthGuardBandThickness.x);
 
+}
+
+// sets the gather radius of the indirect renderer
+void App::setGatherRadius()
+{
+    // TODO : is .04 a reasonable amount to decrease the indirect gather radius by?
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
 }
 
 FilmSettings App::getFilmSettings()

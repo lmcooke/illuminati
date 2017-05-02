@@ -73,6 +73,8 @@ public:
     int             num_passes;
     bool            continueRender;
 
+    int m_maxPasses;
+
     int indRenderCount;
 
 private:
