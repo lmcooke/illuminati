@@ -153,11 +153,12 @@ shared_ptr<Camera> World::camera()
     return m_camera;
 }
 
-void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area)
+void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area, int &id)
 {
     // Pick an emissive triangle uniformly at random
     int i = random.integer(0, m_emit.size() - 1);
     const Tri& tri = m_emit[i].tri();
+    id = m_emit[i].index();
 
     // Pick a point in that triangle uniformly at random
     // http://books.google.com/books?id=fvA7zLEFWZgC&pg=PA24#v=onepage&q&f=false
@@ -195,8 +196,9 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
     shared_ptr<Surfel> light;
     float prob;
     float area;
+    int id;
 
-    World::emissivePoint(random, light, prob, area);
+    World::emissivePoint(random, light, prob, area, id);
     // Shoot the photon beamette somewhere into the scene
     Vector3 dir;
     float dist;
