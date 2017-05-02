@@ -5,6 +5,8 @@
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
 
+static Random &rng = Random::common();
+
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
@@ -76,13 +78,39 @@ void App::buildPhotonMap()
 
 void App::traceCallback(int x, int y)
 {
-    Ray ray = m_world.camera()->worldRay(x + .5f, y + .5f, m_canvas->rect2DBounds());
-    m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+
+    if (continueRender) {
+
+        double dx = rng.uniform(), dy = rng.uniform();
+
+        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+
+        if (indRenderCount == 0) {
+            m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+        } else {
+            Radiance3 prev = m_canvas->get(x,y);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+
+            float indCountFl = static_cast<float>(indRenderCount);
+
+            float prevContrib = indCountFl / (indCountFl + 1.f);
+            float nextContrib = 1.f / (indCountFl + 1.f);
+
+//            std::cout << "=========" << std::endl;
+//            std::cout << "current count : " << indCountFl << std::endl;
+//            std::cout << "prevContrib: " << prevContrib << std::endl;
+//            std::cout << "nextContrib: " << nextContrib << std::endl;
+
+            m_canvas->set(x, y, prevContrib * prev +
+                                nextContrib * sample);
+        }
+
+
+    }
 }
 
 static void dispatcher(void *arg)
 {
-
     App *self = (App*)arg;
 
 
@@ -93,13 +121,23 @@ static void dispatcher(void *arg)
 
     self->buildPhotonMap();
 
-    printf("Rendering ...");
-    fflush(stdout);
-    self->stage = App::GATHERING;
-    Thread::runConcurrently(Point2int32(0, 0),
-                            Point2int32(w, h),
-                            [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
-    printf("done\n");
+
+    for (int i = 0; i < 3; i++) {
+        printf("Rendering ...");
+        std::cout << " Pass: " << i << std::endl;
+        fflush(stdout);
+
+        self->indRenderCount = i;
+
+        self->stage = App::GATHERING;
+        Thread::runConcurrently(Point2int32(0, 0),
+                                Point2int32(w, h),
+                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
+
+        printf("done\n");
+    }
+
+
 
     self->stage = App::IDLE;
 }
@@ -144,6 +182,8 @@ void App::onInit()
 
     setFrameDuration(1.0f / 60.0f);
 
+    indRenderCount = 0;
+
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
 
@@ -167,6 +207,37 @@ void App::onInit()
     developerWindow->setResizable(true);
 }
 
+bool App::onEvent(const GEvent &e)
+{
+    if (GApp::onEvent(e)) { return true; }
+
+    if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
+
+//        m_dispatch->terminate();
+
+//        m_canvas = Image3::createEmpty(window()->width(),
+//                                       window()->height());
+
+        // pause renderer
+        continueRender = false;
+
+//        m_canvas = Image3::createEmpty(window()->width(),
+//                                       window()->height());
+
+        // restart
+//        m_dispatch->terminate();
+//        std::cout << "oE 1" << std::endl;
+//        shared_ptr<Thread> newThread = Thread::create("Newdispatcher", dispatcher, this);
+//        std::cout << "oE 2" << std::endl;
+//        newThread ->start();
+//        std::cout << "oE 3" << std::endl;
+
+
+        return true;
+    }
+    return false;
+}
+
 void App::onRender()
 {
 
@@ -181,8 +252,10 @@ void App::onRender()
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
+        std::cout << "onRender" << std::endl;
         m_dispatch->start();
     } else {
+        std::cout << "onRender: false" << std::endl;
         continueRender=false;
     }
 }
@@ -246,12 +319,20 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-
+//    std::cout << "onGraphics3D 1" << std::endl;
     if (!m_world.camnull() && m_dirBeams){
+
+
         m_dirBeams->setRadius(m_radius);
+
+
         m_dirBeams->makeBeams();
+
+
         gpuProcess(rd);
     } else {
+
+
         swapBuffers();
         rd->clear();
     }
@@ -264,7 +345,7 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-
+//    std::cout << "gpuProcess 1" << std::endl;
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     direct_beams.append(m_dirBeams->getBeams());
 

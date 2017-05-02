@@ -37,6 +37,8 @@ public:
     /** Called once at application startup */
     virtual void onInit();
 
+    virtual bool onEvent(const GEvent& e) override;
+
     /** Called once at application shutdown */
     virtual void onCleanup();
 
@@ -69,6 +71,8 @@ public:
     int             num_passes;
     bool            continueRender;
 
+    int indRenderCount;
+
 private:
 
     void gpuProcess(RenderDevice *rd);
@@ -78,6 +82,8 @@ private:
 
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
+
+
 
     // TODO : temp
     float m_count;
