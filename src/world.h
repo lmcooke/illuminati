@@ -43,7 +43,7 @@ public:
       *                 all light-emitting points in the scene
       * @param area     The area of the emitter chosen
       */
-    void emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area);
+    void emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob, float &area, int &id);
 
     /** Emits a photon into the scene. If this method returns true, the
       * resulting photon will have already been shot into the scene (i.e. the
@@ -54,6 +54,7 @@ public:
       * @param photon       Receives the photon emitted
       * @param surf         The surface the photon hit on its first bounce
       * @param totalPhotons The total number of photons (for weighting)
+      * @param id           The spline unique id/index
       * @return             Whether or not there is a photon to continue scattering
       */
 
