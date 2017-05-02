@@ -103,8 +103,7 @@ public:
 
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
-    Array<Tri>          m_emit;     // Triangles that emit light
-//    Array<Emitter> m_emit;
+    Array<Emitter> m_emit;  // Triangles that emit light
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
     Array<shared_ptr<Surface>> m_spline_geometry; // for previewing purposes

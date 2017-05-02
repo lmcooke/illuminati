@@ -1,12 +1,9 @@
 #include "app.h"
 #include "world.h"
-#include "emitter.h"
-#include <string>
 
 World::World()
     : m_splines(Array<Array<Vector4>>())
-{
-}
+{ }
 
 World::~World() { }
 
@@ -45,6 +42,8 @@ void World::load(const String &path )
         {
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
+//            std::cout << "LOAD is cam null? " << camnull() << std::endl;
+//            std::cout << "is wcam null? " << !camera() << std::endl;
 
             printf("done\n");
         }
@@ -97,6 +96,7 @@ void World::load(const String &path )
 
             // Add it to the scene
             for (int i = 0; i < posed.size(); ++i)
+//                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
                 m_geometry.append(posed[i]);
 
             printf("done\n");
@@ -109,6 +109,7 @@ void World::load(const String &path )
 
     // Build bounding interval hierarchy for scene geometry
     Array<Tri> triArray;
+
     Surface::getTris(m_geometry, m_verts, triArray);
     for (int i = 0; i < triArray.size(); ++i)
     {
@@ -128,11 +129,12 @@ void World::load(const String &path )
                 int id = std::atoi(name.c_str());
 
                 Emitter emitter = Emitter(id, triArray[i]);
-//                m_emit.append(emitter);
-                m_emit.append(triArray[i]);
+                m_emit.append(emitter);
             }
         }
     }
+
+    m_tris.setContents(triArray, m_verts);
 
     printf( "%d light-emitting triangle(s) in scene.\n", (int) m_emit.size() );
     fflush( stdout );
@@ -155,7 +157,7 @@ void World::emissivePoint(Random &random, shared_ptr<Surfel> &surf, float &prob,
 {
     // Pick an emissive triangle uniformly at random
     int i = random.integer(0, m_emit.size() - 1);
-    const Tri& tri = m_emit[i];//.tri();
+    const Tri& tri = m_emit[i].tri();
 
     // Pick a point in that triangle uniformly at random
     // http://books.google.com/books?id=fvA7zLEFWZgC&pg=PA24#v=onepage&q&f=false
