@@ -55,7 +55,7 @@
             
             projection = Projection { 
                 farPlaneZ = -200; 
-                fovDegrees = 20; 
+                fovDegrees = 40;
                 fovDirection = "VERTICAL"; 
                 nearPlaneZ = -0.1; 
                 pixelOffset = Vector2(0, 0 ); 
@@ -204,4 +204,4 @@
     }; 
     
     name = "G3D Cornell Box (Spheres)"; 
-} 
+}

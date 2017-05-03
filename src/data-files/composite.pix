@@ -27,5 +27,6 @@ void main()
 	float contribution = 1.0/(passNum + 1.0);
 	cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
 
-	result = indirectColor + cumulativeDirectLight;
+        result = indirectColor + cumulativeDirectLight;
+        //result = indirectColor + directColor;
 }

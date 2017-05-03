@@ -346,6 +346,7 @@ void App::gpuProcess(RenderDevice *rd)
 {
 //    std::cout << "gpuProcess 1" << std::endl;
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+//    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
@@ -362,13 +363,20 @@ void App::gpuProcess(RenderDevice *rd)
 
     // beam splatting
     rd->pushState(m_dirFBO); {
+        //m_world.setMatrices(rd);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(),
+                                         m_world.camera()->frame());
+
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
-        Array<Color3>     cpuPower;
+        Array<Color3>    cpuPower;
 
-        //int i = 0;
+        Matrix4 mvp = rd->invertYMatrix() *
+                (rd->projectionMatrix() *
+                 rd->cameraToWorldMatrix().inverse().toMatrix4());
+
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
                 cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
@@ -390,7 +398,6 @@ void App::gpuProcess(RenderDevice *rd)
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
-        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -409,16 +416,15 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setAttributeArray("Power", gpuPower);
-        args.setUniform("Camera", Vector3(0, 1.5, 9));
-
-        args.setUniform("MVP", rd->invertYMatrix() *
-                                rd->projectionMatrix() *
-                                rd->cameraToWorldMatrix().inverse());
+        args.setUniform("Resolution", Vector2(rd->width(), rd->height()));
+        args.setUniform("Look", m_world.camera()->frame().lookVector());
+        args.setUniform("MVP", mvp);
+        debugAssertGLOk();
 
         LAUNCH_SHADER("beamsplat.*", args);
+        debugAssertGLOk();
 
     } rd->popState();
-
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect

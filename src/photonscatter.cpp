@@ -282,24 +282,34 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
 
     //start
     if (prev.isNaN()) { // beam is light source? will cut edge perpendicular to beam
-        Vector3 perp = (!vbeam.x) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
-        beam.m_start_major = startRad * cross(perp, vbeam);
-        beam.m_start_minor = startRad * perp;
+        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        beam.m_start_major = startRad * normalize(cross(perp, vbeam));
+        beam.m_start_minor = startRad * normalize(cross(vbeam, beam.m_start_major));
     } else {
         Vector3 beam_prev = normalize(startPt - prev);
-        beam.m_start_major = ((vbeam + beam_prev) / 2.0) * (startRad / dot(vbeam, beam_prev));
-        beam.m_start_minor = startRad * beam_prev;
+        Vector3 majdir = normalize((vbeam - beam_prev) / 2.0);
+        float startr = startRad;
+        if (dot(vbeam, majdir) != 0) {
+            startr = startr / dot(vbeam, majdir);
+        }
+        beam.m_start_major = startr * majdir;
+        beam.m_start_minor = startRad * normalize(cross(vbeam, beam_prev));
     }
 
     // end
     if (next.isNaN()) { // beam has no child? will cut edge perpendicular to beam
-        Vector3 perp = (!vbeam.x) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
-        beam.m_end_minor = endRad * perp;
-        beam.m_end_major = endRad * cross(perp, vbeam);
+        Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+        beam.m_end_major = endRad * normalize(cross(perp, vbeam));
+        beam.m_end_minor = endRad * normalize(cross(vbeam, beam.m_end_major));
     } else {
         Vector3 beam_next = normalize(next - endPt);
-        beam.m_end_major = ((vbeam + beam_next) / 2.0) * (endRad / dot(vbeam, beam_next));
-        beam.m_end_minor = endRad * beam_next;
+        Vector3 majdir = normalize((-vbeam + beam_next) / 2.0);
+        float endr = endRad;
+        if (dot(vbeam, majdir) != 0) {
+            endr = endr / dot(vbeam, majdir);
+        }
+        beam.m_end_major = endr * majdir;
+        beam.m_end_minor = endRad * normalize(cross(vbeam, beam_next));
     }
     m_beams.push_back(beam);
 }
