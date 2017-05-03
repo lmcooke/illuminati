@@ -20,8 +20,8 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings.beamSpread))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
-        if (beam.m_splineID > 0){
-            shootRayRecursiveCurve(beam, initBounceNum);
+        if (beam.m_splineID >= 0){
+            shootRayRecursiveCurve(beam, initBounceNum, 0); // We're always starting at beginnign of spline
         }else{
             shootRayRecursiveStraight(beam, initBounceNum);
         }
@@ -100,8 +100,36 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
-        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01)); // TODO: negative? ?
         shootRayRecursiveStraight(beam2, bounces );
+    }
+}
+
+/**
+ * @brief scatterForwardCurve A beam that starts at startPt moves in direction origDirection and recurrs.
+ * @param startPt
+ * @param origDirection
+ * @param power
+ * @param spline ID
+ * @param bounces
+ * @param curveStep
+ */
+void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep)
+{
+    float rand = m_random.uniform();
+    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
+    {
+        // Do some Russian Roulette stuff here.
+        PhotonBeamette beam2 = PhotonBeamette();
+        beam2.m_start = startPt;
+        beam2.m_end = beam2.m_start + nextDirection;
+        beam2.m_splineID = id;
+
+        // Attenuate over the distance
+        float dist = length(beam2.m_start - beam2.m_end);
+        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        curveStep += 1;
+        shootRayRecursiveCurve(beam2, bounces, curveStep);
     }
 }
 
@@ -157,7 +185,7 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     if (!hitSurf && dist < inf())
     {
 
-        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
+        Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
         Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
         Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
         if(bounces > 0)
@@ -176,15 +204,37 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
  * @param emittedBeam
  * @param bounces
  */
-void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces)
+void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces, int curveStep)
 {
     // Terminate recursion
     if (bounces > m_PSettings.maxDepthScatter) {
         return;
     }
 
+    assert(emittedBeam.m_splineID >= 0);
+
+    Array<Vector4> spline = m_world->splines()[emittedBeam.m_splineID];
+
+    // if there isn't one more CV, return
+    if (curveStep > spline.length()-2){
+        return;
+    }
+
     // A random distance to step forward along the beam.
-    float marchDist = m_random.uniform()*getRayMarchDist();
+    Vector3 startPoint = spline[curveStep].xyz();
+    Vector3 endPoint = spline[curveStep+1].xyz();
+    float startRad = spline[curveStep].w;
+    float endRad = spline[curveStep+1].w;
+    float marchDist = length(endPoint - startPoint);
+
+    // Generate random next point based on radius
+    // float jitter = random.uniform()*end[3];
+    // TODO: JITTER POINT
+
+//    Vector3 curveDir = normalize(emittedBeam.m_end - emittedBeam.m_start);
+//    emittedBeam.m_end = startPoint + marchDist * curveDir;
+
+    emittedBeam.m_end = endPoint;
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -195,17 +245,22 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
-
-        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
-        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
-        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
-        if(bounces > 0)
-        {
-            calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
+        Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
+        Vector3 nextDirection = spline[curveStep+2].xyz() - endPoint;
+        Vector3 prev = emittedBeam.m_start;
+        if (curveStep > 0){
+            prev = spline[curveStep-1].xyz();
         }
+        Vector3 next = spline[curveStep+2].xyz();
+
+        startRad = max(startRad * m_PSettings.radiusScalingFactor, 0.05f);
+        endRad = max(endRad*m_PSettings.radiusScalingFactor, 0.05f);
+
+        calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
 
         scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+//        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+        scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
     }
 }
 
@@ -226,13 +281,17 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     beam.m_start =  startPt;
     beam.m_end = endPt;
 
+    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
+        return;
+    }
+
     // We want the total light contribution to the screen from a single beam to be constant
     // regardless of the width of the beam.
     beam.m_power = power/(startRad + endRad)/2;
     Vector3 vbeam = normalize(endPt - startPt);
 
     //start
-    if (prev.isNaN()) { // beam is light source? will cut edge perpendicular to beam
+    if (prev.isNaN() || prev == startPt) { // beam is light source? will cut edge perpendicular to beam
         Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_start_major = startRad * normalize(cross(perp, vbeam));
         beam.m_start_minor = startRad * normalize(cross(vbeam, beam.m_start_major));
@@ -248,7 +307,7 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     }
 
     // end
-    if (next.isNaN()) { // beam has no child? will cut edge perpendicular to beam
+    if (next.isNaN() || next == endPt) { // beam has no child? will cut edge perpendicular to beam
         Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_end_major = endRad * normalize(cross(perp, vbeam));
         beam.m_end_minor = endRad * normalize(cross(vbeam, beam.m_end_major));

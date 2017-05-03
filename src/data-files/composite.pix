@@ -33,10 +33,11 @@ void main()
 		float contribution = 1.0/(passNum + 1.0);
 		cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
 
+		// result = cumulativeDirectLight;
 		result = indirectColor + cumulativeDirectLight;
 	} else {
-		result = vec4(1.0, 0.0, 0.0, 0.0);
-		cumulativeDirectLight = vec4(1.0, 0.0, 0.0, 0.0);
+		result = vec4(0.0, 1.0, 0.0, 0.0);
+		cumulativeDirectLight = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 
         
