@@ -100,7 +100,7 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
-        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01)); // TODO: negative? ?
         shootRayRecursiveStraight(beam2, bounces );
     }
 }
@@ -132,7 +132,6 @@ void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, 
         shootRayRecursiveCurve(beam2, bounces, curveStep);
     }
 }
-
 
 /**
  * @brief scatterIntoFog A beam that starts at startPt and, if it were to continue forward, would go in direction
@@ -212,11 +211,12 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         return;
     }
 
+    assert(emittedBeam.m_splineID >= 0);
+
     Array<Vector4> spline = m_world->splines()[emittedBeam.m_splineID];
 
     // if there isn't one more CV, return
     if (curveStep > spline.length()-2){
-        std::cout << "curveStep: " << curveStep << std::endl;
         return;
     }
 
@@ -225,7 +225,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     Vector3 endPoint = spline[curveStep+1].xyz();
     float startRad = spline[curveStep].w;
     float endRad = spline[curveStep+1].w;
-    float marchDist = length(endPoint - startPoint);// m_random.uniform()*getRayMarchDist(); // TODO: make this random
+    float marchDist = length(endPoint - startPoint);
 
     // Generate random next point based on radius
     // float jitter = random.uniform()*end[3];
@@ -247,12 +247,18 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     {
         Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
         Vector3 nextDirection = spline[curveStep+2].xyz() - endPoint;
-        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
-        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
+        Vector3 prev = emittedBeam.m_start;
+        if (curveStep > 0){
+            prev = spline[curveStep-1].xyz();
+        }
+        Vector3 next = spline[curveStep+2].xyz();
 
-        calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
+        startRad = max(startRad * m_PSettings.radiusScalingFactor, 0.05f);
+        endRad = max(endRad*m_PSettings.radiusScalingFactor, 0.05f);
 
-//        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
+        calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
+
+        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
 //        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
         scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
     }
@@ -275,13 +281,17 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     beam.m_start =  startPt;
     beam.m_end = endPt;
 
+    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
+        return;
+    }
+
     // We want the total light contribution to the screen from a single beam to be constant
     // regardless of the width of the beam.
     beam.m_power = power/(startRad + endRad)/2;
     Vector3 vbeam = normalize(endPt - startPt);
 
     //start
-    if (prev.isNaN()) { // beam is light source? will cut edge perpendicular to beam
+    if (prev.isNaN() || prev == startPt) { // beam is light source? will cut edge perpendicular to beam
         Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_start_major = startRad * normalize(cross(perp, vbeam));
         beam.m_start_minor = startRad * normalize(cross(vbeam, beam.m_start_major));
@@ -297,7 +307,7 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     }
 
     // end
-    if (next.isNaN()) { // beam has no child? will cut edge perpendicular to beam
+    if (next.isNaN() || next == endPt) { // beam has no child? will cut edge perpendicular to beam
         Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
         beam.m_end_major = endRad * normalize(cross(perp, vbeam));
         beam.m_end_minor = endRad * normalize(cross(vbeam, beam.m_end_major));

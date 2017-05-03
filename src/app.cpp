@@ -39,7 +39,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.attenuation=0.0;
     m_PSettings.scattering=0.0;
     m_PSettings.noiseBiasRatio=0.0;
-    m_PSettings.radiusScalingFactor=0.5;
+    m_PSettings.radiusScalingFactor=0.8;
     m_PSettings.followRatio=0.0;
 
     m_PSettings.maxDepthScatter=4;
@@ -345,12 +345,13 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 void App::gpuProcess(RenderDevice *rd)
 {
 //    std::cout << "gpuProcess 1" << std::endl;
-    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
-//    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
+//    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
-    m_radius = max(m_radius*0.8, 0.05);
+    float calcRadius = m_radius*m_PSettings.radiusScalingFactor;
+    m_radius = max(calcRadius, 0.05f); // TODO: not hardcoded radius scaling
     m_passes += 1;
 
     // flipFlop FBOs and textures
@@ -600,14 +601,14 @@ void App::makeGUI()
     settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
-    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+//    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    settingsPane->pack();
 
     // Lights
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-    m_lightdl = settingsPane->addDropDownList("Emitter");
-    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+//    m_lightdl = settingsPane->addDropDownList("Emitter");
+//    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
     settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
 //    lightsPane->addLabel("Beam radius");

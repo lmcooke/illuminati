@@ -359,17 +359,23 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
                     // Center point
                     if (a == 0){
                         CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+                        Vector4 tmp = transrot * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+//                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
                         v.position = Vector3(tmp.x, tmp.y, tmp.z);
                         v.normal = Vector3::nan();
                         v.tangent = Vector4::nan();
                     }
 
                     CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                    Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
-                                                            pt2.y,
-                                                            pt2.z + w2 * sin(a * arc),
-                                                            1.0);
+//                    Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
+//                                                            pt2.y,
+//                                                            pt2.z + w2 * sin(a * arc),
+//                                                            1.0);
+                    Vector4 tmp = transrot *
+                            Vector4(w2 * cos(a * arc),
+                                    0,
+                                    w2 * sin(a * arc),
+                                    1.0);
 
                     v.position = Vector3(tmp.x, tmp.y, tmp.z);
                     v.normal  = Vector3::nan();
