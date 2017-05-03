@@ -50,11 +50,11 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings.directSamples=64;
 
-    m_PSettings.gatherRadius=0.2;
-    m_PSettings.useFinalGather=true;
+//    m_PSettings.gatherRadius=0.2;
+//    m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
-    m_maxPasses = 3;
-    m_PSettings.gatherRadius=0.1;
+    m_maxPasses = 1;
+    m_PSettings.gatherRadius=0.15;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
     m_PSettings.dist = .4;
