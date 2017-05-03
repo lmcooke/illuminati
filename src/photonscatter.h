@@ -70,6 +70,17 @@ protected:
     void scatterForward(Vector3 startPt, Vector3 origDirection, Color3 power, int bounces);
 
     /**
+     * @brief scatterForwardCurve A beam that starts at startPt moves in direction origDirection and recurrs.
+     * @param startPt
+     * @param origDirection
+     * @param power
+     * @param id
+     * @param bounces
+     * @param curveStep
+     */
+    void scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep);
+
+    /**
      * @brief shootRayRecursiveStraight Given a potential beam, store it (as long as it's not going off into the abyss).
      * Then, scatter it off a surfel, into fog, and/or forward.
      * @param emittedBeam
@@ -81,9 +92,10 @@ protected:
      * @brief shootRayRecursiveCurve Given a potential beam, defined by a spline, store it (as long as it's not going off into the abyss).
      * Then, scatter it off a surfel, into fog, and/or forward.
      * @param emittedBeam
-     * @param bounces
+     * @param bounces (off surfels)
+     * @param step (steps along the spline)
      */
-    void shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces);
+    void shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces, int curveStep);
 
     /**
      * @brief scatterOffSurf Standard old scattering function. Scatter and see what you hit! Only catch is

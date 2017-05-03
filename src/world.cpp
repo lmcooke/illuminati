@@ -260,7 +260,7 @@ void World::renderWireframe(RenderDevice *dev)
 
 Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) {
     const shared_ptr<ArticulatedModel>& modelBody = ArticulatedModel::createEmpty("splineModel");
-    std::string                 nameRoot      = std::to_string(m_splines.length() + 1) + std::string("spline");
+    std::string                 nameRoot      = std::to_string(m_splines.length()) + std::string("spline");
     String                      name          = String(nameRoot.c_str());
 
     ArticulatedModel::Part*     partBody      = modelBody->addPart(name + "_rootBody");

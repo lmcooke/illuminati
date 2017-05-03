@@ -20,8 +20,8 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings.beamSpread))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
-        if (beam.m_splineID > 0){
-            shootRayRecursiveCurve(beam, initBounceNum);
+        if (beam.m_splineID >= 0){
+            shootRayRecursiveCurve(beam, initBounceNum, 0); // We're always starting at beginnign of spline
         }else{
             shootRayRecursiveStraight(beam, initBounceNum);
         }
@@ -106,6 +106,35 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
 }
 
 /**
+ * @brief scatterForwardCurve A beam that starts at startPt moves in direction origDirection and recurrs.
+ * @param startPt
+ * @param origDirection
+ * @param power
+ * @param spline ID
+ * @param bounces
+ * @param curveStep
+ */
+void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep)
+{
+    float rand = m_random.uniform();
+    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
+    {
+        // Do some Russian Roulette stuff here.
+        PhotonBeamette beam2 = PhotonBeamette();
+        beam2.m_start = startPt;
+        beam2.m_end = beam2.m_start + nextDirection;
+        beam2.m_splineID = id;
+
+        // Attenuate over the distance
+        float dist = length(beam2.m_start - beam2.m_end);
+        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        curveStep += 1;
+        shootRayRecursiveCurve(beam2, bounces, curveStep);
+    }
+}
+
+
+/**
  * @brief scatterIntoFog A beam that starts at startPt and, if it were to continue forward, would go in direction
  * origDirection. But it doesn't! Instead, it scatters some other direction based on the phase function.
  * @param startPt
@@ -157,7 +186,7 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     if (!hitSurf && dist < inf())
     {
 
-        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
+        Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
         Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
         Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
         if(bounces > 0)
@@ -176,15 +205,36 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
  * @param emittedBeam
  * @param bounces
  */
-void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces)
+void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces, int curveStep)
 {
     // Terminate recursion
     if (bounces > m_PSettings.maxDepthScatter) {
         return;
     }
 
+    Array<Vector4> spline = m_world->splines()[emittedBeam.m_splineID];
+
+    // if there isn't one more CV, return
+    if (curveStep > spline.length()-2){
+        std::cout << "curveStep: " << curveStep << std::endl;
+        return;
+    }
+
     // A random distance to step forward along the beam.
-    float marchDist = m_random.uniform()*getRayMarchDist();
+    Vector3 startPoint = spline[curveStep].xyz();
+    Vector3 endPoint = spline[curveStep+1].xyz();
+    float startRad = spline[curveStep].w;
+    float endRad = spline[curveStep+1].w;
+    float marchDist = length(endPoint - startPoint);// m_random.uniform()*getRayMarchDist(); // TODO: make this random
+
+    // Generate random next point based on radius
+    // float jitter = random.uniform()*end[3];
+    // TODO: JITTER POINT
+
+//    Vector3 curveDir = normalize(emittedBeam.m_end - emittedBeam.m_start);
+//    emittedBeam.m_end = startPoint + marchDist * curveDir;
+
+    emittedBeam.m_end = endPoint;
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -195,17 +245,16 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
-
-        Vector3 beamEndPt = emittedBeam.m_start + direction * marchDist;
+        Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
+        Vector3 nextDirection = spline[curveStep+2].xyz() - endPoint;
         Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
         Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
-        if(bounces > 0)
-        {
-            calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
-        }
 
-        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+        calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
+
+//        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
+//        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+        scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
     }
 }
 

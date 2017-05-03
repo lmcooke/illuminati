@@ -107,6 +107,10 @@ public:
         m_PSettings = settings;
     }
 
+    Array<Array<Vector4>> splines(){
+        return m_splines;
+    }
+
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
     Array<Emitter> m_emit;  // Triangles that emit light
