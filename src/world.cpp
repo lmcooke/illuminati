@@ -316,68 +316,79 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     Vector3 diff;
     Vector3 prev_diff = Vector3(0, 0, 1);
     bool comment;
+    bool has_color;
+
+    Color3 c = Color3::one();
+
     while (std::getline(infile, line)) {
-        std::istringstream iss(line);
         pt1 = pt2;
         pt2 = pt3;
         w2 = w3;
+        std::istringstream iss(line);
         comment = iss.peek() == '#';
-        if (!comment) {
-            if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
-                throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+        has_color = iss.peek() == '*';
+        if (has_color) {
+            if (!(iss >> c[0] >> c[1] >> c[2])) {
+                printf("%s", "spline file has no color, using default color...");
             }
-            raw_spline.append(Vector4(pt3[0], pt3[1], pt3[2], w3));
-        }
-        if (npts > 0) {
-            prev_diff = diff;
-            if (npts == 1) { // first control point
-                diff = normalize(pt3 - pt2);
-            } else if (comment) { // last control point
-                diff = normalize(pt2 - pt1);
-            } else {
-                diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
+            std::cout << c.toString() << std::endl;
+        } else {
+            if (!comment) {
+                if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
+                    throw std::invalid_argument( "spline file must consist of four values: x y z radius" );
+                }
+                raw_spline.append(Vector4(pt3[0], pt3[1], pt3[2], w3));
             }
+            if (npts > 0) {
+                prev_diff = diff;
+                if (npts == 1) { // first control point
+                    diff = normalize(pt3 - pt2);
+                } else if (comment) { // last control point
+                    diff = normalize(pt2 - pt1);
+                } else {
+                    diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
+                }
 
-            CFrame yax = CoordinateFrame::fromYAxis(diff);
-            Matrix4 trans = Matrix4::translation(pt2);
-            Matrix4 rot = CoordinateFrame::fromYAxis(diff).toMatrix4();
-            //Matrix4 yaw = Matrix4::yawDegrees();
-            Matrix4 transrot = trans * rot;
-            for (int a = 0; a < slices; a++) {
-                CPUVertexArray::Vertex& v = vertexArray.next();
-                Vector4 tmp = transrot *
-                        Vector4(w2 * cos(a * arc),
-                                0.0,
-                                w2 * sin(a * arc),
-                                1.0);
-                v.position = Vector3(tmp.x, tmp.y, tmp.z);
-                v.normal  = Vector3::nan();
-                v.tangent = Vector4::nan();
-
-                if (npts == 1){ // If first control point
-
-                    // Center point
-                    if (a == 0){
-                        CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
-                        v.position = Vector3(tmp.x, tmp.y, tmp.z);
-                        v.normal = Vector3::nan();
-                        v.tangent = Vector4::nan();
-                    }
-
-                    CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                    Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
-                                                            pt2.y,
-                                                            pt2.z + w2 * sin(a * arc),
-                                                            1.0);
-
+                CFrame yax = CoordinateFrame::fromYAxis(diff);
+                Matrix4 trans = Matrix4::translation(pt2);
+                Matrix4 rot = CoordinateFrame::fromYAxis(diff).toMatrix4();
+                //Matrix4 yaw = Matrix4::yawDegrees();
+                Matrix4 transrot = trans * rot;
+                for (int a = 0; a < slices; a++) {
+                    CPUVertexArray::Vertex& v = vertexArray.next();
+                    Vector4 tmp = transrot *
+                            Vector4(w2 * cos(a * arc),
+                                    0.0,
+                                    w2 * sin(a * arc),
+                                    1.0);
                     v.position = Vector3(tmp.x, tmp.y, tmp.z);
                     v.normal  = Vector3::nan();
                     v.tangent = Vector4::nan();
+
+                    if (npts == 1){ // If first control point
+                        // Center point
+                        if (a == 0){
+                            CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
+                            Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+                            v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                            v.normal = Vector3::nan();
+                            v.tangent = Vector4::nan();
+                        }
+
+                        CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
+                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
+                                                                pt2.y,
+                                                                pt2.z + w2 * sin(a * arc),
+                                                                1.0);
+
+                        v.position = Vector3(tmp.x, tmp.y, tmp.z);
+                        v.normal  = Vector3::nan();
+                        v.tangent = Vector4::nan();
+                    }
                 }
             }
+            npts++;
         }
-        npts++;
     }
     npts--;
 
