@@ -40,7 +40,7 @@
             }; 
             
             frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-            motionBlurSettings = MotionBlurSettings { 
+            motionBlurSettings = MotionBlurSettings {
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
                 exposureFraction = 0.75; 
@@ -50,9 +50,9 @@
             
             projection = Projection { 
                 farPlaneZ = -200; 
-                fovDegrees = 25;
+                fovDegrees = 20;
                 fovDirection = "VERTICAL"; 
-                nearPlaneZ = -0.1; 
+                nearPlaneZ = -1;
                 pixelOffset = Vector2(0, 0 ); 
             }; 
             
@@ -123,7 +123,7 @@
         }; 
 
         splineModel = ArticulatedModel::Specification {
-            filename = "model/spline2.txt";
+            filename = "model/spline4.txt";
         };
         
     }; 

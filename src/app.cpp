@@ -54,10 +54,10 @@ App::App(const GApp::Settings &settings)
     m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
     m_maxPasses = 3;
-    m_PSettings.gatherRadius=0.1;
-    m_PSettings.useFinalGather=false;
+//    m_PSettings.gatherRadius=0.1;
+//    m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .4;
+//    m_PSettings.dist = .4;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
 
@@ -97,7 +97,9 @@ void App::traceCallback(int x, int y)
 
         Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
 
-        if (indRenderCount == 0) {
+        if (indRenderCount == -1) {
+            m_canvas->set(x, y, Radiance3::black());
+        } else if (indRenderCount == 0) {
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 
 
@@ -116,6 +118,8 @@ void App::traceCallback(int x, int y)
         }
 
 
+    } else {
+        continueRender = true;
     }
 }
 
@@ -132,12 +136,12 @@ static void dispatcher(void *arg)
     self->buildPhotonMap();
 
 
-    for (int i = 0; i < self->m_maxPasses; i++) {
+    while (self->indRenderCount < self->m_maxPasses) {
         printf("Rendering ...");
-        std::cout << " Pass: " << i << std::endl;
+        std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
 
-        self->indRenderCount = i;
+        self->indRenderCount += 1;
         self->setGatherRadius();
 
         self->stage = App::GATHERING;
@@ -250,9 +254,9 @@ bool App::onEvent(const GEvent &e)
 
         CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .5f, z, yaw, pitch, roll);
         m_world.setCameraCframe(newCframe);
-        indRenderCount = 0;
+        indRenderCount = -1;
 
-        continueRender = true;
+//        continueRender = true;
 
 
         return true;
@@ -370,6 +374,7 @@ void App::gpuProcess(RenderDevice *rd)
 {
 //    std::cout << "gpuProcess 1" << std::endl;
     Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+//    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
@@ -390,13 +395,20 @@ void App::gpuProcess(RenderDevice *rd)
 
     // beam splatting
     rd->pushState(m_dirFBO); {
+        //m_world.setMatrices(rd);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(),
+                                         m_world.camera()->frame());
+
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
-        Array<Color3>     cpuPower;
+        Array<Color3>    cpuPower;
 
-        //int i = 0;
+        Matrix4 mvp = rd->invertYMatrix() *
+                (rd->projectionMatrix() *
+                 rd->cameraToWorldMatrix().inverse().toMatrix4());
+
         for (PhotonBeamette pb : direct_beams) {
             if (testGPUprogression) {
                 cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
@@ -418,7 +430,6 @@ void App::gpuProcess(RenderDevice *rd)
         rd->setColorClearValue(Color3::black());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
-        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -437,16 +448,15 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setAttributeArray("Power", gpuPower);
-        args.setUniform("Camera", Vector3(0, 1.5, 9));
-
-        args.setUniform("MVP", rd->invertYMatrix() *
-                                rd->projectionMatrix() *
-                                rd->cameraToWorldMatrix().inverse());
+        args.setUniform("Resolution", Vector2(rd->width(), rd->height()));
+        args.setUniform("Look", m_world.camera()->frame().lookVector());
+        args.setUniform("MVP", mvp);
+        debugAssertGLOk();
 
         LAUNCH_SHADER("beamsplat.*", args);
+        debugAssertGLOk();
 
     } rd->popState();
-
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
@@ -458,6 +468,10 @@ void App::gpuProcess(RenderDevice *rd)
 
         Args argsComp;
         argsComp.setRect(rd->viewport());
+
+//        std::cout << "continueRender : " << continueRender << std::endl;
+
+        argsComp.setUniform("continueRendering", indRenderCount > -1);
 
         argsComp.setUniform("screenHeight", rd->height());
         argsComp.setUniform("screenWidth", rd->width());

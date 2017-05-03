@@ -115,6 +115,11 @@ void World::load(const String &path )
             spline->pose(posedSpline, CFrame(pos));
             emitter->pose(posedGeo, CFrame(pos));
 
+            // Add it to the scene
+           /* for (int i = 0; i < posed.size(); ++i)
+                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
+                //m_geometry.append(posed[i]); // just for testing spline accuracy
+                        */
             if (m_PSettings.renderSplines){
                 m_geometry.append(posedSpline);
             }
@@ -331,6 +336,8 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     Vector3 pt3 = Vector3(0, 0, 0);
     float w2;
     float w3;
+    Vector3 diff;
+    Vector3 prev_diff = Vector3(0, 0, 1);
     bool comment;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
@@ -345,7 +352,7 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
             raw_spline.append(Vector4(pt3[0], pt3[1], pt3[2], w3));
         }
         if (npts > 0) {
-            Vector3 diff;
+            prev_diff = diff;
             if (npts == 1) { // first control point
                 diff = normalize(pt3 - pt2);
             } else if (comment) { // last control point
@@ -353,13 +360,19 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
             } else {
                 diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
             }
-            CFrame yax = CoordinateFrame::fromYAxis(diff, pt2);
+
+            CFrame yax = CoordinateFrame::fromYAxis(diff);
+            Matrix4 trans = Matrix4::translation(pt2);
+            Matrix4 rot = CoordinateFrame::fromYAxis(diff).toMatrix4();
+            //Matrix4 yaw = Matrix4::yawDegrees();
+            Matrix4 transrot = trans * rot;
             for (int a = 0; a < slices; a++) {
                 CPUVertexArray::Vertex& v = vertexArray.next();
-                Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
-                                                        pt2.y,
-                                                        pt2.z + w2 * sin(a * arc),
-                                                        1.0);
+                Vector4 tmp = transrot *
+                        Vector4(w2 * cos(a * arc),
+                                0.0,
+                                w2 * sin(a * arc),
+                                1.0);
                 v.position = Vector3(tmp.x, tmp.y, tmp.z);
                 v.normal  = Vector3::nan();
                 v.tangent = Vector4::nan();
@@ -437,16 +450,12 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     return out;
 }
 
-/* TODO use this to make a real function that takes in a spline
- * (start pt, start radius, end point, end radius, prev and next points)
- * so that it can handle arbitrary beams */
+
 Array<PhotonBeamette> World::visualizeSplines() {
     Array<PhotonBeamette> beams = Array<PhotonBeamette>();
     for (Array<Vector4> spline : m_splines) {
-//        Vector4 prev = Vector4::nan();
         Vector3 prev_major = Vector3::nan();
         Vector3 prev_minor = Vector3::nan();
-//        for (Vector4 v : spline) {
         Array<Vector4>::iterator it;
         Vector4 v;
         int i = 1;
@@ -455,36 +464,59 @@ Array<PhotonBeamette> World::visualizeSplines() {
             v = *it;
             Vector4 prev = *std::prev(it);
             Vector4 next = *std::next(it);
+            float startRad = prev.w;
+            float endRad = v.w;
 
             PhotonBeamette pb = PhotonBeamette();
             pb.m_end = v.xyz();
             pb.m_start = prev.xyz();
-            pb.m_start_major = prev_major;
-            if (i == 1) { // has no prev beam, is start beam
-                Vector3 beam = normalize(pb.m_end - pb.m_start);
-                Vector3 perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
-                pb.m_start_minor = v.w * perp;
-                pb.m_start_major = v.w * cross(perp, beam);
-            } else {
-                pb.m_start_minor = prev_minor;
-                pb.m_start_major = prev_major;
-            }
-            Vector3 beam = normalize(pb.m_end - pb.m_start);
-            Vector3 beam_next = normalize(next.xyz() - v.xyz());
-            Vector3 perp;
-            if (i == n - 1) { // has no next beam, is end beam
-                perp = Vector3(0, 0, 1); // TODO beam vector might be 001 or 00-1
-                pb.m_end_major = v.w * cross(perp, beam);
-            } else {
-                perp = beam_next;
-                pb.m_end_major = ((beam + beam_next) / 2.0) * (v.w / dot(beam, beam_next));
-            }
-            pb.m_end_minor = v.w * perp;
 
+            Vector3 vbeam = normalize(pb.m_end - pb.m_start);
+
+            //start
+            if (i == 1) { // beam is light source? will cut edge perpendicular to beam
+                Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+                pb.m_start_major = startRad * normalize(cross(perp, vbeam));
+                pb.m_start_minor = startRad * normalize(cross(vbeam, pb.m_start_major));
+            } else {
+                pb.m_start_major = prev_major;
+                pb.m_start_minor = prev_minor;
+            }
+
+            // end
+            if (i == n - 1) { // beam has no child? will cut edge perpendicular to beam
+                Vector3 perp = (!vbeam.x && !vbeam.y) ? Vector3(0, 1, 0) : Vector3(0, 0, 1); // any nonparallel vector
+                pb.m_end_major = endRad * normalize(cross(perp, vbeam));
+                pb.m_end_minor = endRad * normalize(cross(vbeam, pb.m_end_major));
+            } else {
+                Vector3 beam_next = normalize(next.xyz() - pb.m_end);
+                Vector3 majdir = normalize((-vbeam + beam_next) / 2.0);
+                float endr = endRad;
+                if (dot(vbeam, majdir) != 0) {
+                    endr = endr / dot(vbeam, majdir);
+                }
+                pb.m_end_major = majdir * endr;
+                pb.m_end_minor = endRad * normalize(cross(vbeam, beam_next));
+            }
             prev_major = pb.m_end_major;
             prev_minor = pb.m_end_minor;
+
+
+            //debugging
+            if (abs(length(pb.m_start_minor) - startRad) > 0.001) {
+                std::cout << pb.m_start_minor.toString() << "\t" << length(pb.m_start_minor) << " \t" << startRad << std::endl;
+            }
+            if (length(pb.m_start_major) < length(pb.m_start_minor)) {
+                std::cout << pb.m_start_major.toString() << " \t" << pb.m_start_minor.toString() << std::endl;
+            }
+            if (abs(dot(pb.m_start_major, pb.m_start_minor)) > 0.001) {
+                std::cout << pb.m_start_major.toString() << " \t" << pb.m_start_minor.toString() << std::endl;
+            }
             pb.m_power = Color3(0.7, 0.5, 1.0); // TODO unhardcode
             beams.append(pb);
+
+
+
         }
     }
     return beams;
