@@ -345,8 +345,8 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 void App::gpuProcess(RenderDevice *rd)
 {
 //    std::cout << "gpuProcess 1" << std::endl;
-    //Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
-    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
+    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
+//    Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
@@ -364,7 +364,8 @@ void App::gpuProcess(RenderDevice *rd)
     // beam splatting
     rd->pushState(m_dirFBO); {
         //m_world.setMatrices(rd);
-        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(),
+                                         m_world.camera()->frame());
 
         // Allocate on CPU
         Array<Vector3>   cpuVertex;
@@ -389,7 +390,6 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            //std::cout << (pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2)).toString() << std::endl;
             cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
             cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
         }
@@ -425,7 +425,6 @@ void App::gpuProcess(RenderDevice *rd)
         debugAssertGLOk();
 
     } rd->popState();
-
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
     // composite direct and indirect
