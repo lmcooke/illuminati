@@ -52,7 +52,7 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings.dist = 5;
     m_maxPasses = 3;
-    m_PSettings.gatherRadius=0.1;
+    m_PSettings.gatherRadius=0.15;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
     m_PSettings.dist = .4;
@@ -90,30 +90,38 @@ void App::traceCallback(int x, int y)
 
     if (continueRender) {
 
-        // TODO : keep random or just use .5f?
-        double dx = rng.uniform(), dy = rng.uniform();
 
-        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
 
-        if (indRenderCount == 0) {
+        if (indRenderCount == -1) {
+            m_canvas->set(x, y, Radiance3::black());
+        } else {
+
+            // TODO : keep random or just use .5f?
+            double dx = rng.uniform(), dy = rng.uniform();
+
+            Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+
+
+            if (indRenderCount == 0) {
+
+
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 
 
-        } else {
+            } else {
 
-            Radiance3 prev = m_canvas->get(x,y);
-            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+                Radiance3 prev = m_canvas->get(x,y);
+                Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
 
-            float indCountFl = static_cast<float>(indRenderCount);
+                float indCountFl = static_cast<float>(indRenderCount);
 
-            float prevContrib = indCountFl / (indCountFl + 1.f);
-            float nextContrib = 1.f / (indCountFl + 1.f);
+                float prevContrib = indCountFl / (indCountFl + 1.f);
+                float nextContrib = 1.f / (indCountFl + 1.f);
 
-            m_canvas->set(x, y, prevContrib * prev +
-                                nextContrib * sample);
+                m_canvas->set(x, y, prevContrib * prev +
+                                    nextContrib * sample);
+            }
         }
-
-
     }
 }
 
@@ -130,12 +138,18 @@ static void dispatcher(void *arg)
     self->buildPhotonMap();
 
 
-    for (int i = 0; i < self->m_maxPasses; i++) {
+    while (self->indRenderCount < self->m_maxPasses) {
         printf("Rendering ...");
-        std::cout << " Pass: " << i << std::endl;
+        std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
 
-        self->indRenderCount = i;
+        self->indRenderCount += 1;
+
+        if (self->prevIndRenderCount != -1) {
+            self->prevIndRenderCount += 1;
+        }
+
+
         self->setGatherRadius();
 
         self->stage = App::GATHERING;
@@ -194,6 +208,7 @@ void App::onInit()
     setFrameDuration(1.0f / 60.0f);
 
     indRenderCount = 0;
+    prevIndRenderCount = 0;
 
     GApp::showRenderingStats = false;
     renderDevice->setSwapBuffersAutomatically(false);
@@ -222,15 +237,78 @@ bool App::onEvent(const GEvent &e)
 {
     if (GApp::onEvent(e)) { return true; }
 
-    if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
+    if (e.type == GEventType::KEY_DOWN) {
 
-        // pause renderer
-        continueRender = false;
+        const CFrame& cFrame = m_world.getCameraCframe();
+        float x;
+        float y;
+        float z;
+        float yaw;
+        float pitch;
+        float roll;
 
-        // TODO : clear m_canvas and restart with updated camera
+        cFrame.getXYZYPRDegrees(x,y,z,yaw,pitch,roll);
 
+        if (e.key.keysym.sym == 'a') {
+            // move cam left
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x + 0.25f, y, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 'd') {
+            // move cam right
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x - 0.25f, y, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 'w') {
+            // move cam up
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y - .25f, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 's') {
+            // move cam down
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .25f, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 'q') {
+            // move cam backward
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z - .25f, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+        } else if (e.key.keysym.sym == 'e') {
+            // move cam forward
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z + .25f, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+        }
         return true;
     }
+
     return false;
 }
 
@@ -249,10 +327,8 @@ void App::onRender()
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
-        std::cout << "onRender" << std::endl;
         m_dispatch->start();
     } else {
-        std::cout << "onRender: false" << std::endl;
         continueRender=false;
     }
 }
@@ -325,6 +401,12 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
         m_dirBeams->makeBeams();
 
+        // camera has changed, reset direct light
+        if (indRenderCount == 0 && prevIndRenderCount == -1) {
+            m_passes = 0;
+            prevIndRenderCount = 0;
+        }
+
 
         gpuProcess(rd);
     } else {
@@ -359,6 +441,10 @@ void App::gpuProcess(RenderDevice *rd)
 
     // turns on and off beam movement so we can visualize GPU averaging
     bool testGPUprogression = false;
+
+    // print camera information
+
+
 
     // beam splatting
     rd->pushState(m_dirFBO); {
@@ -435,6 +521,10 @@ void App::gpuProcess(RenderDevice *rd)
 
         Args argsComp;
         argsComp.setRect(rd->viewport());
+
+//        std::cout << "continueRender : " << continueRender << std::endl;
+
+        argsComp.setUniform("continueRendering", indRenderCount > -1);
 
         argsComp.setUniform("screenHeight", rd->height());
         argsComp.setUniform("screenWidth", rd->width());

@@ -1,0 +1,79 @@
+newmtl CornellBox_Empty_Squashed:backWall1
+illum 4
+Kd 0.16 0.13 0.43
+Ka 0.40 0.40 0.40
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl CornellBox_Empty_Squashed:ceiling1
+illum 4
+Kd 0.73 0.71 0.68
+Ka 0.73 0.71 0.68
+Tf 1.00 1.00 1.00
+Ni 1.50
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl CornellBox_Empty_Squashed:floor1
+illum 4
+Kd 0.73 0.71 0.68
+Ka 0.73 0.71 0.68
+Tf 1.00 1.00 1.00
+Ni 1.50
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl CornellBox_Empty_Squashed:leftWall1
+illum 4
+Kd 0.63 0.06 0.05
+Ka 0.63 0.06 0.05
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl CornellBox_Empty_Squashed:light1
+illum 4
+Kd 0.78 0.78 0.78
+Ka 0.78 0.78 0.78
+Tf 1.00 1.00 1.00
+Ni 1.50
+Ks 0.00 0.00 0.00
+Ns 10.00
+Ke 6 6 4
+newmtl CornellBox_Empty_Squashed:rightWall1
+illum 4
+Kd 0.16 0.13 0.43
+Ka 0.40 0.40 0.40
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl LampBearAlone:blinn1SG
+illum 4
+Kd 0.12 0.42 0.47
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+Ns 0.06
+newmtl LampBearAlone:blinn2SG
+illum 4
+Kd 0.03 0.03 0.03
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+Ns 0.06
+newmtl LampBearAlone:blinn3SG
+illum 4
+Kd 0.78 0.78 0.78
+Ka 0.78 0.78 0.78
+Tf 1.00 1.00 1.00
+Ni 1.50
+Ks 0.00 0.00 0.00
+Ns 10.00
+newmtl trunk1_2:initialShadingGroup
+illum 4
+Kd 0.75 0..6 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00

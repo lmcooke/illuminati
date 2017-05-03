@@ -12,6 +12,11 @@
                 canChange = false;
                 model = "bearModel";
         };
+
+        tree1 = VisibleEntity {
+            frame = CFrame::fromXYZPRDegrees(0, -1, 0);
+            model = "treeModel";
+        };
         
         camera = Camera { 
             canChange = false; 
@@ -191,10 +196,16 @@
     }; 
     
     models = { 
-        boxModel = "model/CornellBox/CornellBox.zip/CornellBox-Empty-RG.obj";
+        boxModel = "model/cornellBox_for_blueno1_1.obj";
+
         bearModel = ArticulatedModel::Specification {
-            filename = "model/LampBear/LampBearAlone.obj";
+            filename = "model/LampBear/LampBearAlone2.obj";
         };
+
+        treeModel = ArticulatedModel::Specification {
+            filename = "model/trunk1_3.obj";
+        }
+
     }; 
     
     name = "G3D Cornell Box"; 

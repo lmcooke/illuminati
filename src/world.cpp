@@ -43,6 +43,28 @@ void World::load(const String &path )
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
 
+            // TESTING camera movement
+//            const CFrame& cframe = m_camera->frame();
+
+//            float x;
+//            float y;
+//            float z;
+//            float yaw;
+//            float pitch;
+//            float roll;
+
+//            cframe.getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
+
+//            std::cout << "x: " << x << std::endl;
+//            std::cout << "y: " << y << std::endl;
+//            std::cout << "z : " << z << std::endl;
+//            std::cout << "yaw : " << yaw << std::endl;
+//            std::cout << "pitch : " << pitch << std::endl;
+//            std::cout << "roll : " << roll << std::endl;
+
+//            const CFrame newCframe = CFrame::fromXYZYPRDegrees(.5, 0.75, 3, 20, 0, 0 );
+//            m_camera->setFrame(newCframe);
+
             printf("done\n");
         }
         else if (type == "Light")
@@ -157,6 +179,7 @@ void World::unload()
 
 shared_ptr<Camera> World::camera()
 {
+
     return m_camera;
 }
 
@@ -315,10 +338,11 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
         comment = iss.peek() == '#';
         has_color = iss.peek() == '*';
         if (has_color) {
+            iss.ignore(1, ' ');
             if (!(iss >> c[0] >> c[1] >> c[2])) {
-                printf("%s", "spline file has no color, using default color...");
+                printf("spline file has invalid color, using default color... ");
             }
-            std::cout << c.toString() << std::endl;
+            printf("color %s \n", c.toString().c_str());
         } else {
             if (!comment) {
                 if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
@@ -382,11 +406,11 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
 
     // Assign a material
     UniversalMaterial::Specification specBody = UniversalMaterial::Specification();
-    specBody.setLambertian(Texture::Specification(Color4(Color3::one(), 1.0)));
+    specBody.setLambertian(Texture::Specification(Color4(c, 1.0)));
     meshBody->material = UniversalMaterial::create(specBody);
 
     UniversalMaterial::Specification specEmissive = UniversalMaterial::Specification();
-    specEmissive.setEmissive(Texture::Specification(Color4(Color3::one(), 1.0)));
+    specEmissive.setEmissive(Texture::Specification(Color4(c, 1.0)));
     meshEmitter->material = UniversalMaterial::create(specEmissive);
 
     /* face construction */
@@ -503,5 +527,16 @@ Array<PhotonBeamette> World::visualizeSplines() {
         }
     }
     return beams;
+}
+
+const CFrame &World::getCameraCframe()
+{
+    const CFrame& cframe = m_camera->frame();
+    return cframe;
+}
+
+void World::setCameraCframe(CFrame &cframe)
+{
+    m_camera->setFrame(cframe);
 }
 

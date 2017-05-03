@@ -107,6 +107,9 @@ public:
         m_PSettings = settings;
     }
 
+    const CFrame& getCameraCframe();
+    void setCameraCframe(CFrame& cframe);
+
     Array<Array<Vector4>> splines(){
         return m_splines;
     }
