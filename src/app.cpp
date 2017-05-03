@@ -95,8 +95,6 @@ void App::traceCallback(int x, int y)
 
 
         if (indRenderCount == -1) {
-//            std::cout << "indRenderCount = -1" << std::endl;
-
             m_canvas->set(x, y, Radiance3::black());
         } else {
 
@@ -241,14 +239,9 @@ bool App::onEvent(const GEvent &e)
 {
     if (GApp::onEvent(e)) { return true; }
 
-    if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
+    if (e.type == GEventType::KEY_DOWN) {
 
-        // pause renderer
-//        continueRender = false;
-
-        // TODO : clear m_canvas and restart with updated camera
         const CFrame& cFrame = m_world.getCameraCframe();
-
         float x;
         float y;
         float z;
@@ -258,22 +251,66 @@ bool App::onEvent(const GEvent &e)
 
         cFrame.getXYZYPRDegrees(x,y,z,yaw,pitch,roll);
 
-        std::cout << "x: " << x << std::endl;
-        std::cout << "y: " << y << std::endl;
-        std::cout << "z : " << z << std::endl;
-        std::cout << "yaw : " << yaw << std::endl;
-        std::cout << "pitch : " << pitch << std::endl;
-        std::cout << "roll : " << roll << std::endl;
+        if (e.key.keysym.sym == 'a') {
+            // move cam left
 
-        CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .5f, z, yaw, pitch, roll);
-        m_world.setCameraCframe(newCframe);
-        indRenderCount = -1;
-        prevIndRenderCount = -1;
-        m_passes = 0;
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x + 0.25f, y, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
 
 
+        } else if (e.key.keysym.sym == 'd') {
+            // move cam right
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x - 0.25f, y, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 'w') {
+            // move cam up
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y - .25f, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 's') {
+            // move cam down
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .25f, z, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+
+        } else if (e.key.keysym.sym == 'q') {
+            // move cam backward
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z - .25f, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
+        } else if (e.key.keysym.sym == 'e') {
+            // move cam forward
+
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z + .25f, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+        }
         return true;
     }
+
     return false;
 }
 
@@ -292,10 +329,8 @@ void App::onRender()
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
         m_dispatch = Thread::create("dispatcher", dispatcher, this);
-        std::cout << "onRender" << std::endl;
         m_dispatch->start();
     } else {
-        std::cout << "onRender: false" << std::endl;
         continueRender=false;
     }
 }
@@ -368,10 +403,10 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
         m_dirBeams->makeBeams();
 
+        // camera has changed, reset direct light
         if (indRenderCount == 0 && prevIndRenderCount == -1) {
             m_passes = 0;
             prevIndRenderCount = 0;
-            std::cout << "Resetting m_passes" << std::endl;
         }
 
 
