@@ -328,10 +328,11 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
         comment = iss.peek() == '#';
         has_color = iss.peek() == '*';
         if (has_color) {
+            iss.ignore(1, ' ');
             if (!(iss >> c[0] >> c[1] >> c[2])) {
-                printf("%s", "spline file has no color, using default color...");
+                printf("spline file has invalid color, using default color... ");
             }
-            std::cout << c.toString() << std::endl;
+            printf("color %s \n", c.toString().c_str());
         } else {
             if (!comment) {
                 if (!(iss >> pt3[0] >> pt3[1] >> pt3[2] >> w3)) {
