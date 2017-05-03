@@ -54,10 +54,10 @@ App::App(const GApp::Settings &settings)
     m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
     m_maxPasses = 3;
-//    m_PSettings.gatherRadius=0.1;
-//    m_PSettings.useFinalGather=false;
+    m_PSettings.gatherRadius=0.1;
+    m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-//    m_PSettings.dist = .4;
+    m_PSettings.dist = .4;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
 
@@ -92,34 +92,38 @@ void App::traceCallback(int x, int y)
 
     if (continueRender) {
 
-        // TODO : keep random or just use .5f?
-        double dx = rng.uniform(), dy = rng.uniform();
 
-        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
 
         if (indRenderCount == -1) {
             m_canvas->set(x, y, Radiance3::black());
-        } else if (indRenderCount == 0) {
+        } else {
+
+            // TODO : keep random or just use .5f?
+            double dx = rng.uniform(), dy = rng.uniform();
+
+            Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+
+
+            if (indRenderCount == 0) {
+
+
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
 
 
-        } else {
+            } else {
 
-            Radiance3 prev = m_canvas->get(x,y);
-            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+                Radiance3 prev = m_canvas->get(x,y);
+                Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
 
-            float indCountFl = static_cast<float>(indRenderCount);
+                float indCountFl = static_cast<float>(indRenderCount);
 
-            float prevContrib = indCountFl / (indCountFl + 1.f);
-            float nextContrib = 1.f / (indCountFl + 1.f);
+                float prevContrib = indCountFl / (indCountFl + 1.f);
+                float nextContrib = 1.f / (indCountFl + 1.f);
 
-            m_canvas->set(x, y, prevContrib * prev +
-                                nextContrib * sample);
+                m_canvas->set(x, y, prevContrib * prev +
+                                    nextContrib * sample);
+            }
         }
-
-
-    } else {
-        continueRender = true;
     }
 }
 
@@ -231,7 +235,7 @@ bool App::onEvent(const GEvent &e)
     if ((e.type == GEventType::KEY_DOWN) && (e.key.keysym.sym == 'p')) {
 
         // pause renderer
-        continueRender = false;
+//        continueRender = false;
 
         // TODO : clear m_canvas and restart with updated camera
         const CFrame& cFrame = m_world.getCameraCframe();
@@ -255,8 +259,6 @@ bool App::onEvent(const GEvent &e)
         CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .5f, z, yaw, pitch, roll);
         m_world.setCameraCframe(newCframe);
         indRenderCount = -1;
-
-//        continueRender = true;
 
 
         return true;

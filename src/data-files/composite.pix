@@ -35,8 +35,8 @@ void main()
 
 		result = indirectColor + cumulativeDirectLight;
 	} else {
-		result = vec4(0.0, 0.0, 0.0, 0.0);
-		cumulativeDirectLight = vec4(0.0, 0.0, 0.0, 0.0);
+		result = vec4(1.0, 0.0, 0.0, 0.0);
+		cumulativeDirectLight = vec4(1.0, 0.0, 0.0, 0.0);
 	}
 
         
