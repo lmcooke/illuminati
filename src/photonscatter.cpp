@@ -281,9 +281,9 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     beam.m_start =  startPt;
     beam.m_end = endPt;
 
-    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
-        return;
-    }
+//    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
+//        return;
+//    }
 
     // We want the total light contribution to the screen from a single beam to be constant
     // regardless of the width of the beam.

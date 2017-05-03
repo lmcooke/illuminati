@@ -50,8 +50,6 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings.directSamples=64;
 
-    m_PSettings.gatherRadius=0.2;
-    m_PSettings.useFinalGather=true;
     m_PSettings.dist = 5;
     m_maxPasses = 3;
     m_PSettings.gatherRadius=0.1;
@@ -603,7 +601,6 @@ void App::makeGUI()
     settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
 //    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-//    settingsPane->pack();
 
     // Lights
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
@@ -611,6 +608,8 @@ void App::makeGUI()
 //    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
     settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
+    settingsPane->addCheckBox("Use Final Gather", &m_PSettings.useFinalGather);
+    settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings.gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
