@@ -35,6 +35,9 @@ public:
     /** Gets the scene's camera */
     shared_ptr<Camera> camera();
 
+    /** Gets the scene's geometry */
+    Array<shared_ptr<Surface>> geometry();
+
     /** Picks a point of light from the scene that emits light from the scene.
       * The point is picked uniformly at random.
       * @param random   A random number generator

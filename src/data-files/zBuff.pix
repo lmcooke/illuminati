@@ -1,0 +1,6 @@
+#version 410
+out vec3 g3d_FragColor;
+in vec4 pos;
+void main() {
+    g3d_FragColor = pos.xyz;
+}

@@ -77,5 +77,12 @@ QMAKE_CXXFLAGS_WARN_ON += -Waddress -Warray-bounds -Wc++0x-compat -Wchar-subscri
                           -Wvolatile-register-var -Wno-extra
 
 OTHER_FILES += \
-    data-files/beamsplat.vsh
+    data-files/beamsplat.vsh \
+    data-files/zBuff.pix \
+    data-files/zBuff.vrt \
+    data-files/beamsplat.geo \
+    data-files/beamsplat.pix \
+    data-files/beamsplat.vrt \
+    data-files/composite.pix \
+    data-files/g3d-license.txt
 

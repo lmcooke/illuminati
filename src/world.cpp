@@ -148,6 +148,12 @@ void World::unload()
     m_splines.clear();
 }
 
+Array<shared_ptr<Surface>> World::geometry()
+{
+    return m_geometry;
+}
+
+
 shared_ptr<Camera> World::camera()
 {
     return m_camera;

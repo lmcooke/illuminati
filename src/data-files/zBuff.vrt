@@ -1,0 +1,9 @@
+#version 410
+in vec3 g3d_Vertex;
+uniform mat4 MVP;
+out vec4 pos;
+
+void main() {
+    gl_Position = MVP*vec4(g3d_Vertex, 1.0);
+    pos = gl_Position;
+}
