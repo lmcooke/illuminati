@@ -230,6 +230,30 @@ bool App::onEvent(const GEvent &e)
         continueRender = false;
 
         // TODO : clear m_canvas and restart with updated camera
+        const CFrame& cFrame = m_world.getCameraCframe();
+
+        float x;
+        float y;
+        float z;
+        float yaw;
+        float pitch;
+        float roll;
+
+        cFrame.getXYZYPRDegrees(x,y,z,yaw,pitch,roll);
+
+        std::cout << "x: " << x << std::endl;
+        std::cout << "y: " << y << std::endl;
+        std::cout << "z : " << z << std::endl;
+        std::cout << "yaw : " << yaw << std::endl;
+        std::cout << "pitch : " << pitch << std::endl;
+        std::cout << "roll : " << roll << std::endl;
+
+        CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .5f, z, yaw, pitch, roll);
+        m_world.setCameraCframe(newCframe);
+        indRenderCount = 0;
+
+        continueRender = true;
+
 
         return true;
     }
@@ -359,6 +383,10 @@ void App::gpuProcess(RenderDevice *rd)
 
     // turns on and off beam movement so we can visualize GPU averaging
     bool testGPUprogression = false;
+
+    // print camera information
+
+
 
     // beam splatting
     rd->pushState(m_dirFBO); {

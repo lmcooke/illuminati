@@ -107,6 +107,9 @@ public:
         m_PSettings = settings;
     }
 
+    const CFrame& getCameraCframe();
+    void setCameraCframe(CFrame& cframe);
+
 private:
     shared_ptr<Camera>  m_camera;   // The scene's camera
     Array<Emitter> m_emit;  // Triangles that emit light

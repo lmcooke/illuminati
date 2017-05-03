@@ -43,6 +43,28 @@ void World::load(const String &path )
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
 
+            // TESTING camera movement
+//            const CFrame& cframe = m_camera->frame();
+
+//            float x;
+//            float y;
+//            float z;
+//            float yaw;
+//            float pitch;
+//            float roll;
+
+//            cframe.getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
+
+//            std::cout << "x: " << x << std::endl;
+//            std::cout << "y: " << y << std::endl;
+//            std::cout << "z : " << z << std::endl;
+//            std::cout << "yaw : " << yaw << std::endl;
+//            std::cout << "pitch : " << pitch << std::endl;
+//            std::cout << "roll : " << roll << std::endl;
+
+//            const CFrame newCframe = CFrame::fromXYZYPRDegrees(.5, 0.75, 3, 20, 0, 0 );
+//            m_camera->setFrame(newCframe);
+
             printf("done\n");
         }
         else if (type == "Light")
@@ -152,6 +174,7 @@ void World::unload()
 
 shared_ptr<Camera> World::camera()
 {
+
     return m_camera;
 }
 
@@ -466,3 +489,15 @@ Array<PhotonBeamette> World::visualizeSplines() {
     }
     return beams;
 }
+
+const CFrame &World::getCameraCframe()
+{
+    const CFrame& cframe = m_camera->frame();
+    return cframe;
+}
+
+void World::setCameraCframe(CFrame &cframe)
+{
+    m_camera->setFrame(cframe);
+}
+
