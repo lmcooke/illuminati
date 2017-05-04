@@ -51,8 +51,8 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist,
         // Store the photon!
         if(bounces > 0)
         {
-            Vector3 prev = -(emittedBeam.m_start - surfel->position) * 1.1;
-            Vector3 next = (emittedBeam.m_start - surfel->position) * 1.1;
+            Vector3 prev = emittedBeam.m_start;
+            Vector3 next = surfel->position;
             calculateAndStoreBeam(emittedBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emittedBeam.m_power);
         }
 
@@ -186,8 +186,8 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     {
         Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
         // TODO wait to calculate and store beam until next is calculated
-        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
-        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
+        Vector3 prev = emittedBeam.m_start;
+        Vector3 next = beamEndPt;
         if(bounces > 0)
         {
             calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);

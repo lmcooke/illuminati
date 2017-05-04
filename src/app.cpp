@@ -55,7 +55,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.gatherRadius=0.15;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .4;
+    m_PSettings.dist = .1;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
 
@@ -177,6 +177,9 @@ void App::onInit()
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
 
+    m_zBuffer = Texture::createEmpty("App::zBuffer", m_framebuffer->width(),
+                                      m_framebuffer->height(), ImageFormat::RGBA16());
+
     m_totalDirLight1 = Texture::createEmpty("App::totalDirLight1", m_framebuffer->width(),
                                           m_framebuffer->height(), ImageFormat::RGBA16());
 
@@ -190,15 +193,19 @@ void App::onInit()
                                          m_framebuffer->height(), ImageFormat::RGBA16());
 
     m_dirLight->clear();
+    m_zBuffer->clear();
     m_totalDirLight1->clear();
     m_currentComposite1->clear();
     m_totalDirLight2->clear();
     m_currentComposite2->clear();
 
     m_dirFBO = Framebuffer::create(m_dirLight);
+    m_ZFBO = Framebuffer::create(m_zBuffer);
     m_FBO1 = Framebuffer::create(m_currentComposite1);
     m_FBO2 = Framebuffer::create(m_currentComposite2);
 
+    m_ZFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_zBuffer);
+    m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
     m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
     m_FBO1->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite1);
     m_FBO1->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight1);
@@ -392,7 +399,6 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-//    std::cout << "onGraphics3D 1" << std::endl;
     if (!m_world.camnull() && m_dirBeams){
 
 
@@ -424,7 +430,30 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-//    std::cout << "gpuProcess 1" << std::endl;
+    rd->pushState(m_ZFBO); {
+        rd->setObjectToWorldMatrix(CFrame());
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+
+        Args args;
+        args.setPrimitiveType(PrimitiveType::TRIANGLES);
+        Array<shared_ptr<Surface>> geometry = m_world.geometry();
+        CFrame cframe;
+        for (int i=0; i<geometry.size(); i++)
+        {
+            const shared_ptr<UniversalSurface>& surface = dynamic_pointer_cast<UniversalSurface>(geometry[i]);
+            if (notNull(surface))
+            {
+                surface->getCoordinateFrame(cframe);
+                args.setUniform("MVP", rd->invertYMatrix()*rd->projectionMatrix()*rd->cameraToWorldMatrix().inverse() * cframe);
+                surface->gpuGeom()->setShaderArgs(args);
+                LAUNCH_SHADER("zBuff.*", args);
+            }
+        }
+    } rd->popState();
+
 //    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
@@ -501,6 +530,9 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setAttributeArray("Power", gpuPower);
+        args.setUniform("screenHeight", rd->height());
+        args.setUniform("screenWidth", rd->width());
+        args.setUniform("zDepth", m_ZFBO->texture(1), Sampler::buffer());
         args.setUniform("Resolution", Vector2(rd->width(), rd->height()));
         args.setUniform("Look", m_world.camera()->frame().lookVector());
         args.setUniform("MVP", mvp);
