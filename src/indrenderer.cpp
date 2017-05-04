@@ -84,12 +84,13 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
         for (int i=0; i < m_PSettings.gatherSamples; i++){
             // get a random sample direction from this sample point
             Vector3 wInGather = wo;
-            Vector3 wOutGather = Vector3(0.f, 0.f, 0.f);
+            Vector3 wOutGather = Vector3(0.f, 0.f, 0.f); // ray leaving original intersect point
             float probabilityHint = 0.f;
             Color3 weight = Color3(1.0);
             surf->scatter(PathDirection::SOURCE_TO_EYE, wInGather, false, m_random, weight, wOutGather, probabilityHint);
+
             Vector3 offsetPos = Utils::bump(surf->position, wOutGather, surf->shadingNormal);
-            Ray gatherRay = Ray(offsetPos, wOutGather);
+            Ray gatherRay = Ray(offsetPos, wOutGather); // bumped ray leaving original intersect point
             int newDepth = depth - 1;
             Radiance3 gatherColor = trace(gatherRay, newDepth).clamp(0.f, 1.f);
             Radiance3 currColor = pif() * gatherColor * weight;
@@ -105,13 +106,19 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
 
         m_beams->getIntersectingMembers(Sphere(surf->position, m_gatherRadius), beamettes);
         for (int i=0; i<beamettes.size(); i++){
+
+
             PhotonBeamette beam = beamettes[i];
             Vector3 closestPt = Utils::closestPointOnLine(surf->position, beam.m_start, beam.m_end);
+
             float dist = Vector3(surf->position - closestPt).length();
+
             Vector3 wi =  beam.m_end - beam.m_start;
             Radiance3 scatter = surf->finiteScatteringDensity(wi, wo.direction());
+
             float c = std::fmax(Utils::cone(dist, m_gatherRadius), 0.0);
             rad += beam.m_power * c * scatter/fmin(m_PSettings.numBeamettesInDir, m_beams->size());
+//            rad += beam.m_power * c * scatter;
         }
     }
     return rad;

@@ -628,8 +628,7 @@ void App::gpuProcess(RenderDevice *rd)
 // sets the gather radius of the indirect renderer
 void App::setGatherRadius()
 {
-//    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
-    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(2.f, (indRenderCount - 1)));
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(1.08f, (indRenderCount - 1)));
 }
 
 FilmSettings App::getFilmSettings()
