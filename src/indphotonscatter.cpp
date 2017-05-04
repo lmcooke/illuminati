@@ -18,6 +18,7 @@ void IndPhotonScatter::preprocess()
     // Send out a beam, recursivly bounce it around, and then store it in our beams array.
     for (int i=0; i<m_PSettings.numBeamettesInDir; i++)
     {
+        // we won't start storing rays until after initial bounce
         shootRay(newBeams, m_PSettings.numBeamettesInDir, 0);
         tempBeamettes.append(newBeams);
         printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettesInDir);

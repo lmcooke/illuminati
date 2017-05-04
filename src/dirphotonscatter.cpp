@@ -17,6 +17,7 @@ void DirPhotonScatter::preprocess()
     // Send out a beam, recursively bounce it around, and then store it in our beams array.
     for (int i=0; i<m_PSettings.numBeamettesDir; i++)
     {
+        // Stores from first bounce
         shootRay(newBeams, m_PSettings.numBeamettesDir, 1);
         m_beams.append(newBeams);
     }

@@ -51,8 +51,9 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist,
         // Store the photon!
         if(bounces > 0)
         {
-            Vector3 prev = -(emittedBeam.m_start - surfel->position) * 1.1;
-            Vector3 next = (emittedBeam.m_start - surfel->position) * 1.1;
+            //
+            Vector3 prev = emittedBeam.m_start;
+            Vector3 next = surfel->position;
             calculateAndStoreBeam(emittedBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emittedBeam.m_power);
         }
 
@@ -178,6 +179,8 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
     Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
+
+    // scatterOffSurf will recur if we hit a surface
     bool hitSurf = scatterOffSurf(emittedBeam, marchDist, dist, bounces);
 
     // If the marched distance is closer than the nearest surface along the same ray (ie, hitSurf is true), then we're in fog.
@@ -191,10 +194,16 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
         if(bounces > 0)
         {
             calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
+        } else {
+            std::cout << "HERE" << std::endl;
         }
 
         scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
         scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
+    } else {
+        if (!(dist < inf())) {
+            std::cout << "hitSurf: " << hitSurf << std::endl;
+        }
     }
 }
 
