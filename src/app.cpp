@@ -626,7 +626,10 @@ void App::gpuProcess(RenderDevice *rd)
 // sets the gather radius of the indirect renderer
 void App::setGatherRadius()
 {
-    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(1.08f, (indRenderCount - 1)));
+    // the closer this value is to 1, the slower the radius will decrease.
+    float radReductionRate = 1.08f;
+
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
 }
 
 FilmSettings App::getFilmSettings()
