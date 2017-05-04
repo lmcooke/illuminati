@@ -124,6 +124,7 @@ void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
         beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+//        assert(!beam2.m_power.isZero());
         curveStep += 1;
         shootRayRecursiveCurve(beam2, bounces, curveStep);
     }
@@ -194,17 +195,17 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
         float scatterProb = remainingProb * m_PSettings.scattering;
         float transProb = remainingProb - scatterProb;
 
-        float fogEmmission = 1.02f;
+        float fogEmission = 1.02f;
 
         float rng = m_random.uniform();
 
         if (rng < transProb) {
             // transmission
-            scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+            scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
 
         } else if (rng < transProb + scatterProb) {
             // scattering
-            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
 
         } else {
             std::cout << "extinction" << std::endl;
@@ -227,8 +228,6 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         return;
     }
 
-    assert(emittedBeam.m_splineID >= 0);
-
     Array<Vector4> spline = m_world->splines()[emittedBeam.m_splineID];
 
     // if there isn't one more CV, return
@@ -241,7 +240,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     Vector3 endPoint = spline[curveStep+1].xyz();
     float startRad = spline[curveStep].w;
     float endRad = spline[curveStep+1].w;
-    float marchDist = m_random.uniform() * length(endPoint - startPoint);
+    float marchDist = length(endPoint - startPoint);//m_random.uniform() * length(endPoint - startPoint);
     Vector3 curveDirection =  normalize(endPoint - emittedBeam.m_start);
     curveDirection = (normalize(endPoint - emittedBeam.m_start) + normalize(spline[curveStep+2].xyz() - endPoint))/2.f;
 
@@ -253,7 +252,6 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     float randAngle = m_random.uniform()* M_2_PI;
     Matrix4 rot = CoordinateFrame::fromYAxis(curveDirection).toMatrix4();
     Vector4 perp = rot * Vector4(cos(randAngle), 0.0, sin(randAngle), 0.0);
-//    Vector3 jitteredEndPoint = endPoint - m_random.uniform()*
     Vector3 beamEndPt = endPoint + jitter * normalize(perp.xyz());
 //    beamEndPt = emittedBeam.m_start + marchDist * normalize(beamEndPt - emittedBeam.m_start); // TODO: TESTING
     emittedBeam.m_end = beamEndPt;
@@ -279,8 +277,27 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
 
         calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
 
-        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-        scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
+        float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
+        float remainingProb = 1.f - extinctionProb;
+        float scatterProb = remainingProb * m_PSettings.scattering;
+        float transProb = remainingProb - scatterProb;
+
+        float fogEmission = 1.02f;
+
+        float rng = m_random.uniform();
+
+        if (rng < transProb) {
+            // transmission
+            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power * fogEmission, emittedBeam.m_splineID, bounces, curveStep);
+
+        } else if (rng < transProb + scatterProb) {
+            // scattering
+            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
+
+        } else {
+            std::cout << "extinction" << std::endl;
+        }
+        // otherwise, extinction -> no recursion.
     }
 }
 
