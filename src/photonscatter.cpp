@@ -251,12 +251,12 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     Vector3 endPoint = spline[curveStep+1].xyz();
     float startRad = spline[curveStep].w;
     float endRad = spline[curveStep+1].w;
-    float marchDist = m_random.uniform() * length(endPoint - emittedBeam.m_start);// - 0.05;
+    float marchDist = m_random.uniform() * length(endPoint - emittedBeam.m_start);
     Vector3 curveDirection =  normalize(endPoint - emittedBeam.m_start);
     curveDirection = (normalize(endPoint - emittedBeam.m_start) + normalize(spline[curveStep+2].xyz() - endPoint))/2.f;
 
     // Generate random next point based on radius
-    float jitter = m_random.uniform()*endRad;
+    float jitter = endRad * m_PSettings.beamSpread;
 
     // Generate random vector in xz plane about y axis
     // Then rotate to be oriented about curveDirect axis
@@ -269,7 +269,6 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
-    Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
     bool hitSurf = scatterOffSurf(emittedBeam, marchDist, dist, bounces);
 
     // If the marched distance is closer than the nearest surface along the same ray (ie, hitSurf is true), then we're in fog.

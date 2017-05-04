@@ -129,11 +129,11 @@
         }; 
 
         splineModel1 = ArticulatedModel::Specification {
-            filename = "model/spline11.txt";
+            filename = "model/spline11.lit";
         };
 
         splineModel2 = ArticulatedModel::Specification{
-            filename = "model/spline9.txt";
+            filename = "model/spline9.lit";
         }
         
     }; 

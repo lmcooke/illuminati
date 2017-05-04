@@ -63,8 +63,6 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dist = .5;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
-
-    m_PSettings.renderSplines = false;
 }
 
 App::~App() { }
@@ -744,7 +742,7 @@ void App::makeGUI()
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
     scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
+//    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
