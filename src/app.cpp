@@ -67,7 +67,6 @@ void App::setScenePath(const char* path)
 
 void App::buildPhotonMap(bool createRngGen)
 {
-    std::cout << "building photon maps" <<std::endl;
     if (createRngGen) {
         std::cout << "createRngGen" <<std::endl;
 
