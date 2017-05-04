@@ -56,11 +56,11 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings.directSamples=64;
 
-    m_maxPasses = 3;
+    m_maxPasses = 20;
     m_PSettings.gatherRadius=0.15;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .1;
+    m_PSettings.dist = .5;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
 
@@ -74,19 +74,36 @@ void App::setScenePath(const char* path)
     m_scenePath = path;
 }
 
-void App::buildPhotonMap()
+void App::buildPhotonMap(bool createRngGen)
 {
-    // Make the diret photon beams, to be splatted and rendered directly.
-    m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
 
-    // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
-    // Note that it's redunant to here calculate both of these lighting maps, but
-    // we'll later be using them at different rates (and also with different scattering properties)
-    m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
 
-    // Create renderer
-    m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
-    m_indRenderer->setBeams(m_inDirBeams->getBeams());
+
+
+
+    if (createRngGen) {
+
+        // Make the diret photon beams, to be splatted and rendered directly.
+        m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
+
+        // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
+        // Note that it's redunant to here calculate both of these lighting maps, but
+        // we'll later be using them at different rates (and also with different scattering properties)
+        m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
+
+        // Create renderer
+        m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
+        m_indRenderer->setBeams(m_inDirBeams->getBeams());
+    } else {
+
+
+        m_inDirBeams->makeBeams();
+        m_indRenderer->setBeams(m_inDirBeams->getBeams());
+    }
+
+
+
+
 
 }
 
@@ -140,13 +157,20 @@ static void dispatcher(void *arg)
 
     self->stage = App::SCATTERING;
 
-    self->buildPhotonMap();
+    self->buildPhotonMap(true);
 
 
     while (self->indRenderCount < self->m_maxPasses) {
         printf("Rendering ...");
         std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
+
+//        shared_ptr<DirPhotonScatter>
+
+//        self->m_dirBeams->makeBeams();
+//        self->m_inDirBeams->setBeams(m_inDirBeams->getBeams());
+
+        self->buildPhotonMap(false);
 
         self->indRenderCount += 1;
 

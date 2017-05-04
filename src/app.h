@@ -26,7 +26,7 @@ public:
     virtual ~App();
 
     /** Calls the shoot() callback until the minumum photon count is met */
-    void buildPhotonMap();
+    void buildPhotonMap(bool createRngGen);
 
     /** Multithreaded callback for tracing gather rays */
     void traceCallback(int x, int y);
@@ -78,6 +78,9 @@ public:
     int indRenderCount;
     int prevIndRenderCount;
 
+    std::unique_ptr<DirPhotonScatter> m_dirBeams;
+    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
+
 private:
 
     void gpuProcess(RenderDevice *rd);
@@ -120,8 +123,8 @@ private:
     shared_ptr<GuiWindow> m_windowRendering;
     shared_ptr<GuiWindow> m_windowScenes;
     shared_ptr<GuiWindow> m_windowPath;
-    std::unique_ptr<DirPhotonScatter> m_dirBeams;
-    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
+//    std::unique_ptr<DirPhotonScatter> m_dirBeams;
+//    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
     std::unique_ptr<IndRenderer> m_indRenderer;
 
     static String           m_scenePath; // path to scene folder

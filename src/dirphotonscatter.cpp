@@ -42,5 +42,6 @@ void DirPhotonScatter::makeBeams()
 
 float DirPhotonScatter::getRayMarchDist()
 {
-    return 5;
+//    return 5;
+    return .1f;
 }
