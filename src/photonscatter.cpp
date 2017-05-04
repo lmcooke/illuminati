@@ -291,20 +291,17 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         float rng = m_random.uniform();
 
         if (rng < transProb) {
-            // transmission
 
-            std::cout << "curve forward" << std::endl;
+            // transmission
             scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power * fogEmission, emittedBeam.m_splineID, bounces, curveStep);
-//            scatterForward(beamEndPt, nextDirection, emittedBeam.m_power * fogEmission, emittedBeam.m_splineID, bounces, curveStep);
 
         } else if (rng < transProb + scatterProb) {
-            // scattering
 
-            std::cout << "curve scatter" << std::endl;
+            // scattering
             scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
 
         } else {
-            std::cout << "extinction" << std::endl;
+
         }
         // otherwise, extinction -> no recursion.
     }

@@ -25,7 +25,8 @@ void DirPhotonScatter::preprocess()
 
 void DirPhotonScatter::phaseFxn(Vector3 wi, Vector3 &wo)
 {
-    wo = wi;
+//    wo = wi;
+    wo = Vector3::cosPowHemiRandom(-wi, .1f, m_random);
 }
 
 Array<PhotonBeamette> DirPhotonScatter::getBeams()
@@ -43,5 +44,6 @@ void DirPhotonScatter::makeBeams()
 float DirPhotonScatter::getRayMarchDist()
 {
 //    return 5;
-    return .1f;
+//    return .1f;
+    return m_PSettings.dist;
 }
