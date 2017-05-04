@@ -45,7 +45,7 @@ App::App(const GApp::Settings &settings)
 
 
     m_PSettings.noiseBiasRatio=0.0;
-    m_PSettings.radiusScalingFactor=0.8;
+    m_PSettings.radiusScalingFactor=0.95;
     m_PSettings.followRatio=0.0;
 
     m_PSettings.maxDepthScatter=100;
