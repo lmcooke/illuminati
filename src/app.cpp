@@ -75,10 +75,6 @@ void App::setScenePath(const char* path)
 void App::buildPhotonMap(bool createRngGen)
 {
 
-
-
-
-
     if (createRngGen) {
 
         // Make the diret photon beams, to be splatted and rendered directly.
