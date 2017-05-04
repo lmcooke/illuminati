@@ -19,7 +19,7 @@ void IndPhotonScatter::preprocess()
     for (int i=0; i<m_PSettings.numBeamettesInDir; i++)
     {
         // we won't start storing rays until after initial bounce
-        shootRay(newBeams, m_PSettings.numBeamettesInDir, 0);
+        shootRay(newBeams, m_PSettings.numBeamettesInDir, 1);
         tempBeamettes.append(newBeams);
         printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings.numBeamettesInDir);
     }
@@ -33,11 +33,13 @@ void IndPhotonScatter::preprocess()
 
 void IndPhotonScatter::phaseFxn(Vector3 wi, Vector3 &wo)
 {
-    float a = m_random.uniform();
-    float b = m_random.uniform();
-    wo.x = b*wi.y - a*wi.z;
-    wo.y = -a*wi.x;
-    wo.z = b*wi.x;
+//    float a = m_random.uniform();
+//    float b = m_random.uniform();
+//    wo.x = b*wi.y - a*wi.z;
+//    wo.y = -a*wi.x;
+//    wo.z = b*wi.x;
+
+    wo = Vector3::cosHemiRandom(-wi);
 }
 
 float IndPhotonScatter::getRayMarchDist()

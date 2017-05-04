@@ -132,7 +132,7 @@ Radiance3 IndRenderer::trace(const Ray &ray, int depth)
                + diffuse(surf, wo, depth)
                + impulse(surf, wo, depth);
         Radiance3 fogCooef = Utils::exp(dist, Radiance3(m_PSettings.attenuation));
-        surf_radiance = surf_radiance*fogCooef.r + (1. - fogCooef.r)*Color3::white()*0.2;
+//        surf_radiance = surf_radiance*fogCooef.r + (1. - fogCooef.r)*Color3::white()*0.2;
 
         final += surf_radiance;
     }

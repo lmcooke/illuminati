@@ -51,7 +51,6 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist,
         // Store the photon!
         if(bounces > 0)
         {
-            //
             Vector3 prev = emittedBeam.m_start;
             Vector3 next = surfel->position;
             calculateAndStoreBeam(emittedBeam.m_start,  surfel->position, prev, next, m_radius, m_radius, emittedBeam.m_power);
@@ -91,19 +90,15 @@ bool PhotonScatter::scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist,
  */
 void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color3 power, int bounces)
 {
-    float rand = m_random.uniform();
-    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
-    {
-        // Do some Russian Roulette stuff here.
-        PhotonBeamette beam2 = PhotonBeamette();
-        beam2.m_start = startPt;
-        beam2.m_end = beam2.m_start + origDirection;
+    // Do some Russian Roulette stuff here.
+    PhotonBeamette beam2 = PhotonBeamette();
+    beam2.m_start = startPt;
+    beam2.m_end = beam2.m_start + origDirection;
 
-        // Attenuate over the distance
-        float dist = length(beam2.m_start - beam2.m_end);
-        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01)); // TODO: negative? ?
-        shootRayRecursiveStraight(beam2, bounces );
-    }
+    // Attenuate over the distance
+    float dist = length(beam2.m_start - beam2.m_end);
+    beam2.m_power = power; // TODO: negative? ?
+    shootRayRecursiveStraight(beam2, bounces );
 }
 
 /**
@@ -147,17 +142,12 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
     Vector3 wIn = origDirection;
     Vector3 wOut;
     phaseFxn(wIn, wOut);
-    float rand = m_random.uniform();
-
-    if (rand < m_PSettings.scattering)
-    {
-        // Do some Russian Roulette stuff here.
-        PhotonBeamette beam2 = PhotonBeamette();
-        beam2.m_start = startPt;
-        beam2.m_end = beam2.m_start + wOut;
-        beam2.m_power = power/fmax(m_PSettings.scattering, 0.001);
-        shootRayRecursiveStraight(beam2, bounces + 1);
-    }
+    // Do some Russian Roulette stuff here.
+    PhotonBeamette beam2 = PhotonBeamette();
+    beam2.m_start = startPt;
+    beam2.m_end = beam2.m_start + wOut;
+    beam2.m_power = power;
+    shootRayRecursiveStraight(beam2, bounces);
 }
 
 /**
@@ -168,13 +158,16 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
  */
 void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bounces)
 {
+
+
     // Terminate recursion
     if (bounces > m_PSettings.maxDepthScatter) {
         return;
     }
 
     // A random distance to step forward along the beam.
-    float marchDist = m_random.uniform()*getRayMarchDist();
+//    float marchDist = m_random.uniform()*getRayMarchDist();
+    float marchDist = getRayMarchDist();
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -189,21 +182,34 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     {
 
         Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
-        Vector3 prev = -(emittedBeam.m_start - beamEndPt) * 1.1;
-        Vector3 next = (emittedBeam.m_start - beamEndPt) * 1.1;
+        // TODO wait to calculate and store beam until next is calculated
+        Vector3 prev = emittedBeam.m_start;
+        Vector3 next = beamEndPt;
         if(bounces > 0)
         {
             calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, m_radius, m_radius, emittedBeam.m_power);
-        } else {
-            std::cout << "HERE" << std::endl;
         }
 
-        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
-    } else {
-        if (!(dist < inf())) {
-            std::cout << "hitSurf: " << hitSurf << std::endl;
+        float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
+        float remainingProb = 1.f - extinctionProb;
+        float scatterProb = remainingProb * m_PSettings.scattering;
+        float transProb = remainingProb - scatterProb;
+
+        float fogEmmission = 1.02f;
+
+        float rng = m_random.uniform();
+
+        if (rng < transProb) {
+            // transmission
+            scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+
+        } else if (rng < transProb + scatterProb) {
+            // scattering
+            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+
         }
+
+        // otherwise, extinction -> no recursion.
     }
 }
 
@@ -290,9 +296,9 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     beam.m_start =  startPt;
     beam.m_end = endPt;
 
-    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
-        return;
-    }
+//    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
+//        return;
+//    }
 
     // We want the total light contribution to the screen from a single beam to be constant
     // regardless of the width of the beam.
@@ -336,4 +342,11 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
 void PhotonScatter::setRadius(float radius)
 {
     m_radius = radius;
+}
+
+
+// returns sum of 1 - (scattering + transmission)
+float PhotonScatter::getExtinctionProbability(float marchDist)
+{
+    return  1.f - (exp(-1.f * marchDist * m_PSettings.attenuation));
 }

@@ -837,11 +837,11 @@ app.o: app.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		world.h \
+		photonsettings.h \
 		photonbeamette.h \
 		emitter.h \
 		utils.h \
 		photonscatter.h \
-		photonsettings.h \
 		indphotonscatter.h \
 		dirphotonscatter.h \
 		indrenderer.h
@@ -1254,11 +1254,11 @@ world.o: world.cpp app.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		world.h \
+		photonsettings.h \
 		photonbeamette.h \
 		emitter.h \
 		utils.h \
 		photonscatter.h \
-		photonsettings.h \
 		indphotonscatter.h \
 		dirphotonscatter.h \
 		indrenderer.h
@@ -1672,9 +1672,9 @@ photonscatter.o: photonscatter.cpp photonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
+		photonsettings.h \
 		emitter.h \
-		utils.h \
-		photonsettings.h
+		utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o photonscatter.o photonscatter.cpp
 
 photonbeamette.o: photonbeamette.cpp photonbeamette.h \
@@ -2494,9 +2494,9 @@ indphotonscatter.o: indphotonscatter.cpp indphotonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
+		photonsettings.h \
 		emitter.h \
-		utils.h \
-		photonsettings.h
+		utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o indphotonscatter.o indphotonscatter.cpp
 
 dirphotonscatter.o: dirphotonscatter.cpp dirphotonscatter.h \
@@ -2908,9 +2908,9 @@ dirphotonscatter.o: dirphotonscatter.cpp dirphotonscatter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		photonbeamette.h \
 		world.h \
+		photonsettings.h \
 		emitter.h \
-		utils.h \
-		photonsettings.h
+		utils.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dirphotonscatter.o dirphotonscatter.cpp
 
 main.o: main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/G3D/G3DAll.h \
@@ -3320,11 +3320,11 @@ main.o: main.cpp ../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		app.h \
 		world.h \
+		photonsettings.h \
 		photonbeamette.h \
 		emitter.h \
 		utils.h \
 		photonscatter.h \
-		photonsettings.h \
 		indphotonscatter.h \
 		dirphotonscatter.h \
 		indrenderer.h
@@ -3737,11 +3737,11 @@ indrenderer.o: indrenderer.cpp indrenderer.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilter.h \
 		../../../../../../sys/shared/psfu/contrib/projects/g3d10/G3D10/build/include/GLG3D/BilateralFilterSettings.h \
 		world.h \
+		photonsettings.h \
 		photonbeamette.h \
 		emitter.h \
 		utils.h \
-		photonscatter.h \
-		photonsettings.h
+		photonscatter.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o indrenderer.o indrenderer.cpp
 
 utils.o: utils.cpp utils.h \

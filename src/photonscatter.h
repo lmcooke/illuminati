@@ -108,6 +108,9 @@ protected:
      */
 
     bool scatterOffSurf(PhotonBeamette &emittedBeam, float marchDist, float &dist, int bounces);
+
+    float getExtinctionProbability(float marchDist);
+
     World* m_world;
     Random m_random;   // Random number generator
     PhotonSettings m_PSettings;

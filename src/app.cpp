@@ -12,7 +12,7 @@ String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
 
 // set this to 1 to debug a single render thread
-#define THREADS 12
+#define THREADS 1
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
@@ -36,28 +36,31 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dofLens=0.2f;
     m_PSettings.dofSamples=5;
 
-    m_PSettings.attenuation=0.0;
-    m_PSettings.scattering=0.0;
+
+
+    m_PSettings.attenuation=0.0; // variable in transmission calculation
+
+
+    m_PSettings.scattering=0.0; // ratio of scattering to extinction
+
+
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.8;
     m_PSettings.followRatio=0.0;
 
-    m_PSettings.maxDepthScatter=4;
+    m_PSettings.maxDepthScatter=100;
     m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
     m_PSettings.numBeamettesDir=100;
-    m_PSettings.numBeamettesInDir=2000;
+    m_PSettings.numBeamettesInDir=80;
 
     m_PSettings.directSamples=64;
 
-//    m_PSettings.gatherRadius=0.2;
-//    m_PSettings.useFinalGather=true;
-    m_PSettings.dist = 5;
     m_maxPasses = 3;
     m_PSettings.gatherRadius=0.15;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .4;
+    m_PSettings.dist = .1;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
 
@@ -179,6 +182,9 @@ void App::onInit()
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
 
+    m_zBuffer = Texture::createEmpty("App::zBuffer", m_framebuffer->width(),
+                                      m_framebuffer->height(), ImageFormat::RGBA16());
+
     m_totalDirLight1 = Texture::createEmpty("App::totalDirLight1", m_framebuffer->width(),
                                           m_framebuffer->height(), ImageFormat::RGBA16());
 
@@ -192,15 +198,19 @@ void App::onInit()
                                          m_framebuffer->height(), ImageFormat::RGBA16());
 
     m_dirLight->clear();
+    m_zBuffer->clear();
     m_totalDirLight1->clear();
     m_currentComposite1->clear();
     m_totalDirLight2->clear();
     m_currentComposite2->clear();
 
     m_dirFBO = Framebuffer::create(m_dirLight);
+    m_ZFBO = Framebuffer::create(m_zBuffer);
     m_FBO1 = Framebuffer::create(m_currentComposite1);
     m_FBO2 = Framebuffer::create(m_currentComposite2);
 
+    m_ZFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_zBuffer);
+    m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
     m_dirFBO->set(Framebuffer::AttachmentPoint::COLOR1, m_dirLight);
     m_FBO1->set(Framebuffer::AttachmentPoint::COLOR1, m_currentComposite1);
     m_FBO1->set(Framebuffer::AttachmentPoint::COLOR2, m_totalDirLight1);
@@ -394,7 +404,6 @@ void App::renderBeams(RenderDevice *dev, World *world)
 
 void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 {
-//    std::cout << "onGraphics3D 1" << std::endl;
     if (!m_world.camnull() && m_dirBeams){
 
 
@@ -426,7 +435,30 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-//    std::cout << "gpuProcess 1" << std::endl;
+    rd->pushState(m_ZFBO); {
+        rd->setObjectToWorldMatrix(CFrame());
+        rd->setColorClearValue(Color3::black());
+        rd->clear();
+        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+
+        Args args;
+        args.setPrimitiveType(PrimitiveType::TRIANGLES);
+        Array<shared_ptr<Surface>> geometry = m_world.geometry();
+        CFrame cframe;
+        for (int i=0; i<geometry.size(); i++)
+        {
+            const shared_ptr<UniversalSurface>& surface = dynamic_pointer_cast<UniversalSurface>(geometry[i]);
+            if (notNull(surface))
+            {
+                surface->getCoordinateFrame(cframe);
+                args.setUniform("MVP", rd->invertYMatrix()*rd->projectionMatrix()*rd->cameraToWorldMatrix().inverse() * cframe);
+                surface->gpuGeom()->setShaderArgs(args);
+                LAUNCH_SHADER("zBuff.*", args);
+            }
+        }
+    } rd->popState();
+
 //    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
@@ -503,6 +535,9 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setAttributeArray("Power", gpuPower);
+        args.setUniform("screenHeight", rd->height());
+        args.setUniform("screenWidth", rd->width());
+        args.setUniform("zDepth", m_ZFBO->texture(1), Sampler::buffer());
         args.setUniform("Resolution", Vector2(rd->width(), rd->height()));
         args.setUniform("Look", m_world.camera()->frame().lookVector());
         args.setUniform("MVP", mvp);
@@ -693,7 +728,6 @@ void App::makeGUI()
     settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
 //    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-//    settingsPane->pack();
 
     // Lights
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
@@ -701,6 +735,8 @@ void App::makeGUI()
 //    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
     settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
+    settingsPane->addCheckBox("Use Final Gather", &m_PSettings.useFinalGather);
+    settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings.gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
