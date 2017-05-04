@@ -52,7 +52,7 @@ App::App(const GApp::Settings &settings)
     m_PSettings.maxDepthRender=3;
     m_PSettings.epsilon=0.0001;
     m_PSettings.numBeamettesDir=100;
-    m_PSettings.numBeamettesInDir=80;
+    m_PSettings.numBeamettesInDir=2000;
 
     m_PSettings.directSamples=64;
 

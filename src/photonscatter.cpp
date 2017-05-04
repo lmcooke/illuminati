@@ -166,8 +166,8 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     }
 
     // A random distance to step forward along the beam.
-//    float marchDist = m_random.uniform()*getRayMarchDist();
-    float marchDist = getRayMarchDist();
+    float marchDist = m_random.uniform()*getRayMarchDist();
+//    float marchDist = getRayMarchDist();
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -207,6 +207,8 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
             // scattering
             scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
 
+        } else {
+            std::cout << "extinction" << std::endl;
         }
 
         // otherwise, extinction -> no recursion.
