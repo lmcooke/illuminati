@@ -40,7 +40,7 @@
                 vignetteTopStrength = 0.5; 
             }; 
             
-            frame = CFrame::fromXYZYPRDegrees(.5, 0.5, 3, 20, 0, 0 ); 
+            frame = CFrame::fromXYZYPRDegrees(2.5, 0.5, 3, 45, 0, 0 ); 
             motionBlurSettings = MotionBlurSettings { 
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
