@@ -26,7 +26,8 @@ SOURCES += app.cpp \
     main.cpp \
     indrenderer.cpp \
     utils.cpp \
-    emitter.cpp
+    emitter.cpp \
+    threadpool.cpp
 
 HEADERS += app.h \
            world.h \
@@ -38,7 +39,8 @@ HEADERS += app.h \
     indrenderer.h \
     utils.h \
     photonsettings.h \
-    emitter.h
+    emitter.h \
+    threadpool.h
 
 INCLUDEPATH += $${G3D_PATH}/build/include \
             += $${G3D_PATH}/tbb/include

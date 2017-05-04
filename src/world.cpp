@@ -69,7 +69,7 @@ void World::load(const String &path )
         }
         else if (type == "Light")
         {
-            printf("ignored (only emitters are used as lights in path)\n");
+//            printf("ignored (only emitters are used as lights in path)\n");
         }
         else if (type == "VisibleEntity")
         {

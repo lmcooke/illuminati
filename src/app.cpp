@@ -4,15 +4,13 @@
 #ifndef G3D_PATH
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
+#define THREADS 8
 
 static Random &rng = Random::common();
 
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
-
-// set this to 1 to debug a single render thread
-#define THREADS 1
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
@@ -36,13 +34,8 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dofLens=0.2f;
     m_PSettings.dofSamples=5;
 
-
-
     m_PSettings.attenuation=0.0; // variable in transmission calculation
-
-
     m_PSettings.scattering=0.0; // ratio of scattering to extinction
-
 
     m_PSettings.noiseBiasRatio=0.0;
     m_PSettings.radiusScalingFactor=0.95;
@@ -74,8 +67,8 @@ void App::setScenePath(const char* path)
 
 void App::buildPhotonMap(bool createRngGen)
 {
-
     if (createRngGen) {
+        std::cout << "createRngGen" <<std::endl;
 
         // Make the diret photon beams, to be splatted and rendered directly.
         m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
@@ -89,54 +82,37 @@ void App::buildPhotonMap(bool createRngGen)
         m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
         m_indRenderer->setBeams(m_inDirBeams->getBeams());
     } else {
-
-
         m_inDirBeams->makeBeams();
         m_indRenderer->setBeams(m_inDirBeams->getBeams());
     }
-
-
-
-
-
 }
 
 void App::traceCallback(int x, int y)
 {
 
-    if (continueRender) {
+    if (!continueRender) return;
+    if (indRenderCount == -1) {
+        m_canvas->set(x, y, Radiance3::black());
+    } else {
 
+        // TODO : keep random or just use .5f?
+        double dx = rng.uniform(), dy = rng.uniform();
 
-
-        if (indRenderCount == -1) {
-            m_canvas->set(x, y, Radiance3::black());
-        } else {
-
-            // TODO : keep random or just use .5f?
-            double dx = rng.uniform(), dy = rng.uniform();
-
-            Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
-
-
-            if (indRenderCount == 0) {
-
-
+        // Choose a ray, shoot it into the scean
+        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+        if (indRenderCount == 0) {
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+        } else {
+            Radiance3 prev = m_canvas->get(x,y);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
 
+            float indCountFl = static_cast<float>(indRenderCount);
 
-            } else {
+            float prevContrib = indCountFl / (indCountFl + 1.f);
+            float nextContrib = 1.f / (indCountFl + 1.f);
 
-                Radiance3 prev = m_canvas->get(x,y);
-                Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
-
-                float indCountFl = static_cast<float>(indRenderCount);
-
-                float prevContrib = indCountFl / (indCountFl + 1.f);
-                float nextContrib = 1.f / (indCountFl + 1.f);
-
-                m_canvas->set(x, y, prevContrib * prev +
-                                    nextContrib * sample);
-            }
+            m_canvas->set(x, y, prevContrib * prev +
+                                nextContrib * sample);
         }
     }
 }
@@ -144,47 +120,27 @@ void App::traceCallback(int x, int y)
 static void dispatcher(void *arg)
 {
     App *self = (App*)arg;
-
-
-    int w = self->window()->width(),
-        h = self->window()->height();
-
     self->stage = App::SCATTERING;
-
     self->buildPhotonMap(true);
 
-
+    // Create the thread pool and for each pass, send out THREADs number of threads to do the dirty work.
+    ThreadPool pool( self, THREADS );
     while (self->indRenderCount < self->m_maxPasses) {
         printf("Rendering ...");
         std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
-
-//        shared_ptr<DirPhotonScatter>
-
-//        self->m_dirBeams->makeBeams();
-//        self->m_inDirBeams->setBeams(m_inDirBeams->getBeams());
-
         self->buildPhotonMap(false);
-
         self->indRenderCount += 1;
 
         if (self->prevIndRenderCount != -1) {
             self->prevIndRenderCount += 1;
         }
 
-
         self->setGatherRadius();
-
         self->stage = App::GATHERING;
-        Thread::runConcurrently(Point2int32(0, 0),
-                                Point2int32(w, h),
-                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
-
+        pool.run();
         printf("done\n");
     }
-
-
-
     self->stage = App::IDLE;
 }
 
@@ -344,15 +300,17 @@ bool App::onEvent(const GEvent &e)
 
 void App::onRender()
 {
-
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
         continueRender = true;
-
+        indRenderCount = -1;
+        prevIndRenderCount = -1;
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
+
         m_world.unload();
         m_world.setSettings(m_PSettings);
         m_world.load(fullpath);
+
         std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
@@ -583,8 +541,6 @@ void App::gpuProcess(RenderDevice *rd)
 
         Args argsComp;
         argsComp.setRect(rd->viewport());
-
-//        std::cout << "continueRender : " << continueRender << std::endl;
 
         argsComp.setUniform("continueRendering", indRenderCount > -1);
 

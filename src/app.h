@@ -10,6 +10,7 @@
 #include "dirphotonscatter.h"
 #include "indrenderer.h"
 #include "photonsettings.h"
+#include "threadpool.h"
 
 //enum RenderMethod { RAY, PATH, PHOTON };
 
