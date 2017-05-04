@@ -4,15 +4,13 @@
 #ifndef G3D_PATH
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
+#define THREADS 1
 
 static Random &rng = Random::common();
 
 //RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
-
-// set this to 1 to debug a single render thread
-#define THREADS 1
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
@@ -93,39 +91,29 @@ void App::buildPhotonMap()
 void App::traceCallback(int x, int y)
 {
 
-    if (continueRender) {
+    if (!continueRender) return;
+    if (indRenderCount == -1) {
+        m_canvas->set(x, y, Radiance3::black());
+    } else {
 
+        // TODO : keep random or just use .5f?
+        double dx = rng.uniform(), dy = rng.uniform();
 
-
-        if (indRenderCount == -1) {
-            m_canvas->set(x, y, Radiance3::black());
-        } else {
-
-            // TODO : keep random or just use .5f?
-            double dx = rng.uniform(), dy = rng.uniform();
-
-            Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
-
-
-            if (indRenderCount == 0) {
-
-
+        // Choose a ray, shoot it into the scean
+        Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
+        if (indRenderCount == 0) {
             m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+        } else {
+            Radiance3 prev = m_canvas->get(x,y);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
 
+            float indCountFl = static_cast<float>(indRenderCount);
 
-            } else {
+            float prevContrib = indCountFl / (indCountFl + 1.f);
+            float nextContrib = 1.f / (indCountFl + 1.f);
 
-                Radiance3 prev = m_canvas->get(x,y);
-                Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
-
-                float indCountFl = static_cast<float>(indRenderCount);
-
-                float prevContrib = indCountFl / (indCountFl + 1.f);
-                float nextContrib = 1.f / (indCountFl + 1.f);
-
-                m_canvas->set(x, y, prevContrib * prev +
-                                    nextContrib * sample);
-            }
+            m_canvas->set(x, y, prevContrib * prev +
+                                nextContrib * sample);
         }
     }
 }
@@ -133,17 +121,22 @@ void App::traceCallback(int x, int y)
 static void dispatcher(void *arg)
 {
     App *self = (App*)arg;
+    std::cout << "in dispatcher" <<std::endl;
 
-
-    int w = self->window()->width(),
-        h = self->window()->height();
+//    int w = self->window()->width(),
+//        h = self->window()->height();
 
     self->stage = App::SCATTERING;
 
     self->buildPhotonMap();
+    std::cout << "a----------------------------" <<std::endl;
 
+    ThreadPool pool( self, THREADS );
+    std::cout << "b----------------------------" <<std::endl;
 
     while (self->indRenderCount < self->m_maxPasses) {
+        std::cout << "c----------------------------" <<std::endl;
+
         printf("Rendering ...");
         std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
@@ -158,12 +151,17 @@ static void dispatcher(void *arg)
         self->setGatherRadius();
 
         self->stage = App::GATHERING;
-        Thread::runConcurrently(Point2int32(0, 0),
-                                Point2int32(w, h),
-                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
+        pool.run();
+        std::cout << "d----------------------------" <<std::endl;
+
+//        Thread::runConcurrently(Point2int32(0, 0),
+//                                Point2int32(w, h),
+//                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
 
         printf("done\n");
     }
+    std::cout << "e----------------------------" <<std::endl;
+
 
 
 
@@ -326,15 +324,16 @@ bool App::onEvent(const GEvent &e)
 
 void App::onRender()
 {
-
+    std::cout << continueRender <<std::endl;
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
         continueRender = true;
-
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
+
         m_world.unload();
         m_world.setSettings(m_PSettings);
         m_world.load(fullpath);
+
         std::cout << "Loading scene path " + fullpath << std::endl;
         m_canvas = Image3::createEmpty(window()->width(),
                                        window()->height());
@@ -565,8 +564,6 @@ void App::gpuProcess(RenderDevice *rd)
 
         Args argsComp;
         argsComp.setRect(rd->viewport());
-
-//        std::cout << "continueRender : " << continueRender << std::endl;
 
         argsComp.setUniform("continueRendering", indRenderCount > -1);
 

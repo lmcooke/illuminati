@@ -206,8 +206,6 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
             // scattering
             scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
 
-        } else {
-            std::cout << "extinction" << std::endl;
         }
 
         // otherwise, extinction -> no recursion.
