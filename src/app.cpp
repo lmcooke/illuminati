@@ -82,8 +82,6 @@ void App::buildPhotonMap(bool createRngGen)
         m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
         m_indRenderer->setBeams(m_inDirBeams->getBeams());
     } else {
-        std::cout << "not createRngGen" <<std::endl;
-
         m_inDirBeams->makeBeams();
         m_indRenderer->setBeams(m_inDirBeams->getBeams());
     }
