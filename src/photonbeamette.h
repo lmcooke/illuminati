@@ -16,6 +16,7 @@ public:
     Vector3 m_end_major;
     Vector3 m_end_minor;
     Power3 m_power;
+    int m_splineID = -1; // Associated spline, -1 if an area light
 };
 
 /** Define BoundsTrait for the photon beamettes so we can use them in the KDTree */

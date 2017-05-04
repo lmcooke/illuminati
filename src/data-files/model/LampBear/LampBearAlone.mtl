@@ -1,0 +1,26 @@
+newmtl lampbear:blinn1SG
+illum 4
+Kd 0.12 0.42 0.47
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl lampbear:blinn2SG
+illum 4
+Kd 0.03 0.03 0.03
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.50 0.50 0.50
+newmtl lampbear:blinn3SG
+illum 1
+Ns 10.0000
+Ni 1.5000
+d 1.0000
+Tr 0.0000
+Tf 1.0000 1.0000 1.0000
+Ka 0.7800 0.7800 0.7800
+Kd 0.7800 0.7800 0.7800
+Ke 4 4 4
+Ks 0 0 0
+

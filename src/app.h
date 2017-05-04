@@ -76,6 +76,7 @@ public:
     int m_maxPasses;
 
     int indRenderCount;
+    int prevIndRenderCount;
 
 private:
 
