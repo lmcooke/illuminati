@@ -209,10 +209,7 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
             // scattering
             scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
 
-        } else {
-            std::cout << "extinction" << std::endl;
         }
-
         // otherwise, extinction -> no recursion.
     }
 }
@@ -284,19 +281,17 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         float scatterProb = remainingProb * m_PSettings.scattering;
         float transProb = remainingProb - scatterProb;
 
-        float fogEmission = 1.02f;
-
         float rng = m_random.uniform();
 
         if (rng < transProb) {
 
             // transmission
-            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power * fogEmission, emittedBeam.m_splineID, bounces, curveStep);
+            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
 
         } else if (rng < transProb + scatterProb) {
 
             // scattering
-            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power * fogEmission, bounces);
+            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power, bounces);
 
         } else {
 
