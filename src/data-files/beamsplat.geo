@@ -62,6 +62,7 @@ void main() {
 
     vec3 pwr0 = power_geo[0] / (M_PI * pow(max(EPS, length(min0)), 2));
     vec3 pwr1 = power_geo[1] / (M_PI * pow(max(EPS, length(min1)), 2));
+
     if (length(pwr0) > PWR_CLAMP) {
         pwr0 = pwr0 * (PWR_CLAMP / length(pwr0));
     }
@@ -69,10 +70,11 @@ void main() {
         pwr1 = pwr1 * (PWR_CLAMP / length(pwr1));
     }
 
+
     {
             gl_Position = MVP * vec4(start - start_perp, 1.0);
 
-            pos = gl_Position.xyz;
+            pos = gl_Position.xyz / gl_Position.w;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -83,7 +85,7 @@ void main() {
 
             gl_Position = MVP * vec4(start + start_perp, 1.0);
 
-            pos = gl_Position.xyz;
+            pos = gl_Position.xyz / gl_Position.w;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -94,7 +96,7 @@ void main() {
 
             gl_Position = MVP * vec4(end - end_perp, 1.0);
 
-            pos = gl_Position.xyz;
+            pos = gl_Position.xyz / gl_Position.w;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -105,7 +107,7 @@ void main() {
 
             gl_Position = MVP * vec4(end + end_perp, 1.0);
 
-            pos = gl_Position.xyz;
+            pos = gl_Position.xyz / gl_Position.w;
             start_pt = s;
             end_pt = e;
             start_v = bs;

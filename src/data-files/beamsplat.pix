@@ -13,7 +13,7 @@ in vec2 end_v;
 in vec3 power;
 in vec3 pos;
 
-out vec3 g3d_FragColor;
+out vec4 g3d_FragColor;
 
 // project a on b
 float project_dist(vec2 a, vec2 b) {
@@ -64,15 +64,20 @@ void main(void) {
     //powr = vec3(0.02) / (M_PI * pow(uv.x, 2)); // hardcoded for debugging
     powr *= 0.005;
     val = sin(acos(val));
-    g3d_FragColor = vec3(val * powr);
+    //g3d_FragColor = vec4(val * powr);
 
     // Check against depth of other stuff on screen;
-    vec3 pos2 = pos * 0.5 + vec3(0.5);
-    vec2 texCoords = vec2(pos2.x/screenWidth, pos2.y/screenHeight);
+    vec3 pos2 = (pos) * 0.5 + vec3(0.5);
 
-    if (texture(zDepth, pos2.xy, 0.0).z > pos.z)
-    {
-        g3d_FragColor = vec3(0, 0, 0);
+    vec3 lookup = texture(zDepth, gl_FragCoord.xy / Resolution).xyz;
+
+
+    if (lookup.z > pos2.z) {
+        g3d_FragColor = vec4(powr * val, val);
+        //g3d_FragColor = vec4(0.5,0.5,0,0.1);
+    } else {
+        g3d_FragColor = vec4(0);
     }
+    //g3d_FragColor.a = 0.1;
 
 }
