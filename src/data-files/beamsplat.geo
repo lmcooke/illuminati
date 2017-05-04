@@ -18,6 +18,7 @@ out vec2 end_pt;
 out vec2 start_v;
 out vec2 end_v;
 out vec3 power;
+out vec3 pos;
 
 
 void main() {
@@ -71,6 +72,7 @@ void main() {
     {
             gl_Position = MVP * vec4(start - start_perp, 1.0);
 
+            pos = gl_Position.xyz;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -81,6 +83,7 @@ void main() {
 
             gl_Position = MVP * vec4(start + start_perp, 1.0);
 
+            pos = gl_Position.xyz;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -91,6 +94,7 @@ void main() {
 
             gl_Position = MVP * vec4(end - end_perp, 1.0);
 
+            pos = gl_Position.xyz;
             start_pt = s;
             end_pt = e;
             start_v = bs;
@@ -101,6 +105,7 @@ void main() {
 
             gl_Position = MVP * vec4(end + end_perp, 1.0);
 
+            pos = gl_Position.xyz;
             start_pt = s;
             end_pt = e;
             start_v = bs;

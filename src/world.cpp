@@ -177,6 +177,12 @@ void World::unload()
     m_splines.clear();
 }
 
+Array<shared_ptr<Surface>> World::geometry()
+{
+    return m_geometry;
+}
+
+
 shared_ptr<Camera> World::camera()
 {
 
@@ -305,19 +311,6 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     int slices = 8;
     float arc = 2.0 * pif() / slices;
 
-    // Assign a material
-    meshBody->material = UniversalMaterial::create(
-        PARSE_ANY(
-        UniversalMaterial::Specification {
-            lambertian = Color3(1.0, 0.7, 0.15);
-            glossy     = Color4(Color3(0.01), 0.2);
-        }));
-
-    UniversalMaterial::Specification spec = UniversalMaterial::Specification();
-    spec.setLambertian(Texture::Specification(Color4(1.0, 0.7, 0.15, 0.0)));
-    spec.setEmissive(Texture::Specification(Color4(4.0, 4.0, 4.0, 1.0)));
-    meshEmitter->material = UniversalMaterial::create(spec);
-
     Array<CPUVertexArray::Vertex>& vertexArray = geometryBody->cpuVertexArray.vertex;
     Array<int>& indexArray = meshBody->cpuIndexArray;
 
@@ -341,7 +334,7 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     bool comment;
     bool has_color;
 
-    Color3 c = Color3::one();
+    Color3 c = Color3(Vector3(1.0, 0.0, 0.0));//Color3::one();
 
     while (std::getline(infile, line)) {
         pt1 = pt2;
@@ -373,7 +366,7 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
                     diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
                 }
 
-                CFrame yax = CoordinateFrame::fromYAxis(diff);
+//                CFrame yax = CoordinateFrame::fromYAxis(diff);
                 Matrix4 trans = Matrix4::translation(pt2);
                 Matrix4 rot = CoordinateFrame::fromYAxis(diff).toMatrix4();
                 //Matrix4 yaw = Matrix4::yawDegrees();
@@ -393,17 +386,17 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
                         // Center point
                         if (a == 0){
                             CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                            Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x, pt2.y, pt2.z, 1.0);
+                            Vector4 tmp = Vector4(pt2.x, pt2.y, pt2.z, 1.0);
                             v.position = Vector3(tmp.x, tmp.y, tmp.z);
                             v.normal = Vector3::nan();
                             v.tangent = Vector4::nan();
                         }
 
                         CPUVertexArray::Vertex& v = vertexArrayEmitter.next();
-                        Vector4 tmp = yax.toMatrix4() * Vector4(pt2.x + w2 * cos(a * arc),
-                                                                pt2.y,
-                                                                pt2.z + w2 * sin(a * arc),
-                                                                1.0);
+                        Vector4 tmp = transrot * Vector4(w2 * cos(a * arc),
+                                                         0.0,
+                                                         w2 * sin(a * arc),
+                                                         1.0);
                         v.position = Vector3(tmp.x, tmp.y, tmp.z);
                         v.normal  = Vector3::nan();
                         v.tangent = Vector4::nan();
@@ -416,6 +409,15 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
     npts--;
 
     assert(npts == raw_spline.size());
+
+    // Assign a material
+    UniversalMaterial::Specification specBody = UniversalMaterial::Specification();
+    specBody.setLambertian(Texture::Specification(Color4(c, 1.0)));
+    meshBody->material = UniversalMaterial::create(specBody);
+
+    UniversalMaterial::Specification specEmissive = UniversalMaterial::Specification();
+    specEmissive.setEmissive(Texture::Specification(Color4(c, 1.0)));
+    meshEmitter->material = UniversalMaterial::create(specEmissive);
 
     /* face construction */
 

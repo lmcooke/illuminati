@@ -1,6 +1,6 @@
 //Maya ASCII 2016 scene
 //Name: batman.ma
-//Last modified: Tue, May 02, 2017 12:44:53 PM
+//Last modified: Tue, May 02, 2017 02:39:03 PM
 //Codeset: UTF-8
 requires maya "2016";
 requires -nodeType "mentalrayFramebuffer" -nodeType "mentalrayOptions" -nodeType "mentalrayGlobals"
@@ -4785,13 +4785,13 @@ createNode mesh -n "emittorShape1" -p "emittor1";
 	setAttr ".dr" 1;
 createNode transform -n "persp1";
 	rename -uid "63E53F24-D84D-2150-AD1B-6BB9706FF7C0";
-	setAttr ".t" -type "double3" -0.63088320694715505 39.740140396286236 45.958745953810137 ;
-	setAttr ".r" -type "double3" -23.138352729625904 -0.60000000000451237 -4.9698891919644783e-17 ;
+	setAttr ".t" -type "double3" 15.547981189949059 20.64226721625846 48.655017676786052 ;
+	setAttr ".r" -type "double3" 0.26164727037370333 22.999999999995811 -6.7484933283452753e-18 ;
 createNode camera -n "persp1Shape" -p "persp1";
 	rename -uid "E06AF5DA-B645-68FC-7051-878FB69232B5";
 	setAttr -k off ".v";
 	setAttr ".fl" 34.999999999999986;
-	setAttr ".coi" 65.516221794600952;
+	setAttr ".coi" 61.565827008122689;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";

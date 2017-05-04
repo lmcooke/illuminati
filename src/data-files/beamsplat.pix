@@ -2,12 +2,16 @@
 #define M_PI 3.1415926535897932384626433832795
 
 uniform vec2 Resolution;
+uniform sampler2D zDepth;
+uniform int screenHeight;
+uniform int screenWidth;
 
 in vec2 start_pt;
 in vec2 end_pt;
 in vec2 start_v;
 in vec2 end_v;
 in vec3 power;
+in vec3 pos;
 
 out vec3 g3d_FragColor;
 
@@ -61,4 +65,14 @@ void main(void) {
     powr *= 0.005;
     val = sin(acos(val));
     g3d_FragColor = vec3(val * powr);
+
+    // Check against depth of other stuff on screen;
+    vec3 pos2 = pos * 0.5 + vec3(0.5);
+    vec2 texCoords = vec2(pos2.x/screenWidth, pos2.y/screenHeight);
+
+    if (texture(zDepth, pos2.xy, 0.0).z > pos.z)
+    {
+        g3d_FragColor = vec3(0, 0, 0);
+    }
+
 }

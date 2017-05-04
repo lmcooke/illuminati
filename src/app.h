@@ -98,6 +98,7 @@ private:
     Array<shared_ptr<Surface>> m_sceneGeometry;
 
     shared_ptr<Texture> m_dirLight;
+    shared_ptr<Texture> m_zBuffer;
     shared_ptr<Texture> m_totalDirLight1;
     shared_ptr<Texture> m_currentComposite1;
     shared_ptr<Texture> m_totalDirLight2;
@@ -107,6 +108,8 @@ private:
 
     shared_ptr<Framebuffer> m_FBO1;
     shared_ptr<Framebuffer> m_FBO2;
+
+    shared_ptr<Framebuffer> m_ZFBO;
 
     // path flags
     PhotonSettings         m_PSettings;
