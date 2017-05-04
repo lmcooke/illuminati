@@ -437,7 +437,7 @@ void App::gpuProcess(RenderDevice *rd)
 {
     rd->pushState(m_ZFBO); {
         rd->setObjectToWorldMatrix(CFrame());
-        rd->setColorClearValue(Color3::black());
+        rd->setColorClearValue(Color4::zero());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
         rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
@@ -514,9 +514,16 @@ void App::gpuProcess(RenderDevice *rd)
         }
 
         rd->setObjectToWorldMatrix(CFrame());
-        rd->setColorClearValue(Color3::black());
+        rd->setColorClearValue(Color4::zero());
         rd->clear();
-        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+
+        glEnable(GL_BLEND);
+        rd->setBlendFunc(Framebuffer::COLOR1,
+                         RenderDevice::BLEND_ONE,
+                         RenderDevice::BLEND_ONE,
+                         RenderDevice::BLENDEQ_ADD,
+                         RenderDevice::BLEND_SRC_ALPHA,
+                         RenderDevice::BLEND_DST_ALPHA);
 
         // Upload to GPU
         shared_ptr<VertexBuffer> vbuffer = VertexBuffer::create(
@@ -552,7 +559,7 @@ void App::gpuProcess(RenderDevice *rd)
     // composite direct and indirect
 
     rd->push2D(nextFBO); {
-        rd->setColorClearValue(Color3::black());
+        rd->setColorClearValue(Color4::zero());
         rd->clear();
         rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
 

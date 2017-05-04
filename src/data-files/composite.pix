@@ -22,8 +22,8 @@ void main()
 	vec2 texCoords = vec2(gl_FragCoord.x/screenWidth, gl_FragCoord.y/screenHeight);
 
 	vec4 prevDirectLightColor = texture(prevDirectLight, texCoords, 0.0);
-	vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
-	vec4 directColor = texture(directSample, texCoords, 0.0);
+        vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
+        vec4 directColor = texture(directSample, texCoords, 0.0);
 
 
 	

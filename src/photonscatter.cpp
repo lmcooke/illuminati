@@ -180,7 +180,6 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
-
         Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
         // TODO wait to calculate and store beam until next is calculated
         Vector3 prev = emittedBeam.m_start;
@@ -242,16 +241,22 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     Vector3 endPoint = spline[curveStep+1].xyz();
     float startRad = spline[curveStep].w;
     float endRad = spline[curveStep+1].w;
-    float marchDist = length(endPoint - startPoint);
+    float marchDist = m_random.uniform() * length(endPoint - startPoint);
+    Vector3 curveDirection =  normalize(endPoint - emittedBeam.m_start);
+    curveDirection = (normalize(endPoint - emittedBeam.m_start) + normalize(spline[curveStep+2].xyz() - endPoint))/2.f;
 
     // Generate random next point based on radius
-    // float jitter = random.uniform()*end[3];
-    // TODO: JITTER POINT
+    float jitter = m_random.uniform()*endRad;
 
-//    Vector3 curveDir = normalize(emittedBeam.m_end - emittedBeam.m_start);
-//    emittedBeam.m_end = startPoint + marchDist * curveDir;
-
-    emittedBeam.m_end = endPoint;
+    // Generate random vector in xz plane about y axis
+    // Then rotate to be oriented about curveDirect axis
+    float randAngle = m_random.uniform()* M_2_PI;
+    Matrix4 rot = CoordinateFrame::fromYAxis(curveDirection).toMatrix4();
+    Vector4 perp = rot * Vector4(cos(randAngle), 0.0, sin(randAngle), 0.0);
+//    Vector3 jitteredEndPoint = endPoint - m_random.uniform()*
+    Vector3 beamEndPt = endPoint + jitter * normalize(perp.xyz());
+//    beamEndPt = emittedBeam.m_start + marchDist * normalize(beamEndPt - emittedBeam.m_start); // TODO: TESTING
+    emittedBeam.m_end = beamEndPt;
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -262,21 +267,19 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     // Store the ray with the point here. Then, scatter forward and out.
     if (!hitSurf && dist < inf())
     {
-        Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
-        Vector3 nextDirection = spline[curveStep+2].xyz() - endPoint;
+        Vector3 nextDirection = spline[curveStep+2].xyz() - beamEndPt;
         Vector3 prev = emittedBeam.m_start;
         if (curveStep > 0){
             prev = spline[curveStep-1].xyz();
         }
         Vector3 next = spline[curveStep+2].xyz();
 
-        startRad = max(startRad * m_PSettings.radiusScalingFactor, 0.05f);
-        endRad = max(endRad*m_PSettings.radiusScalingFactor, 0.05f);
+        startRad = max(startRad * m_radius, 0.05f);
+        endRad = max(endRad * m_radius, 0.05f);
 
         calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
 
         scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-//        scatterForward(beamEndPt, direction, emittedBeam.m_power, bounces);
         scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
     }
 }

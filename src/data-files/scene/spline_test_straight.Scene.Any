@@ -40,7 +40,7 @@
             }; 
             
             frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-            motionBlurSettings = MotionBlurSettings { 
+            motionBlurSettings = MotionBlurSettings {
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
                 exposureFraction = 0.75; 
@@ -50,35 +50,29 @@
             
             projection = Projection { 
                 farPlaneZ = -200; 
-                fovDegrees = 25;
+                fovDegrees = 20;
                 fovDirection = "VERTICAL"; 
-                nearPlaneZ = -0.1; 
+                nearPlaneZ = -1;
                 pixelOffset = Vector2(0, 0 ); 
             }; 
             
             visualizationScale = 1;
         }; 
-
+        
         cornellBox = VisibleEntity { 
             frame = CFrame::fromXYZYPRDegrees(0, 0, -0.25 ); 
             model = "cornellModel"; 
         }; 
-        
         
         sphere = VisibleEntity { 
             frame = CFrame::fromXYZYPRDegrees(0, 0.399696, 0 ); 
             model = "sphereModel"; 
         }; 
         
-        spline1 = SplineLight {
+        spline = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
-            model = "splineModel1";
+            model = "splineModel";
         };
-
-        spline2 = SplineLight {
-            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
-            model = "splineModel2";
-        }
     }; 
     
     lightingEnvironment = LightingEnvironment { 
@@ -114,7 +108,7 @@
     models = { 
         
         cornellModel = ArticulatedModel::Specification { 
-            filename = "model/CornellBox-Empty-Dark.obj"; 
+            filename = "assets/CornellBox-Empty-CO.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
             
@@ -128,15 +122,11 @@
             
         }; 
 
-        splineModel1 = ArticulatedModel::Specification {
-            filename = "model/spline4.txt";
+        splineModel = ArticulatedModel::Specification {
+            filename = "model/spline8.txt";
         };
-
-        splineModel2 = ArticulatedModel::Specification{
-            filename = "model/spline9.txt";
-        }
         
     }; 
     
-    name = "Two Splines (Photon Beams)"; 
+    name = "Test Spline Straight (Photon Beams)"; 
 } 

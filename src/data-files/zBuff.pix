@@ -1,6 +1,8 @@
 #version 410
 out vec3 g3d_FragColor;
 in vec4 pos;
+
 void main() {
-    g3d_FragColor = vec3(1, 0, 0);//pos.xyz;
+    g3d_FragColor = (pos.xyz * 0.5) + vec3(0.5);
+    //g3d_FragColor = vec3(1, 0, 0); //pos.xyz;
 }
