@@ -4,7 +4,7 @@
 #ifndef G3D_PATH
 #define G3D_PATH "/contrib/projects/g3d10/G3D10"
 #endif
-#define THREADS 1
+#define THREADS 8
 
 static Random &rng = Random::common();
 
@@ -34,16 +34,11 @@ App::App(const GApp::Settings &settings)
     m_PSettings.dofLens=0.2f;
     m_PSettings.dofSamples=5;
 
-
-
     m_PSettings.attenuation=0.0; // variable in transmission calculation
-
-
     m_PSettings.scattering=0.0; // ratio of scattering to extinction
 
-
     m_PSettings.noiseBiasRatio=0.0;
-    m_PSettings.radiusScalingFactor=0.8;
+    m_PSettings.radiusScalingFactor=0.95;
     m_PSettings.followRatio=0.0;
 
     m_PSettings.maxDepthScatter=100;
@@ -54,15 +49,13 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings.directSamples=64;
 
-    m_maxPasses = 3;
-    m_PSettings.gatherRadius=0.15;
+    m_maxPasses = 20;
+    m_PSettings.gatherRadius=0.5;
     m_PSettings.useFinalGather=false;
     m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .1;
+    m_PSettings.dist = .5;
     m_PSettings.beamIntensity = 1;
     m_PSettings.beamSpread = 1;
-
-    m_PSettings.renderSplines = false;
 }
 
 App::~App() { }
@@ -72,20 +65,29 @@ void App::setScenePath(const char* path)
     m_scenePath = path;
 }
 
-void App::buildPhotonMap()
+void App::buildPhotonMap(bool createRngGen)
 {
-    // Make the diret photon beams, to be splatted and rendered directly.
-    m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
+    std::cout << "building photon maps" <<std::endl;
+    if (createRngGen) {
+        std::cout << "createRngGen" <<std::endl;
 
-    // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
-    // Note that it's redunant to here calculate both of these lighting maps, but
-    // we'll later be using them at different rates (and also with different scattering properties)
-    m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
+        // Make the diret photon beams, to be splatted and rendered directly.
+        m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
 
-    // Create renderer
-    m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
-    m_indRenderer->setBeams(m_inDirBeams->getBeams());
+        // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
+        // Note that it's redunant to here calculate both of these lighting maps, but
+        // we'll later be using them at different rates (and also with different scattering properties)
+        m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
 
+        // Create renderer
+        m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
+        m_indRenderer->setBeams(m_inDirBeams->getBeams());
+    } else {
+        std::cout << "not createRngGen" <<std::endl;
+
+        m_inDirBeams->makeBeams();
+        m_indRenderer->setBeams(m_inDirBeams->getBeams());
+    }
 }
 
 void App::traceCallback(int x, int y)
@@ -121,50 +123,27 @@ void App::traceCallback(int x, int y)
 static void dispatcher(void *arg)
 {
     App *self = (App*)arg;
-    std::cout << "in dispatcher" <<std::endl;
-
-//    int w = self->window()->width(),
-//        h = self->window()->height();
-
     self->stage = App::SCATTERING;
+    self->buildPhotonMap(true);
 
-    self->buildPhotonMap();
-    std::cout << "a----------------------------" <<std::endl;
-
+    // Create the thread pool and for each pass, send out THREADs number of threads to do the dirty work.
     ThreadPool pool( self, THREADS );
-    std::cout << "b----------------------------" <<std::endl;
-
     while (self->indRenderCount < self->m_maxPasses) {
-        std::cout << "c----------------------------" <<std::endl;
-
         printf("Rendering ...");
         std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
-
+        self->buildPhotonMap(false);
         self->indRenderCount += 1;
 
         if (self->prevIndRenderCount != -1) {
             self->prevIndRenderCount += 1;
         }
 
-
         self->setGatherRadius();
-
         self->stage = App::GATHERING;
         pool.run();
-        std::cout << "d----------------------------" <<std::endl;
-
-//        Thread::runConcurrently(Point2int32(0, 0),
-//                                Point2int32(w, h),
-//                                [self](Point2int32 pixel){self->traceCallback(pixel.x, pixel.y);});
-
         printf("done\n");
     }
-    std::cout << "e----------------------------" <<std::endl;
-
-
-
-
     self->stage = App::IDLE;
 }
 
@@ -324,10 +303,11 @@ bool App::onEvent(const GEvent &e)
 
 void App::onRender()
 {
-    std::cout << continueRender <<std::endl;
     if(m_dispatch == NULL || (m_dispatch != NULL && m_dispatch->completed()))
     {
         continueRender = true;
+        indRenderCount = -1;
+        prevIndRenderCount = -1;
         String fullpath = m_scenePath + "/" + m_ddl->selectedValue().text();
 
         m_world.unload();
@@ -601,8 +581,10 @@ void App::gpuProcess(RenderDevice *rd)
 // sets the gather radius of the indirect renderer
 void App::setGatherRadius()
 {
-    // TODO : is .04 a reasonable amount to decrease the indirect gather radius by?
-    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius - (.04f * indRenderCount));
+    // the closer this value is to 1, the slower the radius will decrease.
+    float radReductionRate = 1.08f;
+
+    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
 }
 
 FilmSettings App::getFilmSettings()
@@ -718,7 +700,7 @@ void App::makeGUI()
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
     scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
+//    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);

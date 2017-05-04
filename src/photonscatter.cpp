@@ -112,9 +112,23 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
  */
 void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep)
 {
-    float rand = m_random.uniform();
-    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
-    {
+//    float rand = m_random.uniform();
+//    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
+//    {
+//        // Do some Russian Roulette stuff here.
+//        PhotonBeamette beam2 = PhotonBeamette();
+//        beam2.m_start = startPt;
+//        beam2.m_end = beam2.m_start + nextDirection;
+//        beam2.m_splineID = id;
+
+//        // Attenuate over the distance
+//        float dist = length(beam2.m_start - beam2.m_end);
+//        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+////        assert(!beam2.m_power.isZero());
+//        curveStep += 1;
+//        shootRayRecursiveCurve(beam2, bounces, curveStep);
+//    }
+
         // Do some Russian Roulette stuff here.
         PhotonBeamette beam2 = PhotonBeamette();
         beam2.m_start = startPt;
@@ -123,10 +137,12 @@ void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, 
 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
-        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+        beam2.m_power = power;
+//        assert(!beam2.m_power.isZero());
         curveStep += 1;
         shootRayRecursiveCurve(beam2, bounces, curveStep);
-    }
+
+
 }
 
 /**
@@ -158,8 +174,6 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
  */
 void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bounces)
 {
-
-
     // Terminate recursion
     if (bounces > m_PSettings.maxDepthScatter) {
         return;
@@ -194,20 +208,20 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
         float scatterProb = remainingProb * m_PSettings.scattering;
         float transProb = remainingProb - scatterProb;
 
-        float fogEmmission = 1.02f;
+        float fogEmission = 1.02f;
 
         float rng = m_random.uniform();
 
         if (rng < transProb) {
             // transmission
-            scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+            scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
+//            scatterForward(beamEndPt, direction, emittedBeam.m_power / transProb, bounces);
 
         } else if (rng < transProb + scatterProb) {
             // scattering
-            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmmission, bounces);
+            scatterIntoFog(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
 
         }
-
         // otherwise, extinction -> no recursion.
     }
 }
@@ -225,8 +239,6 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         return;
     }
 
-    assert(emittedBeam.m_splineID >= 0);
-
     Array<Vector4> spline = m_world->splines()[emittedBeam.m_splineID];
 
     // if there isn't one more CV, return
@@ -239,26 +251,24 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     Vector3 endPoint = spline[curveStep+1].xyz();
     float startRad = spline[curveStep].w;
     float endRad = spline[curveStep+1].w;
-    float marchDist = m_random.uniform() * length(endPoint - startPoint);
+    float marchDist = m_random.uniform() * length(endPoint - emittedBeam.m_start);
     Vector3 curveDirection =  normalize(endPoint - emittedBeam.m_start);
     curveDirection = (normalize(endPoint - emittedBeam.m_start) + normalize(spline[curveStep+2].xyz() - endPoint))/2.f;
 
     // Generate random next point based on radius
-    float jitter = m_random.uniform()*endRad;
+    float jitter = endRad * m_PSettings.beamSpread;
 
     // Generate random vector in xz plane about y axis
     // Then rotate to be oriented about curveDirect axis
     float randAngle = m_random.uniform()* M_2_PI;
     Matrix4 rot = CoordinateFrame::fromYAxis(curveDirection).toMatrix4();
     Vector4 perp = rot * Vector4(cos(randAngle), 0.0, sin(randAngle), 0.0);
-//    Vector3 jitteredEndPoint = endPoint - m_random.uniform()*
     Vector3 beamEndPt = endPoint + jitter * normalize(perp.xyz());
-//    beamEndPt = emittedBeam.m_start + marchDist * normalize(beamEndPt - emittedBeam.m_start); // TODO: TESTING
+    beamEndPt = emittedBeam.m_start + marchDist * normalize(beamEndPt - emittedBeam.m_start); // TODO: TESTING
     emittedBeam.m_end = beamEndPt;
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
-    Vector3 direction =  emittedBeam.m_end - emittedBeam.m_start;
     bool hitSurf = scatterOffSurf(emittedBeam, marchDist, dist, bounces);
 
     // If the marched distance is closer than the nearest surface along the same ray (ie, hitSurf is true), then we're in fog.
@@ -268,17 +278,36 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         Vector3 nextDirection = spline[curveStep+2].xyz() - beamEndPt;
         Vector3 prev = emittedBeam.m_start;
         if (curveStep > 0){
-            prev = spline[curveStep-1].xyz();
+            prev = spline[curveStep-1].xyz() + -marchDist * curveDirection;
         }
-        Vector3 next = spline[curveStep+2].xyz();
+        Vector3 next = spline[curveStep+2].xyz() + marchDist * curveDirection;
 
-        startRad = max(startRad * m_radius, 0.05f);
-        endRad = max(endRad * m_radius, 0.05f);
+        startRad = max(startRad * m_radius, startRad*.5f);
+        endRad = max(endRad * m_radius, endRad* .5f);
 
         calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
 
-        scatterIntoFog(beamEndPt, direction, emittedBeam.m_power, bounces);
-        scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
+        float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
+        float remainingProb = 1.f - extinctionProb;
+        float scatterProb = remainingProb * m_PSettings.scattering;
+        float transProb = remainingProb - scatterProb;
+
+        float rng = m_random.uniform();
+
+        if (rng < transProb) {
+
+            // transmission
+            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
+
+        } else if (rng < transProb + scatterProb) {
+
+            // scattering
+            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power, bounces);
+
+        } else {
+
+        }
+        // otherwise, extinction -> no recursion.
     }
 }
 
@@ -298,10 +327,6 @@ void PhotonScatter::calculateAndStoreBeam(Vector3 startPt, Vector3 endPt, Vector
     PhotonBeamette beam = PhotonBeamette();
     beam.m_start =  startPt;
     beam.m_end = endPt;
-
-//    if (power.isZero()){ // TODO: this a lame fix find out where power is zero/negative
-//        return;
-//    }
 
     // We want the total light contribution to the screen from a single beam to be constant
     // regardless of the width of the beam.

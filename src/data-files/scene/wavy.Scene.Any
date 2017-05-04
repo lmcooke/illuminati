@@ -123,10 +123,10 @@
         }; 
 
         splineModel = ArticulatedModel::Specification {
-            filename = "model/spline8.lit";
+            filename = "model/spline12.lit";
         };
         
     }; 
     
-    name = "Test Spline Straight (Photon Beams)"; 
+    name = "Wavy(Photon Beams)"; 
 } 

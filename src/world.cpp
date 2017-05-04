@@ -115,15 +115,7 @@ void World::load(const String &path )
             spline->pose(posedSpline, CFrame(pos));
             emitter->pose(posedGeo, CFrame(pos));
 
-            // Add it to the scene
-           /* for (int i = 0; i < posed.size(); ++i)
-                m_spline_geometry.append(posed[i]); // TODO keep separate spline list
-                //m_geometry.append(posed[i]); // just for testing spline accuracy
-                        */
-            if (m_PSettings.renderSplines){
-                m_geometry.append(posedSpline);
-            }
-
+            m_splineGeometry.append(posedSpline);
             m_geometry.append(posedGeo);
 
             printf("done\n");
@@ -244,10 +236,12 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     if (!surf) return false;
 
+    if(light->emittedRadiance(dir).isZero()) return false;
+
     // Store the beam information
     beam.m_end = surf->position;
     beam.m_start = light->position;
-    beam.m_power = light->emittedRadiance(dir)* m_emit.size();
+    beam.m_power = light->emittedRadiance(dir) * m_emit.size();
     beam.m_splineID = id;
     return true;
 }
@@ -289,6 +283,7 @@ void World::renderWireframe(RenderDevice *dev)
     dev->pushState();
     setMatrices(dev);
     Surface::renderWireframe(dev, m_geometry, Color3::white());
+    Surface::renderWireframe(dev, m_splineGeometry, Color3::white());
     dev->popState();
 }
 
