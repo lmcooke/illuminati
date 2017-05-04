@@ -143,7 +143,7 @@
         };
 
         splineModel2 = ArticulatedModel::Specification{
-            filename = "model/spline-set2.lit";
+            filename = "model/spline-set2v2.lit";
         };
 
         splineModel3 = ArticulatedModel::Specification{

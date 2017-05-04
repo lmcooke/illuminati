@@ -79,5 +79,4 @@ void main(void) {
         g3d_FragColor = vec4(0);
     }
     //g3d_FragColor.a = 0.1;
-
 }
