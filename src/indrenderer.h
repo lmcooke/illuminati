@@ -51,6 +51,7 @@ public:
     void setGatherRadius(float rad);
 
 private:
+
     World*  m_world;
     Random  m_random;   // Random number generator
     PhotonSettings m_PSettings; // Settings
