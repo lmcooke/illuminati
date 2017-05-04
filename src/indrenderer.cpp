@@ -24,6 +24,10 @@ Radiance3 IndRenderer::direct(std::shared_ptr<Surfel> surf, Vector3 wo)
     {
         m_world->emissivePoint(m_random, light, P_light, area, id);
 
+        if (id >= 0){ // If spline light, don't render direct illum from area light
+            continue;
+        }
+
         Vector3 wi = light->position - surf->position;
         float dist = wi.length();
         if (dist < EPSILON)
