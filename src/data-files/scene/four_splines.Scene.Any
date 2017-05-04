@@ -40,7 +40,7 @@
             }; 
             
             frame = CFrame::fromXYZYPRDegrees(0, 1.5, 9, 0, 0, 0 );
-            motionBlurSettings = MotionBlurSettings {
+            motionBlurSettings = MotionBlurSettings { 
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
                 exposureFraction = 0.75; 
@@ -50,28 +50,44 @@
             
             projection = Projection { 
                 farPlaneZ = -200; 
-                fovDegrees = 20;
+                fovDegrees = 25;
                 fovDirection = "VERTICAL"; 
-                nearPlaneZ = -1;
+                nearPlaneZ = -0.1; 
                 pixelOffset = Vector2(0, 0 ); 
             }; 
             
             visualizationScale = 1;
         }; 
-        
+
         cornellBox = VisibleEntity { 
             frame = CFrame::fromXYZYPRDegrees(0, 0, -0.25 ); 
             model = "cornellModel"; 
         }; 
+        
         
         sphere = VisibleEntity { 
             frame = CFrame::fromXYZYPRDegrees(0, 0.399696, 0 ); 
             model = "sphereModel"; 
         }; 
         
-        spline = SplineLight {
+        spline1 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
-            model = "splineModel";
+            model = "splineModel1";
+        };
+
+        spline2 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel2";
+        };
+
+        spline3 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel3";
+        };
+
+        spline4 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel4";
         };
     }; 
     
@@ -108,7 +124,7 @@
     models = { 
         
         cornellModel = ArticulatedModel::Specification { 
-            filename = "assets/CornellBox-Empty-CO.obj"; 
+            filename = "model/CornellBox-Empty-Dark.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
             
@@ -122,11 +138,23 @@
             
         }; 
 
-        splineModel = ArticulatedModel::Specification {
-            filename = "model/spline15.lit";
+        splineModel1 = ArticulatedModel::Specification {
+            filename = "model/spline-set1.lit";
+        };
+
+        splineModel2 = ArticulatedModel::Specification{
+            filename = "model/spline-set2.lit";
+        };
+
+        splineModel3 = ArticulatedModel::Specification{
+            filename = "model/spline-set3.lit";
+        };
+
+        splineModel4 = ArticulatedModel::Specification{
+            filename = "model/spline-set4.lit";
         };
         
     }; 
     
-    name = "Wavy(Photon Beams)"; 
+    name = "Four Splines (Photon Beams)"; 
 } 
