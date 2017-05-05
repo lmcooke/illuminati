@@ -143,6 +143,7 @@ void World::unload()
 {
     m_emit.clear();
     m_geometry.clear();
+    m_splineGeometry.clear();
     m_tris.clear();
     m_splines.clear();
 }

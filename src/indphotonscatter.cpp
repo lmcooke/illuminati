@@ -20,10 +20,10 @@ void IndPhotonScatter::preprocess()
         // we won't start storing rays until after initial bounce - initial bounce = 0
         shootRay(newBeams, m_PSettings->numBeamettesInDir, 1);
         tempBeamettes.append(newBeams);
-        printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings->numBeamettesInDir);
+//        printf("\rBuilding indirect photon beamette map ... %.2f%%", 100.f * i / m_PSettings->numBeamettesInDir);
     }
 
-    printf("\rBuilding indirect photon beamette map ... done       \n");
+//    printf("\rBuilding indirect photon beamette map ... done       \n");
     m_KDTreeBeams->insert(tempBeamettes);
 }
 
