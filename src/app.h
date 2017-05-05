@@ -12,10 +12,6 @@
 #include "photonsettings.h"
 #include "threadpool.h"
 
-//enum RenderMethod { RAY, PATH, PHOTON };
-
-//#include "dirphotonscatter.h"
-
 /** The entry point and main window manager */
 class App : public GApp
 {
@@ -53,34 +49,21 @@ public:
     View view;
 
     void loadSceneDirectory(String directory = m_scenePath);
-    void changeDataDirectory();
 
     void onRender();
     void setScenePath(const char *path);
-    void loadDefaultScene();
-    void loadCustomScene();
-    void loadCS244Scene();
     void saveCanvas();
     FilmSettings getFilmSettings();
+
     void toggleWindowRendering();
     void toggleWindowScenes();
-
-    static bool m_kill;
     void toggleWindowPath();
 
     void setGatherRadius();
 
-    int             pass; // how many passes we have taken for a given pixel
-    int             num_passes;
-    bool            continueRender;
-
-    int m_maxPasses;
-
-    int indRenderCount;
-    int prevIndRenderCount;
-
-    std::unique_ptr<DirPhotonScatter> m_dirBeams;
-    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
+    int                 indRenderCount;
+    int                 prevIndRenderCount;
+    int                 m_maxPasses;
 
 private:
 
@@ -92,15 +75,15 @@ private:
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
 
+    /** Resets render counts, called when settings change */
     void clearParams();
 
 
-    // TODO : temp
-    float m_count;
-
-    int m_passes;
-    shared_ptr<ArticulatedModel> m_model;
-    Array<shared_ptr<Surface>> m_sceneGeometry;
+    World                           m_world;    // The scene being rendered
+    shared_ptr<ArticulatedModel>    m_model;
+    Array<shared_ptr<Surface>>      m_sceneGeometry;
+    static String                   m_scenePath; // path to scene folder
+    static String                   m_defaultScene;
 
     shared_ptr<Texture> m_dirLight;
     shared_ptr<Texture> m_zBuffer;
@@ -110,49 +93,32 @@ private:
     shared_ptr<Texture> m_currentComposite2;
 
     shared_ptr<Framebuffer> m_dirFBO;
-
     shared_ptr<Framebuffer> m_FBO1;
     shared_ptr<Framebuffer> m_FBO2;
-
     shared_ptr<Framebuffer> m_ZFBO;
 
-    // path flags
     shared_ptr<PhotonSettings>         m_PSettings;
 
     Random                 m_random;   // Random number generator
-    int                    m_passType; // Pass type to render
 
-    shared_ptr<GuiWindow> m_windowRendering;
-    shared_ptr<GuiWindow> m_windowScenes;
-    shared_ptr<GuiWindow> m_windowPath;
-//    std::unique_ptr<DirPhotonScatter> m_dirBeams;
-//    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
+    std::unique_ptr<DirPhotonScatter> m_dirBeams;
+    std::unique_ptr<IndPhotonScatter> m_inDirBeams;
     std::unique_ptr<IndRenderer> m_indRenderer;
 
-    static String           m_scenePath; // path to scene folder
-    static String           m_defaultScene;
-    float                   m_scaleFactor; // how much to scale down images by.
-
-    World               m_world;    // The scene being rendered
+    int                 m_passType;
     shared_ptr<Image3>  m_canvas;   // Output buffer for raytrace()
     shared_ptr<Thread>  m_dispatch; // Spawns rendering threads
     float               m_radius; // Current radius of the beams to be rendered
-
+    int                 m_passes;
+    int                 num_passes;
+    bool                continueRender;
     bool                m_updating;
-
-#if 0
-    bool                m_pointLights; // true if these are turned on
-    bool                m_areaLights;
-    bool				m_direct;      // show direct lighting of first intersection point?
-    bool				m_direct_s;      // show SPECULAR reflections of direct lighting of first intersection point?
-    bool				m_indirect;    // show indirect lighting at first intersection point?
-    bool				m_emit;        // show emitted light
-
-    bool                m_fresnelEnabled;
-    bool                m_attenuation;
-#endif
+    float               m_scaleFactor; // how much to scale down images by.
 
     // GUI stuff
+    shared_ptr<GuiWindow> m_windowRendering;
+    shared_ptr<GuiWindow> m_windowScenes;
+    shared_ptr<GuiWindow> m_windowPath;
     GuiDropDownList*    m_ddl;
     GuiDropDownList*    m_renderdl;
     GuiDropDownList*    m_lightdl;

@@ -60,10 +60,6 @@ void ThreadPoolThread::threadMain()
 ThreadPool::ThreadPool(App *parent, int numThreads)
     : m_parent(parent)
 {
-    // ???? This used to do something, I presume
-    //if (numThreads == Thread::numCores())
-    //    numThreads = Thread::numCores();
-
     for (int i = 0; i < numThreads; ++i)
     {
         ThreadPoolThread::Ref thr(new ThreadPoolThread(parent, i, numThreads));
