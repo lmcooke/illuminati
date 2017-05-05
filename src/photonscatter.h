@@ -7,7 +7,7 @@
 class PhotonScatter
 {
 public:
-    PhotonScatter(World * world, PhotonSettings settings);
+    PhotonScatter(World * world, shared_ptr<PhotonSettings> settings);
     ~PhotonScatter();
     void setRadius(float radius);
 
@@ -113,7 +113,7 @@ protected:
 
     World* m_world;
     Random m_random;   // Random number generator
-    PhotonSettings m_PSettings;
+    shared_ptr<PhotonSettings> m_PSettings;
     Array<PhotonBeamette> m_beams;
     float m_radius;
 };

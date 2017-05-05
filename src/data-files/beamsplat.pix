@@ -1,5 +1,6 @@
 #version 410
 #define M_PI 3.1415926535897932384626433832795
+#define Z_EPS 0.0001 // artisinal epsilon for z-buffer
 
 uniform vec2 Resolution;
 uniform sampler2D zDepth;
@@ -11,7 +12,7 @@ in vec2 end_pt;
 in vec2 start_v;
 in vec2 end_v;
 in vec3 power;
-in vec3 pos;
+in vec2 depth;
 
 out vec4 g3d_FragColor;
 
@@ -22,15 +23,12 @@ float project_dist(vec2 a, vec2 b) {
 
 void main(void) {
 
-    //vec2 startpt = start_pt * 0.5 + vec2(0.5);
-    //vec2 endpt = end_pt * 0.5 + vec2(0.5);
     vec2 startpt = start_pt;
     vec2 endpt = end_pt;
-    vec2 coord = (gl_FragCoord.xy ) / Resolution;
+    vec2 coord = gl_FragCoord.xy / Resolution;
 
-    // TODO account for aspect ratio
+    /* account for aspect ratio */
     vec2 res = Resolution / Resolution.xx;
-    //res = vec2(1.0);
     startpt = startpt * res;
     endpt = endpt * res;
     coord = coord * res;
@@ -55,28 +53,23 @@ void main(void) {
     float r = mix(s_rad, e_rad, proj / length(beam));
     float val = length(coord - pt) / r;
 
-    //alternate version using length of perpendiculars projected on beam:
+    // alternate version using length of perpendiculars projected on beam:
     //float val = length(coord - pt) / (mix(s_rad, e_rad, proj / length(e_proj_pt - s_proj_pt)));
 
+    /* power */
     vec3 powr = power;
     // cross-section of beam with radius r should have pi*r^2 = power
     // (this is computed in geometry shader, but use following line to debug)
     //powr = vec3(0.02) / (M_PI * pow(uv.x, 2)); // hardcoded for debugging
     powr *= 0.005;
     val = sin(acos(val));
-    //g3d_FragColor = vec4(val * powr);
 
-    // Check against depth of other stuff on screen;
-    vec3 pos2 = (pos) * 0.5 + vec3(0.5);
+    /* depth */
+    vec2 depth2 = (depth) * 0.5 + vec2(0.5);
+    float lookup = texture(zDepth, gl_FragCoord.xy / Resolution).x;
+    //val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
+    g3d_FragColor = vec4(powr * val, val);
 
-    vec3 lookup = texture(zDepth, gl_FragCoord.xy / Resolution).xyz;
+    //g3d_FragColor = vec4(1.0);
 
-
-    if (lookup.z > pos2.z) {
-        g3d_FragColor = vec4(powr * val, val);
-        //g3d_FragColor = vec4(0.5,0.5,0,0.1);
-    } else {
-        g3d_FragColor = vec4(0);
-    }
-    //g3d_FragColor.a = 0.1;
 }
