@@ -112,24 +112,6 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
  */
 void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep)
 {
-//    float rand = m_random.uniform();
-//    if (rand < (1 - fmax(m_PSettings->attenuation, 0.01)))
-//    {
-//        // Do some Russian Roulette stuff here.
-//        PhotonBeamette beam2 = PhotonBeamette();
-//        beam2.m_start = startPt;
-//        beam2.m_end = beam2.m_start + nextDirection;
-//        beam2.m_splineID = id;
-
-//        // Attenuate over the distance
-//        float dist = length(beam2.m_start - beam2.m_end);
-//        beam2.m_power = power/(1 - fmax(m_PSettings->attenuation, 0.01));
-////        assert(!beam2.m_power.isZero());
-//        curveStep += 1;
-//        shootRayRecursiveCurve(beam2, bounces, curveStep);
-//    }
-
-        // Do some Russian Roulette stuff here.
         PhotonBeamette beam2 = PhotonBeamette();
         beam2.m_start = startPt;
         beam2.m_end = beam2.m_start + nextDirection;
@@ -138,11 +120,8 @@ void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, 
         // Attenuate over the distance
         float dist = length(beam2.m_start - beam2.m_end);
         beam2.m_power = power;
-//        assert(!beam2.m_power.isZero());
         curveStep += 1;
         shootRayRecursiveCurve(beam2, bounces, curveStep);
-
-
 }
 
 /**
@@ -158,7 +137,7 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
     Vector3 wIn = origDirection;
     Vector3 wOut;
     phaseFxn(wIn, wOut);
-    // Do some Russian Roulette stuff here.
+
     PhotonBeamette beam2 = PhotonBeamette();
     beam2.m_start = startPt;
     beam2.m_end = beam2.m_start + wOut;
@@ -181,7 +160,6 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
 
     // A random distance to step forward along the beam.
     float marchDist = m_random.uniform()*getRayMarchDist();
-//    float marchDist = getRayMarchDist();
 
     // Shoot the ray into the world and find the surfel it intersects with.
     float dist = inf();
@@ -195,7 +173,6 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
     if (!hitSurf && dist < inf())
     {
         Vector3 beamEndPt = emittedBeam.m_start + normalize(direction) * marchDist;
-        // TODO wait to calculate and store beam until next is calculated
         Vector3 prev = emittedBeam.m_start;
         Vector3 next = beamEndPt;
         if(bounces > 0)
@@ -215,7 +192,6 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
         if (rng < transProb) {
             // transmission
             scatterForward(beamEndPt, direction, emittedBeam.m_power * fogEmission, bounces);
-//            scatterForward(beamEndPt, direction, emittedBeam.m_power / transProb, bounces);
 
         } else if (rng < transProb + scatterProb) {
             // scattering

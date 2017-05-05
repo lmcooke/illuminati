@@ -404,8 +404,6 @@ void App::gpuProcess(RenderDevice *rd)
 {
     if (m_passes == 0) {
 
-        std::cout << "calculating depth buffer" << std::endl;
-
         rd->pushState(m_ZFBO); {
             rd->setObjectToWorldMatrix(CFrame());
             rd->setColorClearValue(Color4::zero());
@@ -431,12 +429,11 @@ void App::gpuProcess(RenderDevice *rd)
         } rd->popState();
     }
 
-//    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     float calcRadius = m_radius*m_PSettings->radiusScalingFactor;
-    m_radius = max(calcRadius, 0.05f); // TODO: not hardcoded radius scaling
+    m_radius = max(calcRadius, 0.05f);
     m_passes += 1;
 
     // flipFlop FBOs and textures
@@ -445,21 +442,17 @@ void App::gpuProcess(RenderDevice *rd)
     auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
 
 
-    // beam splatting
+
+    /* splat beams */
+
     rd->pushState(m_dirFBO); {
-        //m_world.setMatrices(rd);
         rd->setProjectionAndCameraMatrix(m_world.camera()->projection(),
                                          m_world.camera()->frame());
 
-        // Allocate on CPU
         Array<Vector3>   cpuVertex;
         Array<Vector3>   cpuMajor;
         Array<Vector3>   cpuMinor;
         Array<Color3>    cpuPower;
-
-        Matrix4 mvp = rd->invertYMatrix() *
-                (rd->projectionMatrix() *
-                 rd->cameraToWorldMatrix().inverse().toMatrix4());
 
         for (PhotonBeamette pb : direct_beams) {
             cpuVertex.append(pb.m_start);
@@ -502,21 +495,21 @@ void App::gpuProcess(RenderDevice *rd)
         args.setAttributeArray("Major", gpuMajor);
         args.setAttributeArray("Minor", gpuMinor);
         args.setAttributeArray("Power", gpuPower);
-        args.setUniform("screenHeight", rd->height());
-        args.setUniform("screenWidth", rd->width());
         args.setUniform("zDepth", m_ZFBO->texture(1), Sampler::buffer());
         args.setUniform("Resolution", Vector2(rd->width(), rd->height()));
         args.setUniform("Look", m_world.camera()->frame().lookVector());
-        args.setUniform("MVP", mvp);
-        debugAssertGLOk();
+        args.setUniform("MVP",
+                        rd->invertYMatrix() *
+                        (rd->projectionMatrix() *
+                         rd->cameraToWorldMatrix().inverse().toMatrix4()));
 
         LAUNCH_SHADER("beamsplat.*", args);
-        debugAssertGLOk();
 
     } rd->popState();
     shared_ptr<Texture> indirectTex = Texture::fromImage("Source", m_canvas);
 
-    // composite direct and indirect
+
+    /* composite direct and indirect */
 
     rd->push2D(nextFBO); {
         rd->setColorClearValue(Color4::zero());
@@ -526,14 +519,9 @@ void App::gpuProcess(RenderDevice *rd)
         Args argsComp;
         argsComp.setRect(rd->viewport());
 
-        argsComp.setUniform("continueRendering", indRenderCount > -1);
-
-        argsComp.setUniform("screenHeight", rd->height());
-        argsComp.setUniform("screenWidth", rd->width());
+        argsComp.setUniform("Resolution", Vector2(rd->width(), rd->height()));
         argsComp.setUniform("passNum", m_passes);
-
         argsComp.setUniform("prevDirectLight", prevFBO->texture(2), Sampler::buffer());
-
         argsComp.setUniform("directSample", m_dirFBO->texture(1), Sampler::buffer());
         argsComp.setUniform("indirectSample", indirectTex, Sampler::buffer());
 
@@ -568,25 +556,6 @@ void App::setGatherRadius()
     m_indRenderer->setGatherRadius(m_PSettings->gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
 }
 
-FilmSettings App::getFilmSettings()
-{
-    FilmSettings s;
-    s.setAntialiasingEnabled(false);
-    s.setBloomStrength(0);
-    s.setGamma(2.060);
-    s.setVignetteTopStrength(0);
-    s.setVignetteBottomStrength(0);
-    return s;
-}
-
-void App::changeDataDirectory()
-{
-    Array<String> sceneFiles;
-    FileSystem::getFiles(m_dirName + "*.Any", sceneFiles);
-
-    loadSceneDirectory(m_dirName);
-}
-
 void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
@@ -602,54 +571,13 @@ void App::loadSceneDirectory(String directory)
     }
 }
 
-void App::loadDefaultScene()
-{
-    App::loadSceneDirectory(dataDir + "/scene");
-}
-
-void App::loadCustomScene()
-{
-    String localDataDir = FileSystem::currentDirectory() + "/scene";
-    App::loadSceneDirectory(localDataDir);
-}
-
-void App::loadCS244Scene()
-{
-    App::loadSceneDirectory("/contrib/projects/g3d/cs224/scenes");
-}
-
-void App::updateScenePathLabel()
-{
-    m_scenePathLabel->setCaption("..." + m_scenePath.substr(m_scenePath.length() - 30, m_scenePath.length()));
-}
-
-void App::saveCanvas()
-{
-    time_t rawtime;
-    struct tm *info;
-    char dayHourMinSec [7];
-    time(&rawtime);
-    info = localtime(&rawtime);
-    strftime(dayHourMinSec, 7, "%d%H%M%S",info);
-
-    shared_ptr<Texture> colorBuffer = Texture::createEmpty("Color", renderDevice->width(), renderDevice->height());
-    m_film->exposeAndRender(renderDevice, getFilmSettings(), Texture::fromImage("Source", m_canvas), 0, 0, colorBuffer);
-    colorBuffer->toImage(ImageFormat::RGB8())->save(String("../images/scene-") +
-                                                    "p" + String(std::to_string(pass).c_str()) +
-                                                    "-" + dayHourMinSec + ".png");
-}
-
-
 void App::makeGUI()
 {
-    std::cout << "making GUI" << std::endl;
-
     shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
                                                      debugWindow->theme(),
                                                      Rect2D::xywh(0,0,60,60),
                                                      GuiTheme::NORMAL_WINDOW_STYLE);
-
-    windowMain->setResizable(true);
+    windowMain->setResizable(true); // a lie
 
     GuiPane* paneMain = windowMain->pane();
 
@@ -693,6 +621,4 @@ void App::makeGUI()
     addWidget(windowMain);
 
     loadSceneDirectory(m_scenePath);
-
-    std::cout <<"done making GUI" << std::endl;
 }

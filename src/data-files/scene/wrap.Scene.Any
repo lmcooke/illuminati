@@ -123,10 +123,10 @@
         }; 
 
         splineModel = ArticulatedModel::Specification {
-            filename = "model/spline15.lit";
+            filename = "model/wrap-spline.lit";
         };
         
     }; 
     
-    name = "Wavy(Photon Beams)"; 
+    name = "Wrap (Photon Beams)"; 
 } 

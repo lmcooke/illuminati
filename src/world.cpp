@@ -43,33 +43,11 @@ void World::load(const String &path )
             AnyTableReader props(e);
             m_camera = dynamic_pointer_cast<Camera>(Camera::create(type, NULL, props));
 
-            // TESTING camera movement
-//            const CFrame& cframe = m_camera->frame();
-
-//            float x;
-//            float y;
-//            float z;
-//            float yaw;
-//            float pitch;
-//            float roll;
-
-//            cframe.getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
-
-//            std::cout << "x: " << x << std::endl;
-//            std::cout << "y: " << y << std::endl;
-//            std::cout << "z : " << z << std::endl;
-//            std::cout << "yaw : " << yaw << std::endl;
-//            std::cout << "pitch : " << pitch << std::endl;
-//            std::cout << "roll : " << roll << std::endl;
-
-//            const CFrame newCframe = CFrame::fromXYZYPRDegrees(.5, 0.75, 3, 20, 0, 0 );
-//            m_camera->setFrame(newCframe);
-
             printf("done\n");
         }
         else if (type == "Light")
         {
-//            printf("ignored (only emitters are used as lights in path)\n");
+            printf("ignored (only emitters are used as lights in path)\n");
         }
         else if (type == "VisibleEntity")
         {
@@ -236,7 +214,7 @@ bool World::emitBeam(Random &random, PhotonBeamette &beam, shared_ptr<Surfel> &s
 
     if (!surf) return false;
 
-    if(light->emittedRadiance(dir).isZero()) return false;
+    if (light->emittedRadiance(dir).isZero()) return false;
 
     // Store the beam information
     beam.m_end = surf->position;
@@ -361,10 +339,8 @@ Array<shared_ptr<ArticulatedModel>> World::createSplineModel(const String& str) 
                     diff = normalize (normalize(pt2 - pt1) + normalize(pt3 - pt2) );
                 }
 
-//                CFrame yax = CoordinateFrame::fromYAxis(diff);
                 Matrix4 trans = Matrix4::translation(pt2);
                 Matrix4 rot = CoordinateFrame::fromYAxis(diff).toMatrix4();
-                //Matrix4 yaw = Matrix4::yawDegrees();
                 Matrix4 transrot = trans * rot;
                 for (int a = 0; a < slices; a++) {
                     CPUVertexArray::Vertex& v = vertexArray.next();

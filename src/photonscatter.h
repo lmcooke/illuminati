@@ -1,9 +1,11 @@
 #ifndef PHOTONSCATTER_H
 #define PHOTONSCATTER_H
 #include <G3D/G3DAll.h>
+
 #include "photonbeamette.h"
 #include "world.h"
 #include "photonsettings.h"
+
 class PhotonScatter
 {
 public:

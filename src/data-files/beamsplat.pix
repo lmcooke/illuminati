@@ -4,8 +4,6 @@
 
 uniform vec2 Resolution;
 uniform sampler2D zDepth;
-uniform int screenHeight;
-uniform int screenWidth;
 
 in vec2 start_pt;
 in vec2 end_pt;
@@ -59,8 +57,7 @@ void main(void) {
     /* power */
     vec3 powr = power;
     // cross-section of beam with radius r should have pi*r^2 = power
-    // (this is computed in geometry shader, but use following line to debug)
-    //powr = vec3(0.02) / (M_PI * pow(uv.x, 2)); // hardcoded for debugging
+    // (this is computed in geometry shader)
     powr *= 0.005;
     val = sin(acos(val));
 
