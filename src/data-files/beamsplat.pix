@@ -67,9 +67,7 @@ void main(void) {
     /* depth */
     vec2 depth2 = (depth) * 0.5 + vec2(0.5);
     float lookup = texture(zDepth, gl_FragCoord.xy / Resolution).x;
-    //val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
+    val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
     g3d_FragColor = vec4(powr * val, val);
-
-    //g3d_FragColor = vec4(1.0);
 
 }

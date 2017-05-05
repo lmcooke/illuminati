@@ -92,11 +92,9 @@ private:
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
 
+    /** Resets render counts, called when settings change */
     void clearParams();
 
-
-    // TODO : temp
-    float m_count;
 
     int m_passes;
     shared_ptr<ArticulatedModel> m_model;

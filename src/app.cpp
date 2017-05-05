@@ -1,4 +1,3 @@
-
 #include "app.h"
 
 #ifndef G3D_PATH
@@ -8,39 +7,27 @@
 
 static Random &rng = Random::common();
 
-//RenderMethod App::m_currRenderMethod = PATH;
 String App::m_scenePath = G3D_PATH "/data/scene";
 String App::m_defaultScene = FileSystem::currentDirectory() + "/../data-files/scene/sphere_spline.Scene.Any";
 
 App::App(const GApp::Settings &settings)
     : GApp(settings),
+      m_PSettings(std::make_shared<PhotonSettings>()),
       stage(App::IDLE),
       view(App::DEFAULT),
       continueRender(true),
       m_passType(0),
       m_radius(1),
-      m_PSettings(std::make_shared<PhotonSettings>())
+      num_passes(5000),
+      m_maxPasses(20)
 {
     m_scenePath = FileSystem::currentDirectory() + "/scene";
-
-    num_passes=5000;
-
-    m_PSettings->useDirectDiffuse=true;
-    m_PSettings->useDirectSpecular=true;
-    m_PSettings->useEmitted=true;
-    m_PSettings->useIndirect=true;
-
-    m_PSettings->dofEnabled=false;
-    m_PSettings->dofFocus=-4.8f;
-    m_PSettings->dofLens=0.2f;
-    m_PSettings->dofSamples=5;
 
     m_PSettings->attenuation=0.0; // variable in transmission calculation
     m_PSettings->scattering=0.0; // ratio of scattering to extinction
 
     m_PSettings->noiseBiasRatio=0.0;
     m_PSettings->radiusScalingFactor=0.95;
-    m_PSettings->followRatio=0.0;
 
     m_PSettings->maxDepthScatter=100;
     m_PSettings->maxDepthRender=3;
@@ -50,7 +37,6 @@ App::App(const GApp::Settings &settings)
 
     m_PSettings->directSamples=64;
 
-    m_maxPasses = 20;
     m_PSettings->gatherRadius=0.5;
     m_PSettings->useFinalGather=false;
     m_PSettings->gatherSamples=50;
@@ -71,11 +57,11 @@ void App::buildPhotonMap(bool createRngGen)
     if (createRngGen) {
         std::cout << "createRngGen" <<std::endl;
 
-        // Make the diret photon beams, to be splatted and rendered directly.
+        // Make the direct photon beams, to be splatted and rendered directly.
         m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
 
         // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
-        // Note that it's redunant to here calculate both of these lighting maps, but
+        // Note that it's redundant to here calculate both of these lighting maps, but
         // we'll later be using them at different rates (and also with different scattering properties)
         m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
 
@@ -151,14 +137,13 @@ void App::onInit()
 {
 
     // GPU stuff
-    m_count = 0.f;
 
     m_passes = 0;
     m_dirLight = Texture::createEmpty("App::dirLight", m_framebuffer->width(),
                                       m_framebuffer->height(), ImageFormat::RGBA16());
 
     m_zBuffer = Texture::createEmpty("App::zBuffer", m_framebuffer->width(),
-                                      m_framebuffer->height(), ImageFormat::RGBA16());
+                                      m_framebuffer->height(), ImageFormat::R16());
 
     m_totalDirLight1 = Texture::createEmpty("App::totalDirLight1", m_framebuffer->width(),
                                           m_framebuffer->height(), ImageFormat::RGBA16());
@@ -248,45 +233,55 @@ bool App::onEvent(const GEvent &e)
 
         if (e.key.keysym.sym == 'a') {
             // move cam left
-
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x - 0.25f, y, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
         } else if (e.key.keysym.sym == 'd') {
             // move cam right
-
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x + 0.25f, y, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
-        } else if (e.key.keysym.sym == 'w') {
+        } else if (e.key.keysym.sym == 'z') {
             // move cam up
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .25f, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
-        } else if (e.key.keysym.sym == 's') {
+        } else if (e.key.keysym.sym == 'c') {
             // move cam down
-
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y - .25f, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
-        } else if (e.key.keysym.sym == 'q') {
-            // move cam backward
-
+        } else if (e.key.keysym.sym == 'w') {
+            // move cam forward
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z - .25f, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
-        } else if (e.key.keysym.sym == 'e') {
-            // move cam forward
-
+        } else if (e.key.keysym.sym == 's') {
+            // move cam backward
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z + .25f, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 
+        } else if (e.key.keysym.sym == 'e') {
+            // rotate
+            float a = 2.f;
+            Vector4 pt = Matrix4::yawDegrees(a) * Vector4(x, y, z, 1.0);
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(pt.x, pt.y, pt.z, yaw + a, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            clearParams();
+
+        } else if (e.key.keysym.sym == 'q') {
+           // rotate
+           float a = -2.f;
+           Vector4 pt = Matrix4::yawDegrees(a) * Vector4(x, y, z, 1.0);
+           CFrame newCframe = CFrame::fromXYZYPRDegrees(pt.x, pt.y, pt.z, yaw + a, pitch, roll);
+           m_world.setCameraCframe(newCframe);
+           clearParams();
         }
         return true;
     }
@@ -409,6 +404,8 @@ void App::gpuProcess(RenderDevice *rd)
 {
     if (m_passes == 0) {
 
+        std::cout << "calculating depth buffer" << std::endl;
+
         rd->pushState(m_ZFBO); {
             rd->setObjectToWorldMatrix(CFrame());
             rd->setColorClearValue(Color4::zero());
@@ -438,7 +435,6 @@ void App::gpuProcess(RenderDevice *rd)
     Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
-    m_count += .001;
     float calcRadius = m_radius*m_PSettings->radiusScalingFactor;
     m_radius = max(calcRadius, 0.05f); // TODO: not hardcoded radius scaling
     m_passes += 1;
@@ -447,12 +443,6 @@ void App::gpuProcess(RenderDevice *rd)
     bool isEvenPass = m_passes % 2 == 0;
     auto prevFBO = isEvenPass ? m_FBO1 : m_FBO2;
     auto nextFBO = isEvenPass ? m_FBO2 : m_FBO1;
-
-    // turns on and off beam movement so we can visualize GPU averaging
-    bool testGPUprogression = false;
-
-    // print camera information
-
 
 
     // beam splatting
@@ -472,13 +462,8 @@ void App::gpuProcess(RenderDevice *rd)
                  rd->cameraToWorldMatrix().inverse().toMatrix4());
 
         for (PhotonBeamette pb : direct_beams) {
-            if (testGPUprogression) {
-                cpuVertex.append(pb.m_start + Vector3(0.0, m_count/10.0, 0.0));
-                cpuVertex.append(pb.m_end + Vector3(0.0, m_count/10.0, 0.0));
-            } else {
-                cpuVertex.append(pb.m_start);
-                cpuVertex.append(pb.m_end);
-            }
+            cpuVertex.append(pb.m_start);
+            cpuVertex.append(pb.m_end);
 
             cpuMajor.append(pb.m_start_major);
             cpuMinor.append(pb.m_start_minor);
@@ -606,9 +591,6 @@ void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
 
-
-//    updateScenePathLabel();
-
     m_ddl->clear();
 
     Array<String> sceneFiles;
@@ -673,10 +655,7 @@ void App::makeGUI()
 
     // INFO
     GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-//    infoPane->addButton("Save Image", this, &App::saveCanvas);
-//    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
-    infoPane->addLabel("WASD to pan. Q/E to zoom.");
-    infoPane->addLabel("Beam settings can be adjusted interactively.");
+    infoPane->addLabel("Controls: WASD, QE.");
     infoPane->pack();
 
     // SCENE
@@ -685,20 +664,10 @@ void App::makeGUI()
     // SCENE
     m_ddl = scenesPane->addDropDownList("Scenes");
 
-//    scenesPane->addLabel("Scene Directory: ");
-//    m_scenePathLabel = scenesPane->addLabel("");
-//    scenesPane->addTextBox("Directory:", &m_dirName);
-//    scenesPane->addButton("Change Directory", this, &App::changeDataDirectory);
-
-//    scenesPane->addLabel("Scene Folders");
-//    scenesPane->addButton("Demo Scenes", this,  &App::loadCustomScene);
-
     scenesPane->addLabel("View");
     scenesPane->addRadioButton("Default", App::DEFAULT, &view);
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
     scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
-//    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-//    scenesPane->addCheckBox("View Spline Geo", &m_PSettings->renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
