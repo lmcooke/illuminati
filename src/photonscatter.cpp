@@ -263,6 +263,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
 
         calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
 
+
         float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
         float remainingProb = 1.f - extinctionProb;
         float scatterProb = remainingProb * m_PSettings->scattering;
