@@ -4,7 +4,6 @@ DirPhotonScatter::DirPhotonScatter(World * world, shared_ptr<PhotonSettings> set
     : PhotonScatter(world, settings),
       m_beams()
 {
-    makeBeams();
 }
 
 DirPhotonScatter::~DirPhotonScatter()

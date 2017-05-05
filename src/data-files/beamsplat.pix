@@ -4,8 +4,6 @@
 
 uniform vec2 Resolution;
 uniform sampler2D zDepth;
-uniform int screenHeight;
-uniform int screenWidth;
 
 in vec2 start_pt;
 in vec2 end_pt;
@@ -59,17 +57,14 @@ void main(void) {
     /* power */
     vec3 powr = power;
     // cross-section of beam with radius r should have pi*r^2 = power
-    // (this is computed in geometry shader, but use following line to debug)
-    //powr = vec3(0.02) / (M_PI * pow(uv.x, 2)); // hardcoded for debugging
+    // (this is computed in geometry shader)
     powr *= 0.005;
     val = sin(acos(val));
 
     /* depth */
     vec2 depth2 = (depth) * 0.5 + vec2(0.5);
     float lookup = texture(zDepth, gl_FragCoord.xy / Resolution).x;
-    //val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
+    val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
     g3d_FragColor = vec4(powr * val, val);
-
-    //g3d_FragColor = vec4(1.0);
 
 }
