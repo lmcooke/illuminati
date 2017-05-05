@@ -67,11 +67,16 @@
         spline1 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
             model = "splineModel1";
-        };
+        }; 
 
         spline2 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
             model = "splineModel2";
+        };
+
+        spline3 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel3";
         }
 
     }; 
@@ -132,7 +137,11 @@
         };
 
         splineModel2 = ArticulatedModel::Specification{
-            filename = "model/spline5.lit";
+            filename = "model/splines/flashLightBeam2_1.lit";
+        };
+
+        splineModel3 = ArticulatedModel::Specification{
+            filename = "model/splines/flashLightBeam3_1.lit";
         }
         
     }; 

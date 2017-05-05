@@ -83,10 +83,10 @@ Kd 0.50 0.50 0.50
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
-Ks 0.50 0.50 0.50
+Ks 0 0 0
 newmtl cornellBox_for_blueno1_1:backWall1
 illum 4
-Kd 0.16 0.13 0.43
+Kd 0.43 0.43 0.43
 Ka 0.40 0.40 0.40
 Tf 1.00 1.00 1.00
 Ni 1.00
@@ -124,7 +124,7 @@ Tf 1.00 1.00 1.00
 Ni 1.50
 Ks 0.00 0.00 0.00
 Ns 10.00
-Ke 5 5 5
+Ke 4 8 15
 newmtl cornellBox_for_blueno1_1:rightWall1
 illum 4
 Kd 0.16 0.13 0.43
@@ -140,7 +140,7 @@ Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.50 0.50 0.50
-Ke 1 1 1
+Ke 1 .25 0
 newmtl flashLight_SHDSG
 illum 4
 Kd 0.50 0.50 0.50
@@ -167,4 +167,4 @@ Kd 0.50 0.50 0.50
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
-Ks 0.50 0.50 0.50
+Ks 0 0 0
