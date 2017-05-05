@@ -556,25 +556,6 @@ void App::setGatherRadius()
     m_indRenderer->setGatherRadius(m_PSettings->gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
 }
 
-FilmSettings App::getFilmSettings()
-{
-    FilmSettings s;
-    s.setAntialiasingEnabled(false);
-    s.setBloomStrength(0);
-    s.setGamma(2.060);
-    s.setVignetteTopStrength(0);
-    s.setVignetteBottomStrength(0);
-    return s;
-}
-
-void App::changeDataDirectory()
-{
-    Array<String> sceneFiles;
-    FileSystem::getFiles(m_dirName + "*.Any", sceneFiles);
-
-    loadSceneDirectory(m_dirName);
-}
-
 void App::loadSceneDirectory(String directory)
 {
     setScenePath(directory.c_str());
@@ -590,54 +571,13 @@ void App::loadSceneDirectory(String directory)
     }
 }
 
-void App::loadDefaultScene()
-{
-    App::loadSceneDirectory(dataDir + "/scene");
-}
-
-void App::loadCustomScene()
-{
-    String localDataDir = FileSystem::currentDirectory() + "/scene";
-    App::loadSceneDirectory(localDataDir);
-}
-
-void App::loadCS244Scene()
-{
-    App::loadSceneDirectory("/contrib/projects/g3d/cs224/scenes");
-}
-
-void App::updateScenePathLabel()
-{
-    m_scenePathLabel->setCaption("..." + m_scenePath.substr(m_scenePath.length() - 30, m_scenePath.length()));
-}
-
-void App::saveCanvas()
-{
-    time_t rawtime;
-    struct tm *info;
-    char dayHourMinSec [7];
-    time(&rawtime);
-    info = localtime(&rawtime);
-    strftime(dayHourMinSec, 7, "%d%H%M%S",info);
-
-    shared_ptr<Texture> colorBuffer = Texture::createEmpty("Color", renderDevice->width(), renderDevice->height());
-    m_film->exposeAndRender(renderDevice, getFilmSettings(), Texture::fromImage("Source", m_canvas), 0, 0, colorBuffer);
-    colorBuffer->toImage(ImageFormat::RGB8())->save(String("../images/scene-") +
-                                                    "p" + String(std::to_string(pass).c_str()) +
-                                                    "-" + dayHourMinSec + ".png");
-}
-
-
 void App::makeGUI()
 {
-    std::cout << "making GUI" << std::endl;
-
     shared_ptr<GuiWindow> windowMain = GuiWindow::create("Main",
                                                      debugWindow->theme(),
                                                      Rect2D::xywh(0,0,60,60),
                                                      GuiTheme::NORMAL_WINDOW_STYLE);
-
-    windowMain->setResizable(true);
+    windowMain->setResizable(true); // a lie
 
     GuiPane* paneMain = windowMain->pane();
 
@@ -681,6 +621,4 @@ void App::makeGUI()
     addWidget(windowMain);
 
     loadSceneDirectory(m_scenePath);
-
-    std::cout <<"done making GUI" << std::endl;
 }
