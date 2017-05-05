@@ -60,7 +60,7 @@
         }; 
         
         cauldron = VisibleEntity { 
-            frame = Vector3(0, 0, 0 ); 
+            frame = Vector3(0, 1, 0 ); 
             model = "cauldronModel"; 
         }; 
         
@@ -168,36 +168,37 @@
     
     models = { 
         cauldronModel = ArticulatedModel::Specification { 
-            filename = "../model/cracks.obj"; 
+            filename = "model/cracksv2.obj"; 
             preprocess = { 
-                setMaterial(all(), Color3(1, 1, 1 ) ); 
+                setMaterial(all(), Color3(0.1, 0.1, 0.1 ) ); 
                 transformGeometry(all(), Matrix4::scale(0.03, 0.03, 0.03 ) ) }; 
             
         }; 
         
         cornellModel = ArticulatedModel::Specification { 
-            filename = "../model/CornellBox-Empty-CO.obj"; 
+            filename = "model/CornellBox-Empty-CO.obj"; 
             preprocess = { 
-                transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
+                setMaterial(all(), Color3(0.1, 0.1, 0.1 ) ); 
+                transformGeometry(all(), Matrix4::scale(1.2, 1.2, 1.2 ) ) }; 
             
         }; 
         
         floorLight = ArticulatedModel::Specification { 
-            filename = "../model/floorLight.obj"; 
+            filename = "model/crackLight.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(0.02, 0.02, 0.02 ) ) }; 
             
         }; 
         
         lightRig = ArticulatedModel::Specification { 
-            filename = "../model/lights.obj"; 
+            filename = "model/lights.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
             
         }; 
         
         mirrorBall = ArticulatedModel::Specification { 
-            filename = "../model/sphere.obj"; 
+            filename = "model/sphere.obj"; 
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
             

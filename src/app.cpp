@@ -674,8 +674,10 @@ void App::makeGUI()
 
     // INFO
     GuiPane* infoPane = paneMain->addPane("Info", GuiTheme::ORNATE_PANE_STYLE);
-    infoPane->addButton("Save Image", this, &App::saveCanvas);
+//    infoPane->addButton("Save Image", this, &App::saveCanvas);
 //    infoPane->addButton("Exit", [this]() { m_endProgram = true; });
+    infoPane->addLabel("WASD to pan. Q/E to zoom.");
+    infoPane->addLabel("Beam settings can be adjusted interactively.");
     infoPane->pack();
 
     // SCENE
@@ -703,29 +705,28 @@ void App::makeGUI()
     renderButton->setFocused(true);
     scenesPane->pack();
 
-    // RENDERING
-    GuiPane* settingsPane = paneMain->addPane("Settings and Lights", GuiTheme::ORNATE_PANE_STYLE);
+    GuiPane* settingsPane = paneMain->addPane("Beam Settings", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
     settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
 //    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-
-    // Lights
-//    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
-//    m_lightdl = settingsPane->addDropDownList("Emitter");
-//    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
     settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
-    settingsPane->addCheckBox("Use Final Gather", &m_PSettings.useFinalGather);
-    settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings.gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    // Rendering
+    GuiPane* renderPane = paneMain->addPane("Render Settings", GuiTheme::ORNATE_PANE_STYLE);
+//    m_lightdl = settingsPane->addDropDownList("Emitter");
+//    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
+
+    renderPane->addCheckBox("Use Final Gather", &m_PSettings.useFinalGather);
+    renderPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings.gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");
 //    lightsPane->addLabel("Attenuation");
 //    lightsPane->pack();
-    settingsPane->pack();
+    renderPane->pack();
 
     paneMain->pack();
     windowMain->pack();
