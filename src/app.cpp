@@ -291,6 +291,14 @@ bool App::onEvent(const GEvent &e)
             indRenderCount = -1;
             prevIndRenderCount = -1;
             m_passes = 0;
+        } else if (e.key.keysym.sym == 'z') {
+            // pitch cam
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x,y,z, yaw, pitch + 5.f, roll);
+            m_world.setCameraCframe(newCframe);
+            indRenderCount = -1;
+            prevIndRenderCount = -1;
+            m_passes = 0;
+
         }
         return true;
     }
