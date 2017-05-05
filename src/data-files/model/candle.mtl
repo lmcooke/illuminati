@@ -1,0 +1,14 @@
+newmtl blinn2SG
+illum 4
+Kd 0.72 0.51 0.18
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.10 0.10 0.10
+Ns 0.06
+newmtl emissor_shdr_G
+illum 4
+Kd 0.50 0.08 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
