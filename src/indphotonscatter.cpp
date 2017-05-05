@@ -4,7 +4,6 @@ IndPhotonScatter::IndPhotonScatter(World * world, shared_ptr<PhotonSettings> set
     : PhotonScatter(world, settings),
       m_KDTreeBeams(std::make_shared<G3D::KDTree<PhotonBeamette>>())
 {
-    preprocess();
 }
 
 IndPhotonScatter::~IndPhotonScatter()
