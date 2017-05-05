@@ -1,6 +1,6 @@
 #include "photonscatter.h"
 
-PhotonScatter::PhotonScatter(World * world, PhotonSettings settings):
+PhotonScatter::PhotonScatter(World * world, shared_ptr<PhotonSettings> settings):
     m_world(world),
     m_PSettings(settings),
     m_radius(1)
@@ -17,7 +17,7 @@ void PhotonScatter::shootRay(Array<PhotonBeamette> &beams, int numBeams, int ini
     // Emit a photon.
     PhotonBeamette beam;
     shared_ptr<Surfel> surfel;
-    if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings.beamSpread))
+    if (m_world->emitBeam(m_random, beam, surfel, numBeams, m_PSettings->beamSpread))
     {
         // Bounce the beam in the scene and insert the bounced beam into the map.
         if (beam.m_splineID >= 0){
@@ -113,7 +113,7 @@ void PhotonScatter::scatterForward(Vector3 startPt, Vector3 origDirection, Color
 void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, Color3 power, int id, int bounces, int curveStep)
 {
 //    float rand = m_random.uniform();
-//    if (rand < (1 - fmax(m_PSettings.attenuation, 0.01)))
+//    if (rand < (1 - fmax(m_PSettings->attenuation, 0.01)))
 //    {
 //        // Do some Russian Roulette stuff here.
 //        PhotonBeamette beam2 = PhotonBeamette();
@@ -123,7 +123,7 @@ void PhotonScatter::scatterForwardCurve(Vector3 startPt, Vector3 nextDirection, 
 
 //        // Attenuate over the distance
 //        float dist = length(beam2.m_start - beam2.m_end);
-//        beam2.m_power = power/(1 - fmax(m_PSettings.attenuation, 0.01));
+//        beam2.m_power = power/(1 - fmax(m_PSettings->attenuation, 0.01));
 ////        assert(!beam2.m_power.isZero());
 //        curveStep += 1;
 //        shootRayRecursiveCurve(beam2, bounces, curveStep);
@@ -175,7 +175,7 @@ void PhotonScatter::scatterIntoFog(Vector3 startPt, Vector3 origDirection, Color
 void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bounces)
 {
     // Terminate recursion
-    if (bounces > m_PSettings.maxDepthScatter) {
+    if (bounces > m_PSettings->maxDepthScatter) {
         return;
     }
 
@@ -205,7 +205,7 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
 
         float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
         float remainingProb = 1.f - extinctionProb;
-        float scatterProb = remainingProb * m_PSettings.scattering;
+        float scatterProb = remainingProb * m_PSettings->scattering;
         float transProb = remainingProb - scatterProb;
 
         float fogEmission = 1.02f;
@@ -235,7 +235,7 @@ void PhotonScatter::shootRayRecursiveStraight(PhotonBeamette emittedBeam, int bo
 void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounces, int curveStep)
 {
     // Terminate recursion
-    if (bounces > m_PSettings.maxDepthScatter) {
+    if (bounces > m_PSettings->maxDepthScatter) {
         return;
     }
 
@@ -256,7 +256,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
     curveDirection = (normalize(endPoint - emittedBeam.m_start) + normalize(spline[curveStep+2].xyz() - endPoint))/2.f;
 
     // Generate random next point based on radius
-    float jitter = endRad * m_PSettings.beamSpread;
+    float jitter = endRad * m_PSettings->beamSpread;
 
     // Generate random vector in xz plane about y axis
     // Then rotate to be oriented about curveDirect axis
@@ -289,7 +289,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
 
         float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
         float remainingProb = 1.f - extinctionProb;
-        float scatterProb = remainingProb * m_PSettings.scattering;
+        float scatterProb = remainingProb * m_PSettings->scattering;
         float transProb = remainingProb - scatterProb;
 
         float rng = m_random.uniform();
@@ -376,5 +376,5 @@ void PhotonScatter::setRadius(float radius)
 // returns sum of 1 - (scattering + transmission)
 float PhotonScatter::getExtinctionProbability(float marchDist)
 {
-    return  1.f - (exp(-1.f * marchDist * m_PSettings.attenuation));
+    return  1.f - (exp(-1.f * marchDist * m_PSettings->attenuation));
 }

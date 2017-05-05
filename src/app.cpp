@@ -18,44 +18,45 @@ App::App(const GApp::Settings &settings)
       view(App::DEFAULT),
       continueRender(true),
       m_passType(0),
-      m_radius(1)
+      m_radius(1),
+      m_PSettings(std::make_shared<PhotonSettings>())
 {
     m_scenePath = FileSystem::currentDirectory() + "/scene";
 
     num_passes=5000;
 
-    m_PSettings.useDirectDiffuse=true;
-    m_PSettings.useDirectSpecular=true;
-    m_PSettings.useEmitted=true;
-    m_PSettings.useIndirect=true;
+    m_PSettings->useDirectDiffuse=true;
+    m_PSettings->useDirectSpecular=true;
+    m_PSettings->useEmitted=true;
+    m_PSettings->useIndirect=true;
 
-    m_PSettings.dofEnabled=false;
-    m_PSettings.dofFocus=-4.8f;
-    m_PSettings.dofLens=0.2f;
-    m_PSettings.dofSamples=5;
+    m_PSettings->dofEnabled=false;
+    m_PSettings->dofFocus=-4.8f;
+    m_PSettings->dofLens=0.2f;
+    m_PSettings->dofSamples=5;
 
-    m_PSettings.attenuation=0.0; // variable in transmission calculation
-    m_PSettings.scattering=0.0; // ratio of scattering to extinction
+    m_PSettings->attenuation=0.0; // variable in transmission calculation
+    m_PSettings->scattering=0.0; // ratio of scattering to extinction
 
-    m_PSettings.noiseBiasRatio=0.0;
-    m_PSettings.radiusScalingFactor=0.95;
-    m_PSettings.followRatio=0.0;
+    m_PSettings->noiseBiasRatio=0.0;
+    m_PSettings->radiusScalingFactor=0.95;
+    m_PSettings->followRatio=0.0;
 
-    m_PSettings.maxDepthScatter=100;
-    m_PSettings.maxDepthRender=3;
-    m_PSettings.epsilon=0.0001;
-    m_PSettings.numBeamettesDir=10;
-    m_PSettings.numBeamettesInDir=2000;
+    m_PSettings->maxDepthScatter=100;
+    m_PSettings->maxDepthRender=3;
+    m_PSettings->epsilon=0.0001;
+    m_PSettings->numBeamettesDir=10;
+    m_PSettings->numBeamettesInDir=2000;
 
-    m_PSettings.directSamples=64;
+    m_PSettings->directSamples=64;
 
     m_maxPasses = 20;
-    m_PSettings.gatherRadius=0.5;
-    m_PSettings.useFinalGather=false;
-    m_PSettings.gatherSamples=50;
-    m_PSettings.dist = .5;
-    m_PSettings.beamIntensity = 1;
-    m_PSettings.beamSpread = 1;
+    m_PSettings->gatherRadius=0.5;
+    m_PSettings->useFinalGather=false;
+    m_PSettings->gatherSamples=50;
+    m_PSettings->dist = .5;
+    m_PSettings->beamIntensity = 1;
+    m_PSettings->beamSpread = 1;
 }
 
 App::~App() { }
@@ -101,10 +102,10 @@ void App::traceCallback(int x, int y)
         // Choose a ray, shoot it into the scean
         Ray ray = m_world.camera()->worldRay(x + dx, y + dy, m_canvas->rect2DBounds());
         if (indRenderCount == 0) {
-            m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings.maxDepthScatter));
+            m_canvas->set(x, y, m_indRenderer->trace(ray, m_PSettings->maxDepthScatter));
         } else {
             Radiance3 prev = m_canvas->get(x,y);
-            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings.maxDepthScatter);
+            Radiance3 sample = m_indRenderer->trace(ray, m_PSettings->maxDepthScatter);
 
             float indCountFl = static_cast<float>(indRenderCount);
 
@@ -219,9 +220,19 @@ void App::onInit()
     developerWindow->setResizable(true);
 }
 
+void App::clearParams() {
+    m_updating = true;
+    indRenderCount = -1;
+    prevIndRenderCount = -1;
+    m_passes = 0;
+}
+
 bool App::onEvent(const GEvent &e)
 {
-    if (GApp::onEvent(e)) { return true; }
+    if (e.type == GEventType::GUI_CHANGE) {
+        clearParams();
+        return true;
+    }
 
     if (e.type == GEventType::KEY_DOWN) {
 
@@ -238,59 +249,44 @@ bool App::onEvent(const GEvent &e)
         if (e.key.keysym.sym == 'a') {
             // move cam left
 
-            CFrame newCframe = CFrame::fromXYZYPRDegrees(x + 0.25f, y, z, yaw, pitch, roll);
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x - 0.25f, y, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
-
+            clearParams();
 
         } else if (e.key.keysym.sym == 'd') {
             // move cam right
 
-            CFrame newCframe = CFrame::fromXYZYPRDegrees(x - 0.25f, y, z, yaw, pitch, roll);
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x + 0.25f, y, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
-
+            clearParams();
 
         } else if (e.key.keysym.sym == 'w') {
             // move cam up
-            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y - .25f, z, yaw, pitch, roll);
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .25f, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
-
+            clearParams();
 
         } else if (e.key.keysym.sym == 's') {
             // move cam down
 
-            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y + .25f, z, yaw, pitch, roll);
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y - .25f, z, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
-
+            clearParams();
 
         } else if (e.key.keysym.sym == 'q') {
             // move cam backward
 
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z - .25f, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
+            clearParams();
 
         } else if (e.key.keysym.sym == 'e') {
             // move cam forward
 
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z + .25f, yaw, pitch, roll);
             m_world.setCameraCframe(newCframe);
-            indRenderCount = -1;
-            prevIndRenderCount = -1;
-            m_passes = 0;
+            clearParams();
+
         }
         return true;
     }
@@ -411,36 +407,39 @@ void App::onGraphics3D(RenderDevice *rd, Array<shared_ptr<Surface> > &surface3D)
 
 void App::gpuProcess(RenderDevice *rd)
 {
-    rd->pushState(m_ZFBO); {
-        rd->setObjectToWorldMatrix(CFrame());
-        rd->setColorClearValue(Color4::zero());
-        rd->clear();
-        rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
-        rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+    if (m_passes == 0) {
 
-        Args args;
-        args.setPrimitiveType(PrimitiveType::TRIANGLES);
-        Array<shared_ptr<Surface>> geometry = m_world.geometry();
-        CFrame cframe;
-        for (int i=0; i<geometry.size(); i++)
-        {
-            const shared_ptr<UniversalSurface>& surface = dynamic_pointer_cast<UniversalSurface>(geometry[i]);
-            if (notNull(surface))
+        rd->pushState(m_ZFBO); {
+            rd->setObjectToWorldMatrix(CFrame());
+            rd->setColorClearValue(Color4::zero());
+            rd->clear();
+            rd->setBlendFunc(RenderDevice::BLEND_ONE, RenderDevice::BLEND_ONE);
+            rd->setProjectionAndCameraMatrix(m_world.camera()->projection(), m_world.camera()->frame());
+
+            Args args;
+            args.setPrimitiveType(PrimitiveType::TRIANGLES);
+            Array<shared_ptr<Surface>> geometry = m_world.geometry();
+            CFrame cframe;
+            for (int i=0; i<geometry.size(); i++)
             {
-                surface->getCoordinateFrame(cframe);
-                args.setUniform("MVP", rd->invertYMatrix()*rd->projectionMatrix()*rd->cameraToWorldMatrix().inverse() * cframe);
-                surface->gpuGeom()->setShaderArgs(args);
-                LAUNCH_SHADER("zBuff.*", args);
+                const shared_ptr<UniversalSurface>& surface = dynamic_pointer_cast<UniversalSurface>(geometry[i]);
+                if (notNull(surface))
+                {
+                    surface->getCoordinateFrame(cframe);
+                    args.setUniform("MVP", rd->invertYMatrix()*rd->projectionMatrix()*rd->cameraToWorldMatrix().inverse() * cframe);
+                    surface->gpuGeom()->setShaderArgs(args);
+                    LAUNCH_SHADER("zBuff.*", args);
+                }
             }
-        }
-    } rd->popState();
+        } rd->popState();
+    }
 
 //    Array<PhotonBeamette> direct_beams = m_world.visualizeSplines();
     Array<PhotonBeamette> direct_beams = Array<PhotonBeamette>();
     direct_beams.append(m_dirBeams->getBeams());
 
     m_count += .001;
-    float calcRadius = m_radius*m_PSettings.radiusScalingFactor;
+    float calcRadius = m_radius*m_PSettings->radiusScalingFactor;
     m_radius = max(calcRadius, 0.05f); // TODO: not hardcoded radius scaling
     m_passes += 1;
 
@@ -485,8 +484,8 @@ void App::gpuProcess(RenderDevice *rd)
             cpuMinor.append(pb.m_start_minor);
             cpuMajor.append(pb.m_end_major);
             cpuMinor.append(pb.m_end_minor);
-            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
-            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings.beamIntensity, 2));
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings->beamIntensity, 2));
+            cpuPower.append(pb.m_power/direct_beams.size() * pow(m_PSettings->beamIntensity, 2));
         }
 
         rd->setObjectToWorldMatrix(CFrame());
@@ -581,7 +580,7 @@ void App::setGatherRadius()
     // the closer this value is to 1, the slower the radius will decrease.
     float radReductionRate = 1.08f;
 
-    m_indRenderer->setGatherRadius(m_PSettings.gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
+    m_indRenderer->setGatherRadius(m_PSettings->gatherRadius / pow(radReductionRate, (indRenderCount - 1)));
 }
 
 FilmSettings App::getFilmSettings()
@@ -697,7 +696,7 @@ void App::makeGUI()
     scenesPane->addRadioButton("Photon Beams (Dir)", App::DIRBEAMS, &view);
     scenesPane->addRadioButton("Photon Beams (Indir)", App::INDBEAMS, &view);
 //    scenesPane->addRadioButton("Splatting (temp)", App::SPLAT, &view);
-//    scenesPane->addCheckBox("View Spline Geo", &m_PSettings.renderSplines);
+//    scenesPane->addCheckBox("View Spline Geo", &m_PSettings->renderSplines);
 
     GuiButton* renderButton = scenesPane->addButton("Render", this, &App::onRender);
     renderButton->setFocused(true);
@@ -706,20 +705,20 @@ void App::makeGUI()
     // RENDERING
     GuiPane* settingsPane = paneMain->addPane("Settings and Lights", GuiTheme::ORNATE_PANE_STYLE);
 //    settingsPane->addNumberBox(GuiText("Passes"), &num_passes, GuiText(""), GuiTheme::NO_SLIDER, 1, 10000, 0);
-    settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings.scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings.attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings.beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
-//    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings.noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
-    settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings.radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Scattering"), &m_PSettings->scattering, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Attenuation"), &m_PSettings->attenuation, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings->beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 7.0f, 0.05f);
+//    settingsPane->addNumberBox(GuiText("Noise:Bias"), &m_PSettings->noiseBiasRatio, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings->radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
     // Lights
 //    GuiPane* lightsPane = paneMain->addPane("Lights", GuiTheme::ORNATE_PANE_STYLE);
 //    m_lightdl = settingsPane->addDropDownList("Emitter");
-//    settingsPane->addCheckBox("Enable", &m_PSettings.lightEnabled);
-    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings.beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
+//    settingsPane->addCheckBox("Enable", &m_PSettings->lightEnabled);
+    settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings->beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
 
-    settingsPane->addCheckBox("Use Final Gather", &m_PSettings.useFinalGather);
-    settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings.gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
+    settingsPane->addCheckBox("Use Final Gather", &m_PSettings->useFinalGather);
+    settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings->gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 //    lightsPane->addLabel("Beam radius");
 //    lightsPane->addNumberBox(GuiText(""), &m_ptsettings.dofLens, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 100.0f, 1.0f);
 //    lightsPane->addLabel("Scattering");

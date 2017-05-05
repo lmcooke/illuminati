@@ -7,7 +7,7 @@ class DirPhotonScatter
     : public PhotonScatter
 {
 public:
-    DirPhotonScatter(World * world, PhotonSettings settings);
+    DirPhotonScatter(World * world, shared_ptr<PhotonSettings> settings);
     ~DirPhotonScatter();
     void preprocess();
     void phaseFxn(Vector3 wi, Vector3 &wo);
