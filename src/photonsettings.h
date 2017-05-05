@@ -4,13 +4,6 @@ class PhotonSettings
 {
 public:
 
-    // all light contributions assumed to be area lights
-    bool useDirectDiffuse;
-    bool useDirectSpecular;
-    bool useIndirect;
-    bool useEmitted;
-//    bool useSkyMap;
-
     int superSamples; // for say, stratified sampling
     float attenuation; // refracted path absorption through non-vacuum spaces
     float scattering;
@@ -20,12 +13,6 @@ public:
     bool renderSplines;
 
     bool lightEnabled; // TODO: assume one light source for now
-
-    bool dofEnabled;
-    float dofFocus;
-    float dofLens;
-    int dofSamples;
-    float followRatio;
 
     // Recursion depth for photon scattering.
     int maxDepthScatter;

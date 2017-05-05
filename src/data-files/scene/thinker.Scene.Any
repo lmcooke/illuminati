@@ -2,6 +2,11 @@
 /* -*- c++ -*- */
 { 
     entities = { 
+        box = VisibleEntity { 
+            frame = Vector3(0, 0, 0 ); 
+            model = "cornellModel"; 
+        }; 
+        
         camera = Camera { 
             depthOfFieldSettings = DepthOfFieldSettings { 
                 enabled = false; 
@@ -39,7 +44,7 @@
                 vignetteTopStrength = 0.5; 
             }; 
             
-            frame = CFrame::fromXYZYPRDegrees(0, 1, 6 ); 
+            frame = CFrame::fromXYZYPRDegrees(0, 1, 6, 0, 0, 0 ); 
             motionBlurSettings = MotionBlurSettings { 
                 cameraMotionInfluence = 0.5; 
                 enabled = false; 
@@ -57,16 +62,6 @@
             }; 
             
             visualizationScale = 1; 
-        }; 
-        
-        cracks = VisibleEntity { 
-            frame = Vector3(0, 0, 0 ); 
-            model = "cracksModel"; 
-        }; 
-        
-        floorLight = VisibleEntity { 
-            frame = CFrame::fromXYZYPRDegrees(0, -0.1, 0 ); 
-            model = "floorLight"; 
         }; 
         
         light1 = Light { 
@@ -129,6 +124,50 @@
             type = "SPOT"; 
         }; 
         
+        thinker = VisibleEntity { 
+            frame = Vector3(0, 0, 0 ); 
+            model = "thinkerModel"; 
+        }; 
+
+        cube = VisibleEntity { 
+            frame = Vector3(0, 0, 0 ); 
+            model = "rockModel"; 
+        }; 
+
+        spline1 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel1";
+        };
+
+        spline2 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel2";
+        };
+
+
+        spline3 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel3";
+        };
+
+
+        spline4 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel4";
+        };
+
+
+        spline5 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel5";
+        };
+
+        spline6 = SplineLight {
+            frame = CFrame::fromXYZPRDegrees(0, 0, 0);
+            model = "splineModel6";
+        };
+
+        
     }; 
     
     lightingEnvironment = LightingEnvironment { 
@@ -163,65 +202,55 @@
     
     models = { 
         cornellModel = ArticulatedModel::Specification { 
-            filename = "../model/CornellBox-Empty-CO.obj"; 
+            filename = "model/CornellBox-Empty-Dark.obj"; 
             preprocess = { 
+                setMaterial(all(), Color3(0.27451, 0.509804, 0.705882));
                 transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
             
         }; 
-        
-        cracksModel = ArticulatedModel::Specification { 
-            filename = "../model/cracks.obj"; 
+
+        thinkerModel = ArticulatedModel::Specification { 
+            filename = "model/mariav2.obj"; 
+            preprocess = { 
+                setMaterial(all(), Color3(0.2, 0.2, 0.2) ); 
+                transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
+            
+        }; 
+
+
+        rockModel = ArticulatedModel::Specification { 
+            filename = "model/rock.obj"; 
             preprocess = { 
                 setMaterial(all(), Color3(1, 1, 1 ) ); 
-                transformGeometry(all(), Matrix4::scale(0.03, 0.03, 0.03 ) ) }; 
+                transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01) ) }; 
             
-        }; 
-        
-        floorLight = ArticulatedModel::Specification { 
-            filename = "../model/floorLight.obj"; 
-            preprocess = { 
-                transformGeometry(all(), Matrix4::scale(0.018, 0.018, 0.018 ) ) }; 
-            
-        }; 
-        
-        lightRig = ArticulatedModel::Specification { 
-            filename = "../model/lights.obj"; 
-            preprocess = { 
-                transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
-            
-        }; 
-        
-        mirrorBall = ArticulatedModel::Specification { 
-            filename = "../model/sphere.obj"; 
-            preprocess = { 
-                transformGeometry(all(), Matrix4::scale(0.01, 0.01, 0.01 ) ) }; 
-            
-        }; 
-        
-        planeModel = ArticulatedModel::Specification { 
-            filename = "model/primitive/square.obj"; 
-            preprocess = { 
-                setMaterial(all(), Color3(1, 1, 0 ) ); 
-                transformGeometry(all(), Matrix4::scale(10, 10, 10 ) ) }; 
-            
-        }; 
-        
-        planeModelBack = ArticulatedModel::Specification { 
-            filename = "model/primitive/square.obj"; 
-            preprocess = { 
-                setMaterial(all(), Color3(0.6, 0.47, 0.98 ) ); 
-                transformGeometry(all(), Matrix4::scale(10, 10, 10 ) ) }; 
-            
-        }; 
-        
-        planeWhite = ArticulatedModel::Specification { 
-            filename = "../model/square.obj"; 
-            preprocess = { 
-                transformGeometry(all(), Matrix4::scale(10, 10, 10 ) ) }; 
-            
-        }; 
+        };  
+
+        splineModel1 = ArticulatedModel::Specification {
+            filename = "model/rock-spline1.txt";
+        };
+
+        splineModel2 = ArticulatedModel::Specification {
+            filename = "model/rock-spline2.txt";
+        };
+
+        splineModel3 = ArticulatedModel::Specification {
+            filename = "model/rock-spline3.txt";
+        };
+
+        splineModel4 = ArticulatedModel::Specification {
+            filename = "model/rock-spline4.txt";
+        };
+
+        splineModel5 = ArticulatedModel::Specification {
+            filename = "model/rock-spline5.txt";
+        };
+
+        splineModel6 = ArticulatedModel::Specification {
+            filename = "model/rock-spline6.txt";
+        };
         
     }; 
     
-    name = "Cracks No Box (Photon Beams)"; 
+    name = "Thinker (Photon Beam)"; 
 } 

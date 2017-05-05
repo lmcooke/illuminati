@@ -92,10 +92,9 @@ private:
     /** Makes the verts to visualize the direct lighting */
     void makeLinesDirBeams(SlowMesh &mesh);
 
+    /** Resets render counts, called when settings change */
+    void clearParams();
 
-
-    // TODO : temp
-    float m_count;
 
     int m_passes;
     shared_ptr<ArticulatedModel> m_model;
@@ -116,7 +115,7 @@ private:
     shared_ptr<Framebuffer> m_ZFBO;
 
     // path flags
-    PhotonSettings         m_PSettings;
+    shared_ptr<PhotonSettings>         m_PSettings;
 
     Random                 m_random;   // Random number generator
     int                    m_passType; // Pass type to render
@@ -136,6 +135,8 @@ private:
     shared_ptr<Image3>  m_canvas;   // Output buffer for raytrace()
     shared_ptr<Thread>  m_dispatch; // Spawns rendering threads
     float               m_radius; // Current radius of the beams to be rendered
+
+    bool                m_updating;
 
 #if 0
     bool                m_pointLights; // true if these are turned on

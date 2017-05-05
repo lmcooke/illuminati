@@ -6,7 +6,7 @@ class IndPhotonScatter
     :public PhotonScatter
 {
 public:
-    IndPhotonScatter(World * world, PhotonSettings settings);
+    IndPhotonScatter(World * world, shared_ptr<PhotonSettings> settings);
     ~IndPhotonScatter();
     void preprocess();
     void phaseFxn(Vector3 wi, Vector3 &wo);

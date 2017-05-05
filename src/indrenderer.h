@@ -11,7 +11,7 @@
 class IndRenderer
 {
 public:
-    IndRenderer(World *world, PhotonSettings settings);
+    IndRenderer(World *world, shared_ptr<PhotonSettings> settings);
     ~IndRenderer();
 
     /** Computes the direct illumination approaching the given surface point
@@ -54,7 +54,7 @@ private:
 
     World*  m_world;
     Random  m_random;   // Random number generator
-    PhotonSettings m_PSettings; // Settings
+    shared_ptr<PhotonSettings> m_PSettings; // Settings
     std::shared_ptr<G3D::KDTree<PhotonBeamette>> m_beams;
 
     float m_gatherRadius;

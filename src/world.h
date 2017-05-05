@@ -106,7 +106,7 @@ public:
 
     bool camnull() { return !m_camera; }
 
-    void setSettings(PhotonSettings settings){
+    void setSettings(shared_ptr<PhotonSettings> settings){
         m_PSettings = settings;
     }
 
@@ -123,7 +123,7 @@ private:
     CPUVertexArray      m_verts;    // The scene's vertices
     Array<shared_ptr<Surface>> m_geometry;
     Array<shared_ptr<Surface>> m_splineGeometry; // for previewing purposes
-    PhotonSettings m_PSettings; // Settings from UI
+    shared_ptr<PhotonSettings> m_PSettings; // Settings from UI
     Array<Array<Vector4>> m_splines; // collection of spline lights, each light represented by x, y, z, radius
 };
 
