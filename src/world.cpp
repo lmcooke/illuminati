@@ -514,6 +514,15 @@ const CFrame &World::getCameraCframe()
 
 void World::setCameraCframe(CFrame &cframe)
 {
+    float x = 0.f;
+    float y = 0.f;
+    float z = 0.f;
+
+    float yaw = 0.f;
+    float pitch = 0.f;
+    float roll = 0.f;
+
+    cframe.getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
     m_camera->setFrame(cframe);
 }
 

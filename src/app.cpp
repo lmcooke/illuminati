@@ -55,15 +55,15 @@ void App::setScenePath(const char* path)
 void App::buildPhotonMap(bool createRngGen)
 {
     if (createRngGen) {
-        std::cout << "createRngGen" <<std::endl;
-
         // Make the direct photon beams, to be splatted and rendered directly.
         m_dirBeams = std::make_unique<DirPhotonScatter>(&m_world, m_PSettings);
+        m_dirBeams->makeBeams();
 
         // Make the indirect photon beams, to be used to evaluate the lighting equation in the scene.
         // Note that it's redundant to here calculate both of these lighting maps, but
         // we'll later be using them at different rates (and also with different scattering properties)
         m_inDirBeams = std::make_unique<IndPhotonScatter>(&m_world, m_PSettings);
+        m_inDirBeams->makeBeams();
 
         // Create renderer
         m_indRenderer = std::make_unique<IndRenderer>(&m_world, m_PSettings);
@@ -112,7 +112,7 @@ static void dispatcher(void *arg)
 
     // Create the thread pool and for each pass, send out THREADs number of threads to do the dirty work.
     ThreadPool pool( self, THREADS );
-    while (self->indRenderCount < self->m_maxPasses) {
+    while (self->indRenderCount < self->m_maxPasses && self->continueRender) {
         printf("Rendering ...");
         std::cout << " Pass: " << self->indRenderCount << std::endl;
         fflush(stdout);
@@ -264,6 +264,12 @@ bool App::onEvent(const GEvent &e)
         } else if (e.key.keysym.sym == 's') {
             // move cam backward
             CFrame newCframe = CFrame::fromXYZYPRDegrees(x, y, z + .25f, yaw, pitch, roll);
+            m_world.setCameraCframe(newCframe);
+            clearParams();
+
+        } else if (e.key.keysym.sym == 'p') {
+            // pitch cam
+            CFrame newCframe = CFrame::fromXYZYPRDegrees(x,y,z, yaw, pitch + 5.f, roll);
             m_world.setCameraCframe(newCframe);
             clearParams();
 

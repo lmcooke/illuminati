@@ -64,6 +64,8 @@ public:
     int                 indRenderCount;
     int                 prevIndRenderCount;
     int                 m_maxPasses;
+    bool                continueRender;
+
 
 private:
 
@@ -111,7 +113,6 @@ private:
     float               m_radius; // Current radius of the beams to be rendered
     int                 m_passes;
     int                 num_passes;
-    bool                continueRender;
     bool                m_updating;
     float               m_scaleFactor; // how much to scale down images by.
 
