@@ -1,10 +1,10 @@
 #include "indrenderer.h"
 
-IndRenderer::IndRenderer(World* world, PhotonSettings settings):
+IndRenderer::IndRenderer(World* world, shared_ptr<PhotonSettings> settings):
     m_world(world),
     m_PSettings(settings)
 {
-    m_gatherRadius = m_PSettings.gatherRadius;
+    m_gatherRadius = m_PSettings->gatherRadius;
 }
 
 IndRenderer::~IndRenderer()
@@ -20,7 +20,7 @@ Radiance3 IndRenderer::direct(std::shared_ptr<Surfel> surf, Vector3 wo)
     float area;
     int id;
 
-    for (int i = 0; i < m_PSettings.directSamples; ++i)
+    for (int i = 0; i < m_PSettings->directSamples; ++i)
     {
         m_world->emissivePoint(m_random, light, P_light, area, id);
 
@@ -44,7 +44,7 @@ Radiance3 IndRenderer::direct(std::shared_ptr<Surfel> surf, Vector3 wo)
                  / P_light;
         }
     }
-    return rad / m_PSettings.directSamples;
+    return rad / m_PSettings->directSamples;
 }
 
 Radiance3 IndRenderer::impulse(std::shared_ptr<Surfel> surf, Vector3 wo, int depth)
@@ -79,9 +79,9 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
     Radiance3 rad;
     // If first bounce, final gather
 
-    if (depth == m_PSettings.maxDepthScatter && m_PSettings.useFinalGather){
+    if (depth == m_PSettings->maxDepthScatter && m_PSettings->useFinalGather){
 
-        for (int i=0; i < m_PSettings.gatherSamples; i++){
+        for (int i=0; i < m_PSettings->gatherSamples; i++){
             // get a random sample direction from this sample point
             Vector3 wInGather = wo;
             Vector3 wOutGather = Vector3(0.f, 0.f, 0.f); // ray leaving original intersect point
@@ -96,7 +96,7 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
             Radiance3 currColor = pif() * gatherColor * weight;
             rad += currColor;
         }
-        rad /= m_PSettings.gatherSamples;
+        rad /= m_PSettings->gatherSamples;
 
     // Else, do normal diffuse calcualation
     }else{
@@ -117,7 +117,7 @@ Radiance3 IndRenderer::diffuse(std::shared_ptr<Surfel> surf, Vector3 wo, int dep
             Radiance3 scatter = surf->finiteScatteringDensity(wi, wo.direction());
 
             float c = std::fmax(Utils::cone(dist, m_gatherRadius), 0.0);
-            rad += beam.m_power * c * scatter/fmin(m_PSettings.numBeamettesInDir, m_beams->size());
+            rad += beam.m_power * c * scatter/fmin(m_PSettings->numBeamettesInDir, m_beams->size());
 //            rad += beam.m_power * c * scatter;
         }
     }
@@ -142,7 +142,7 @@ Radiance3 IndRenderer::trace(const Ray &ray, int depth)
                + direct(surf, wo)
                + diffuse(surf, wo, depth)
                + impulse(surf, wo, depth);
-        Radiance3 fogCooef = Utils::exp(dist, Radiance3(m_PSettings.attenuation));
+        Radiance3 fogCooef = Utils::exp(dist, Radiance3(m_PSettings->attenuation));
 //        surf_radiance = surf_radiance*fogCooef.r + (1. - fogCooef.r)*Color3::white()*0.2;
 
         final += surf_radiance;

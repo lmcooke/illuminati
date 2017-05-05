@@ -18,28 +18,17 @@ layout(location = 2) out vec4 cumulativeDirectLight;
 
 void main()
 {
+    vec2 texCoords = vec2(gl_FragCoord.x/screenWidth, gl_FragCoord.y/screenHeight);
 
-	vec2 texCoords = vec2(gl_FragCoord.x/screenWidth, gl_FragCoord.y/screenHeight);
+    vec4 prevDirectLightColor = texture(prevDirectLight, texCoords, 0.0);
+    vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
+    vec4 directColor = texture(directSample, texCoords, 0.0);
 
-	vec4 prevDirectLightColor = texture(prevDirectLight, texCoords, 0.0);
-        vec4 indirectColor = texture(indirectSample, texCoords, 0.0);
-        vec4 directColor = texture(directSample, texCoords, 0.0);
+    float contribution = 1.0/(passNum + 1.0);
+    cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
 
+    // result = cumulativeDirectLight;
+    result = indirectColor + cumulativeDirectLight;
 
-	
-
-	if (continueRendering) {
-
-		float contribution = 1.0/(passNum + 1.0);
-		cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
-
-		// result = cumulativeDirectLight;
-		result = indirectColor + cumulativeDirectLight;
-	} else {
-		result = vec4(0.0, 1.0, 0.0, 0.0);
-		cumulativeDirectLight = vec4(0.0, 0.0, 0.0, 0.0);
-	}
-
-        
-        //result = indirectColor + directColor;
+    //result = indirectColor + directColor;
 }

@@ -18,8 +18,7 @@ out vec2 end_pt;
 out vec2 start_v;
 out vec2 end_v;
 out vec3 power;
-out vec3 pos;
-
+out vec2 depth;
 
 void main() {
 
@@ -48,17 +47,17 @@ void main() {
     }
 
     vec4 s4 = (MVP * vec4(start.xyz, 1.0));
-    vec2 s = s4.xy / s4.w;
-    s = s * 0.5 + vec2(0.5);
+    vec3 s = s4.xyz / s4.w;
+    s.xy = s.xy * 0.5 + vec2(0.5);
     vec4 e4 = (MVP * vec4(end.xyz, 1.0));
-    vec2 e = e4.xy / e4.w;
-    e = e * 0.5 + vec2(0.5);
+    vec3 e = e4.xyz / e4.w;
+    e.xy = e.xy * 0.5 + vec2(0.5);
 
     vec4 p1 = MVP * vec4(start + start_perp, 1.0);
     vec4 p2 = MVP * vec4(start + end_perp, 1.0);
 
-    vec2 bs = (((p1.xy / p1.w) * 0.5 + vec2(0.5)) - s);
-    vec2 be = (((p2.xy / p2.w) * 0.5 + vec2(0.5)) - e);
+    vec2 bs = (((p1.xy / p1.w) * 0.5 + vec2(0.5)) - s.xy);
+    vec2 be = (((p2.xy / p2.w) * 0.5 + vec2(0.5)) - e.xy);
 
     vec3 pwr0 = power_geo[0] / (M_PI * pow(max(EPS, length(min0)), 2));
     vec3 pwr1 = power_geo[1] / (M_PI * pow(max(EPS, length(min1)), 2));
@@ -70,13 +69,15 @@ void main() {
         pwr1 = pwr1 * (PWR_CLAMP / length(pwr1));
     }
 
+    vec2 d = vec2(s.z, e.z);
+
 
     {
             gl_Position = MVP * vec4(start - start_perp, 1.0);
 
-            pos = gl_Position.xyz / gl_Position.w;
-            start_pt = s;
-            end_pt = e;
+            depth = d;
+            start_pt = s.xy;
+            end_pt = e.xy;
             start_v = bs;
             end_v = be;
             power = pwr0;
@@ -85,9 +86,9 @@ void main() {
 
             gl_Position = MVP * vec4(start + start_perp, 1.0);
 
-            pos = gl_Position.xyz / gl_Position.w;
-            start_pt = s;
-            end_pt = e;
+            depth = d;
+            start_pt = s.xy;
+            end_pt = e.xy;
             start_v = bs;
             end_v = be;
             power = pwr0;
@@ -96,9 +97,9 @@ void main() {
 
             gl_Position = MVP * vec4(end - end_perp, 1.0);
 
-            pos = gl_Position.xyz / gl_Position.w;
-            start_pt = s;
-            end_pt = e;
+            depth = d;
+            start_pt = s.xy;
+            end_pt = e.xy;
             start_v = bs;
             end_v = be;
             power = pwr1;
@@ -107,9 +108,9 @@ void main() {
 
             gl_Position = MVP * vec4(end + end_perp, 1.0);
 
-            pos = gl_Position.xyz / gl_Position.w;
-            start_pt = s;
-            end_pt = e;
+            depth = d;
+            start_pt = s.xy;
+            end_pt = e.xy;
             start_v = bs;
             end_v = be;
             power = pwr1;
