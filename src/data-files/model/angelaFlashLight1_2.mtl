@@ -140,7 +140,7 @@ Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.50 0.50 0.50
-Ke 1 .25 0
+Ke 1 .75 0
 newmtl flashLight_SHDSG
 illum 4
 Kd 0.50 0.50 0.50

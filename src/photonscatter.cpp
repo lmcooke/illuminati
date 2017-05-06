@@ -261,25 +261,36 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         startRad = max(startRad * m_radius, startRad*.5f);
         endRad = max(endRad * m_radius, endRad* .5f);
 
-        calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
+        if (bounces > 0) {
+            calculateAndStoreBeam(emittedBeam.m_start, beamEndPt, prev, next, startRad, endRad, emittedBeam.m_power);
+        }
 
+
+        // mandate that at least some light from beam is scattered.
+        float adjustedScattering = m_PSettings->scattering;
+        if (adjustedScattering == 0.f) {
+            adjustedScattering = .01f;
+        }
 
         float extinctionProb = getExtinctionProbability(marchDist); // 1 - (scat + trans)
         float remainingProb = 1.f - extinctionProb;
-        float scatterProb = remainingProb * m_PSettings->scattering;
+        float scatterProb = remainingProb * adjustedScattering;
         float transProb = remainingProb - scatterProb;
 
         float rng = m_random.uniform();
 
+        // use intensity setting to determine how scattering power of curved beams is scaled;
+        float powerReduction = max((m_PSettings->beamIntensity / 30.f) + 1.f, 1.1f);
+
         if (rng < transProb) {
 
             // transmission
-            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power, emittedBeam.m_splineID, bounces, curveStep);
+            scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power * powerReduction, emittedBeam.m_splineID, bounces, curveStep);
 
         } else if (rng < transProb + scatterProb) {
 
             // scattering
-            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power, bounces);
+            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power * powerReduction, bounces);
 
         } else {
 

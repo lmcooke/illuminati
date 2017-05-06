@@ -615,6 +615,7 @@ void App::makeGUI()
     settingsPane->addNumberBox(GuiText("Intensity"), &m_PSettings->beamIntensity, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 10.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Radius Scale"), &m_PSettings->radiusScalingFactor, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
     settingsPane->addNumberBox(GuiText("Beam Spread"), &m_PSettings->beamSpread, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.001f, 1.0f, 0.005f);
+//    settingsPane->addNumberBox(GuiText("Curve Power"), &m_PSettings->curveScatterPower, GuiText(""), GuiTheme::LINEAR_SLIDER, 1.00f, 2.01f, 1.10f);
     settingsPane->addNumberBox(GuiText("Gather Radius"), &m_PSettings->gatherRadius, GuiText(""), GuiTheme::LINEAR_SLIDER, 0.0f, 1.0f, 0.05f);
 
     // Rendering

@@ -25,4 +25,5 @@ void main()
     cumulativeDirectLight = mix(prevDirectLightColor, directColor, contribution);
 
     result = indirectColor + cumulativeDirectLight;
+    // result = indirectColor;
 }
