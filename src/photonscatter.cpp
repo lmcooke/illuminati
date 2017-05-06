@@ -280,7 +280,7 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         float rng = m_random.uniform();
 
         // use intensity setting to determine how scattering power of curved beams is scaled;
-        float powerReduction = max((m_PSettings->beamIntensity / 30.f) + 1.f, 1.1f);
+        float powerReduction = max((m_PSettings->beamIntensity / 20.f) + 1.f, 1.1f);
 
         if (rng < transProb) {
 
@@ -290,10 +290,12 @@ void PhotonScatter::shootRayRecursiveCurve(PhotonBeamette emittedBeam, int bounc
         } else if (rng < transProb + scatterProb) {
 
             // scattering
-            scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power * powerReduction, bounces);
 
-        } else {
-
+            if (curveStep > 0) {
+                scatterIntoFog(beamEndPt, nextDirection, emittedBeam.m_power * powerReduction, bounces);
+            } else {
+                scatterForwardCurve(beamEndPt, nextDirection, emittedBeam.m_power * powerReduction, emittedBeam.m_splineID, bounces, curveStep);
+            }
         }
         // otherwise, extinction -> no recursion.
     }

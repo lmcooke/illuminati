@@ -1,5 +1,7 @@
 #include "dirphotonscatter.h"
 
+#include <math.h>
+
 DirPhotonScatter::DirPhotonScatter(World * world, shared_ptr<PhotonSettings> settings)
     : PhotonScatter(world, settings),
       m_beams()
@@ -24,8 +26,8 @@ void DirPhotonScatter::preprocess()
 
 void DirPhotonScatter::phaseFxn(Vector3 wi, Vector3 &wo)
 {
-//    wo = wi;
-    wo = Vector3::cosPowHemiRandom(-wi, .1f, m_random);
+    float power = 1.f;
+    wo = Vector3::cosPowHemiRandom(-wi, power, m_random);
 }
 
 Array<PhotonBeamette> DirPhotonScatter::getBeams()
@@ -46,3 +48,5 @@ float DirPhotonScatter::getRayMarchDist()
 //    return .1f;
     return m_PSettings->dist;
 }
+
+
