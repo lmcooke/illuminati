@@ -1,20 +1,11 @@
-<<<<<<< HEAD
 # Progressive and Expressive Photon
 
 By Nellie Robinson, Emily Reif, Luci Cooke, and Kenji Endo
 
 The goal of this project was to use photon beam mapping in order to render art directed volumetric lighting.
-=======
-# Global Illuminati
-
-By Nellie Robinson, Emily Reif, Luci Cooke, and Kenji Endo
-
->>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 
 ---
 
-
-<<<<<<< HEAD
 ### Overview
 
 Rendering participating media can be slow and memory heavy, in addition to being difficult for artists to control and art direct. However, volumetric effects and lighting can create magical and fantastical effects. For this project, we wanted to create a system to allow artists to control physical and artistic parameters in volumetric lighting.
