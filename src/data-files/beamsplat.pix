@@ -1,0 +1,70 @@
+#version 410
+#define M_PI 3.1415926535897932384626433832795
+#define Z_EPS 0.0001 // artisinal epsilon for z-buffer
+
+uniform vec2 Resolution;
+uniform sampler2D zDepth;
+
+in vec2 start_pt;
+in vec2 end_pt;
+in vec2 start_v;
+in vec2 end_v;
+in vec3 power;
+in vec2 depth;
+
+out vec4 g3d_FragColor;
+
+// project a on b
+float project_dist(vec2 a, vec2 b) {
+    return dot(normalize(a), normalize(b)) * length(a);
+}
+
+void main(void) {
+
+    vec2 startpt = start_pt;
+    vec2 endpt = end_pt;
+    vec2 coord = gl_FragCoord.xy / Resolution;
+
+    /* account for aspect ratio */
+    vec2 res = Resolution / Resolution.xx;
+    startpt = startpt * res;
+    endpt = endpt * res;
+    coord = coord * res;
+    vec2 startv = start_v * res;
+    vec2 endv = end_v * res;
+
+    vec2 beam = endpt - startpt;
+    vec2 nbeam = normalize(beam);
+
+    float proj = project_dist(coord - startpt, beam);
+    vec2 pt = startpt + proj * nbeam;
+
+    float s_proj = project_dist(startv, beam);
+    float e_proj = project_dist(endv, beam);
+    vec2 s_proj_pt = s_proj * nbeam;
+    vec2 e_proj_pt = e_proj * nbeam;
+    float s_rad = length(startv - s_proj_pt);
+    float e_rad = length(endv - e_proj_pt);
+    float s_pow = M_PI * pow(s_rad, 2);
+    float e_pow = M_PI * pow(e_rad, 2);
+
+    float r = mix(s_rad, e_rad, proj / length(beam));
+    float val = length(coord - pt) / r;
+
+    // alternate version using length of perpendiculars projected on beam:
+    //float val = length(coord - pt) / (mix(s_rad, e_rad, proj / length(e_proj_pt - s_proj_pt)));
+
+    /* power */
+    vec3 powr = power;
+    // cross-section of beam with radius r should have pi*r^2 = power
+    // (this is computed in geometry shader)
+    powr *= 0.005;
+    val = sin(acos(val));
+
+    /* depth */
+    vec2 depth2 = (depth) * 0.5 + vec2(0.5);
+    float lookup = texture(zDepth, gl_FragCoord.xy / Resolution).x;
+    val = val * step(0, lookup - depth2.x - Z_EPS) * step(0, lookup - depth2.y - Z_EPS);
+    g3d_FragColor = vec4(powr * val, val);
+
+}
