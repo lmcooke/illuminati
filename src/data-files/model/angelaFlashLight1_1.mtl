@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 newmtl angela_SHDSG
 illum 4
 Kd 0.50 0.50 0.50
@@ -5,6 +6,94 @@ Ka 0.20 0.20 0.20
 Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.50 0.50 0.50
+=======
+newmtl angelaRig_nr_0053:GumsShdrSG
+illum 4
+Kd 0.16 0.05 0.04
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.66 0.66 0.66
+newmtl angelaRig_nr_0053:HairShdrSG
+illum 4
+Kd 0.01 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.13 0.07 0.05
+newmtl angelaRig_nr_0053:PupilShdrSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 0.00
+newmtl angelaRig_nr_0053:ShirtShdrSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl angelaRig_nr_0053:ShortsShdrSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+bump -s 0.166667 0.166667 -mm 0 0.35 unnamed.png -bm 0.04
+Ni 1.00
+newmtl angelaRig_nr_0053:Sock1ShdrSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+bump -s 0.333333 0.333333 -mm 0 0.35 unnamed.png -bm 0.04
+Ni 1.00
+newmtl angelaRig_nr_0053:Sock2Shdr1SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+bump -s 0.333333 0.333333 -mm 0 0.35 unnamed.png -bm 0.04
+Ni 1.00
+newmtl angelaRig_nr_0053:TeethShdrSG
+illum 4
+Kd 0.56 0.54 0.49
+Ka 0.02 0.02 0.02
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.56 0.56 0.56
+newmtl angelaRig_nr_0053:blinn1SG
+illum 4
+Kd 0.02 0.08 0.05
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.00 0.00 0.00
+newmtl angelaRig_nr_0053:lambert5SG
+illum 4
+Kd 0.47 0.47 0.47
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl angelaRig_nr_0053:lambert7SG
+illum 4
+Kd 0.31 0.51 0.73
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl angelaRig_nr_0053:lambert8SG
+illum 4
+Kd 0.60 0.75 0.51
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+newmtl angela_SHD
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0 0 0
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 newmtl cornellBox_for_blueno1_1:backWall1
 illum 4
 Kd 0.16 0.13 0.43
@@ -54,6 +143,7 @@ Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.00 0.00 0.00
 Ns 10.00
+<<<<<<< HEAD
 newmtl cornellBox_for_blueno1_1:rocks_SHDSG
 illum 4
 Kd 0.50 0.50 0.50
@@ -61,6 +151,8 @@ Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.50 0.50 0.50
+=======
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 newmtl flashLightEmissive_SHDSG
 illum 4
 Kd 0.50 0.50 0.50
@@ -68,7 +160,11 @@ Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
 Ks 0.50 0.50 0.50
+<<<<<<< HEAD
 Ke 1 .75 0
+=======
+Ke 1 1 1
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 newmtl flashLight_SHDSG
 illum 4
 Kd 0.50 0.50 0.50
@@ -85,6 +181,7 @@ Ni 1.00
 Ks 0.50 0.50 0.50
 newmtl initialShadingGroup
 illum 4
+<<<<<<< HEAD
 Kd 0.73 0.71 0.68
 Ka 0.73 0.71 0.68
 Tf 1.00 1.00 1.00
@@ -93,10 +190,13 @@ Ks 0.00 0.00 0.00
 Ns 10.00
 newmtl sideLight_SHDSG
 illum 4
+=======
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 Kd 0.50 0.50 0.50
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
+<<<<<<< HEAD
 Ks 0.50 0.50 0.50
 Ke 0 4 10
 newmtl tree_SHDSG
@@ -115,7 +215,15 @@ Ni 1.00
 
 newmtl cornellBox_for_blueno1_1:lambert1SG
 illum 4
+=======
+newmtl tree_SHDSG
+illum 4
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 Kd 0.50 0.50 0.50
 Ka 0.00 0.00 0.00
 Tf 1.00 1.00 1.00
 Ni 1.00
+<<<<<<< HEAD
+=======
+Ks 0 0 0
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df

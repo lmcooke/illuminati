@@ -77,12 +77,16 @@
         spline3 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
             model = "splineModel3";
+<<<<<<< HEAD
         };
 
         spline4 = SplineLight {
             frame = CFrame::fromXYZPRDegrees(0, 0, 0);
             model = "splineModel4";
         };
+=======
+        }
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
 
     }; 
     
@@ -119,7 +123,11 @@
     models = { 
         
         cornellModel = ArticulatedModel::Specification { 
+<<<<<<< HEAD
             filename = "/gpfs/main/home/lmcooke/course/cs224/angelaFlashLight1_2.obj"; 
+=======
+            filename = "model/angelaFlashLight1_2.obj"; 
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
             preprocess = { 
                 transformGeometry(all(), Matrix4::scale(1.5, 1.5, 1.5 ) ) }; 
             
@@ -147,10 +155,13 @@
 
         splineModel3 = ArticulatedModel::Specification{
             filename = "model/splines/flashLightBeam3_1.lit";
+<<<<<<< HEAD
         };
 
         splineModel4 = ArticulatedModel::Specification{
             filename = "model/splines/flashLightBeam4_1.lit";
+=======
+>>>>>>> 6ed38933356ddb25f6830c46703b77a8a777f1df
         }
         
     }; 
